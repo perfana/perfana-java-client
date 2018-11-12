@@ -22,9 +22,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-public class PerfanaClient {
-
-    private Logger logger = new SystemOutLogger();
+public final class PerfanaClient {
 
     private static final MediaType JSON
             = MediaType.parse("application/json; charset=utf-8");
@@ -43,10 +41,11 @@ public class PerfanaClient {
     private final String annotations;
     private final Properties variables;
     private final boolean assertResultsEnabled;
+    private Logger logger;
 
     private ScheduledExecutorService executor;
 
-    public PerfanaClient(String application, String testType, String testEnvironment, String testRunId, String CIBuildResultsUrl, String applicationRelease, String rampupTimeInSeconds, String constantLoadTimeInSeconds, String perfanaUrl, String annotations, Properties variables, final boolean assertResultsEnabled) {
+    PerfanaClient(String application, String testType, String testEnvironment, String testRunId, String CIBuildResultsUrl, String applicationRelease, String rampupTimeInSeconds, String constantLoadTimeInSeconds, String perfanaUrl, String annotations, Properties variables, final boolean assertResultsEnabled) {
         this.application = application;
         this.testType = testType;
         this.testEnvironment = testEnvironment;
@@ -89,7 +88,7 @@ public class PerfanaClient {
         return value == null ? 0 : Integer.valueOf(value);
     }
 
-    public void injectLogger(Logger logger) {
+    void injectLogger(Logger logger) {
         this.logger = logger;
     }
 
@@ -233,25 +232,7 @@ public class PerfanaClient {
         void error(String message);
         void debug(String message);
     }
-
-    public static class SystemOutLogger implements Logger {
-        public void info(String message) {
-            System.out.println("INFO:  " + message);
-        }
-
-        public void warn(String message) {
-            System.out.println("WARN:  " + message);
-        }
-
-        public void error(String message) {
-            System.out.println("ERROR: " + message);
-        }
-
-        public void debug(String message) {
-            System.out.println("DEBUG: " + message);
-        }
-    }
-
+    
     private String assertResults() throws PerfanaClientException {
 
         if (!assertResultsEnabled) {
