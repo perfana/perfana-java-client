@@ -285,15 +285,5 @@ public final class PerfanaClient {
         }
         return assertionText.toString();
     }
-
-    public static class PerfanaClientException extends Exception {
-
-        PerfanaClientException(final String message) {
-            super(message);
-        }
-
-        PerfanaClientException(final String message, final IOException e) {
-            super(message, e);
-        }
-    }
+    
 }
