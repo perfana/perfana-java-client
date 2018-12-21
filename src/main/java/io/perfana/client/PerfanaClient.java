@@ -71,7 +71,7 @@ public final class PerfanaClient {
     public void startSession() {
         logger.info("Perfana start session");
 
-        logger.debug("Perfana broadcast before session");
+        logger.info("Perfana broadcast event before test");
         broadcaster.broadcastBeforeTest(testRunId, eventProperties);
 
         if (executor != null) {
@@ -80,9 +80,30 @@ public final class PerfanaClient {
         final int periodInSeconds = 15;
         logger.info(String.format("Calling Perfana (%s) keep alive every %d seconds.", perfanaUrl, periodInSeconds));
 
-        final PerfanaClient.KeepAliveRunner keepAliveRunner = new PerfanaClient.KeepAliveRunner(this);
         executor = Executors.newSingleThreadScheduledExecutor();
+
+        final PerfanaClient.KeepAliveRunner keepAliveRunner = new PerfanaClient.KeepAliveRunner(this);
         executor.scheduleAtFixedRate(keepAliveRunner, 0, periodInSeconds, TimeUnit.SECONDS);
+
+        int rampupTimeSeconds = parseRampupTime();
+
+        final long failoverSleepInSeconds = rampupTimeSeconds + TimeUnit.MINUTES.toSeconds(5);
+        logger.info("Failover event is scheduled to run in " + failoverSleepInSeconds + " seconds. " +
+                "This is the rampup time plus 5 minutes.");
+        final PerfanaClient.FailoverRunner failoverRunner = new PerfanaClient.FailoverRunner(this);
+        executor.schedule(failoverRunner, failoverSleepInSeconds, TimeUnit.SECONDS);
+
+    }
+
+    private int parseRampupTime() {
+        int rampupTime;
+        try {
+            rampupTime = Integer.parseInt(rampupTimeSeconds);
+        } catch (NumberFormatException e) {
+            logger.error("Unable to parse rampupTimeSeconds, will use 0 as rampup time. " + e.getMessage());
+            rampupTime = 0;
+        }
+        return rampupTime;
     }
 
     public void stopSession() throws PerfanaClientException {
@@ -92,6 +113,7 @@ public final class PerfanaClient {
         }
         executor = null;
 
+        logger.info("Perfana broadcast event after test");
         broadcaster.broadcastAfterTest(testRunId, eventProperties);
 
         callPerfana(true);
@@ -240,6 +262,21 @@ public final class PerfanaClient {
         public void run() {
             client.callPerfana(false);
             client.broadcaster.broadCastKeepAlive(client.testRunId, client.eventProperties);
+        }
+    }
+
+    public static class FailoverRunner implements Runnable {
+
+        private final PerfanaClient client;
+
+        FailoverRunner(PerfanaClient client) {
+            this.client = client;
+        }
+
+        @Override
+        public void run() {
+            client.logger.info("Perfana broadcast event failover");
+            client.broadcaster.broadcastFailover(client.testRunId, client.eventProperties);
         }
     }
 

@@ -47,6 +47,10 @@ Events available, with example usage:
 * _failover_ - initiate a failover during the test 
 * _after test_ - start generating reports, clean up environment
 
+The failover is scheduled 5 minutes after the end of the rampup.
+
+The keep alive is scheduled each 15 seconds during the test.
+
 The events will also be given a set of properties per implementation class.
 The properties can be added before the test run using the `PerfanaClientBuilder`.
 
