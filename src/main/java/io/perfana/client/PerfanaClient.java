@@ -6,6 +6,7 @@ import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.Option;
 import com.jayway.jsonpath.ParseContext;
 import io.perfana.service.PerfanaEventBroadcaster;
+import io.perfana.service.PerfanaEventProperties;
 import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
 import okhttp3.MediaType;
@@ -31,6 +32,7 @@ public final class PerfanaClient {
 
     private final OkHttpClient client = new OkHttpClient();
     private final PerfanaEventBroadcaster broadcaster;
+    private final PerfanaEventProperties eventProperties;
 
     private Logger logger;
 
@@ -49,7 +51,7 @@ public final class PerfanaClient {
 
     private ScheduledExecutorService executor;
 
-    PerfanaClient(String application, String testType, String testEnvironment, String testRunId, String CIBuildResultsUrl, String applicationRelease, String rampupTimeInSeconds, String constantLoadTimeInSeconds, String perfanaUrl, String annotations, Properties variables, boolean assertResultsEnabled, PerfanaEventBroadcaster broadcaster) {
+    PerfanaClient(String application, String testType, String testEnvironment, String testRunId, String CIBuildResultsUrl, String applicationRelease, String rampupTimeInSeconds, String constantLoadTimeInSeconds, String perfanaUrl, String annotations, Properties variables, boolean assertResultsEnabled, PerfanaEventBroadcaster broadcaster, PerfanaEventProperties eventProperties) {
         this.application = application;
         this.testType = testType;
         this.testEnvironment = testEnvironment;
@@ -63,13 +65,14 @@ public final class PerfanaClient {
         this.variables = variables;
         this.assertResultsEnabled = assertResultsEnabled;
         this.broadcaster = broadcaster;
+        this.eventProperties = eventProperties;
     }
 
     public void startSession() {
         logger.info("Perfana start session");
 
         logger.debug("Perfana broadcast before session");
-        broadcaster.broadcastBeforeTest(testRunId);
+        broadcaster.broadcastBeforeTest(testRunId, eventProperties);
 
         if (executor != null) {
             throw new RuntimeException("Cannot start perfana session multiple times!");
@@ -89,7 +92,7 @@ public final class PerfanaClient {
         }
         executor = null;
 
-        broadcaster.broadcastAfterTest(testRunId);
+        broadcaster.broadcastAfterTest(testRunId, eventProperties);
 
         callPerfana(true);
         assertResults();
@@ -236,7 +239,7 @@ public final class PerfanaClient {
         @Override
         public void run() {
             client.callPerfana(false);
-            client.broadcaster.broadCastKeepAlive(client.testRunId);
+            client.broadcaster.broadCastKeepAlive(client.testRunId, client.eventProperties);
         }
     }
 

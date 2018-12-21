@@ -1,6 +1,7 @@
 package io.perfana.client;
 
 import io.perfana.service.PerfanaEventBroadcaster;
+import io.perfana.service.PerfanaEventProperties;
 import io.perfana.service.PerfanaEventProvider;
 
 import java.util.Properties;
@@ -20,6 +21,7 @@ public class PerfanaClientBuilder {
     private Properties variables = new Properties();
     private boolean assertResultsEnabled = false;
     private PerfanaEventBroadcaster broadcaster;
+    private PerfanaEventProperties eventProperties = new PerfanaEventProperties();
 
     private PerfanaClient.Logger logger = new PerfanaClient.Logger() {
         @Override
@@ -117,12 +119,31 @@ public class PerfanaClientBuilder {
         return this;
     }
 
+    /**
+     * Add properties to be passed on to the event implementation class.
+     * @param eventImplementationName the fully qualified implementation class name (class.getName())
+     * @param name the name of the property (not null or empty), e.g. "REST_URL"
+     * @param value the name of the property (can be null or empty), e.g. "https://my-rest-call"
+     * @return this
+     */
+    public PerfanaClientBuilder addEventProperty(String eventImplementationName, String name, String value) {
+        if (eventImplementationName == null || eventImplementationName.isEmpty()) {
+            throw new PerfanaClientRuntimeException("EventImplementationName is null or empty for " + this);
+        }
+        if (name == null || name.isEmpty()) {
+            throw new PerfanaClientRuntimeException("EventImplementation property name is null or empty for " + this);
+        }
+        eventProperties.put(eventImplementationName, name, value);
+        return this;
+    }
+    
     public PerfanaClient createPerfanaClient() {
 
-        // get default broadcaster
+        // get default broadcaster if no broadcaster was given
+        if (broadcaster == null) logger.info("Creating default Perfana event broadcaster.");
         PerfanaEventBroadcaster broadcaster = this.broadcaster == null ? PerfanaEventProvider.getInstance() : this.broadcaster;
 
-        PerfanaClient perfanaClient = new PerfanaClient(application, testType, testEnvironment, testRunId, ciBuildResultsUrl, applicationRelease, rampupTimeInSeconds, constantLoadTimeInSeconds, perfanaUrl, annotations, variables, assertResultsEnabled, broadcaster);
+        PerfanaClient perfanaClient = new PerfanaClient(application, testType, testEnvironment, testRunId, ciBuildResultsUrl, applicationRelease, rampupTimeInSeconds, constantLoadTimeInSeconds, perfanaUrl, annotations, variables, assertResultsEnabled, broadcaster, eventProperties);
         perfanaClient.injectLogger(logger);
         return perfanaClient;
     }
