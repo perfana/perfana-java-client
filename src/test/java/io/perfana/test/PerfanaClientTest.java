@@ -56,6 +56,7 @@ public class PerfanaClientTest
                         .setVariables(new Properties())
                         .setAssertResultsEnabled(true)
                         .setLogger(testLogger)
+                        .addEventProperty("myClass", "name", "value")
                         .createPerfanaClient();
 
         assertNotNull(client);
