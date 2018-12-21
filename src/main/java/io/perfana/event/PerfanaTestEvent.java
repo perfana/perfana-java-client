@@ -1,4 +1,4 @@
-package io.perfana.service;
+package io.perfana.event;
 
 import java.util.Map;
 

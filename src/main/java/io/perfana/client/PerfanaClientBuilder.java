@@ -1,8 +1,8 @@
 package io.perfana.client;
 
-import io.perfana.service.PerfanaEventBroadcaster;
-import io.perfana.service.PerfanaEventProperties;
-import io.perfana.service.PerfanaEventProvider;
+import io.perfana.event.PerfanaEventBroadcaster;
+import io.perfana.event.PerfanaEventProperties;
+import io.perfana.event.PerfanaEventProvider;
 
 import java.util.Properties;
 

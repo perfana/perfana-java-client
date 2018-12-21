@@ -1,4 +1,4 @@
-package io.perfana.service;
+package io.perfana.event;
 
 import org.junit.Test;
 
@@ -13,7 +13,7 @@ public class PerfanaEventPropertiesTest {
 
         String name = "my-name";
         String value = "my-value";
-        properties.put("io.perfana.service.PerfanaEventPropertiesTest.MyPerfanaEvent", name, value);
+        properties.put("io.perfana.event.PerfanaEventPropertiesTest.MyPerfanaEvent", name, value);
 
         assertEquals(value, properties.get(new MyPerfanaEvent()).get(name));
     }
