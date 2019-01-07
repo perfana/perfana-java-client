@@ -4,9 +4,16 @@ import io.perfana.event.PerfanaEventBroadcaster;
 import io.perfana.event.PerfanaEventProperties;
 import io.perfana.event.PerfanaEventProvider;
 
+import java.time.Duration;
 import java.util.Properties;
 
 public class PerfanaClientBuilder {
+
+    private static final int DEFAULT_RAMPUP_TIME_SECONDS = 0;
+    private static final int DEFAULT_CONSTANT_LOAD_TIME_SECONDS = 600;
+    private static final int DEFAULT_KEEP_ALIVE_TIME_SECONDS = 30;
+    private static final int DEFAULT_RETRY_TIME_SECONDS = 10;
+    private static final int DEFAULT_RETRY_MAX_COUNT = 30;
 
     private String application = "unknown";
     private String testType = "unknown";
@@ -14,10 +21,13 @@ public class PerfanaClientBuilder {
     private String testRunId = "unknown";
     private String ciBuildResultsUrl = "unknown";
     private String applicationRelease = "unknown";
-    private String rampupTimeInSeconds = "0";
-    private String constantLoadTimeInSeconds = "0";
+    private Duration rampupTime = Duration.ofSeconds(DEFAULT_RAMPUP_TIME_SECONDS);
+    private Duration constantLoadTime = Duration.ofSeconds(DEFAULT_CONSTANT_LOAD_TIME_SECONDS);
     private String perfanaUrl = "unknown";
     private String annotations = "";
+    private Duration keepAliveTime = Duration.ofSeconds(DEFAULT_KEEP_ALIVE_TIME_SECONDS);
+    private int retryMaxCount = DEFAULT_RETRY_MAX_COUNT;
+    private Duration retryDuration = Duration.ofSeconds(DEFAULT_RETRY_TIME_SECONDS);
     private Properties variables = new Properties();
     private boolean assertResultsEnabled = false;
     private PerfanaEventBroadcaster broadcaster;
@@ -45,7 +55,7 @@ public class PerfanaClientBuilder {
         }
 
         private void say(String level, String something) {
-            System.out.printf("[%s]` %s%n", level, something);
+            System.out.printf("[%s] %s%n", level, something);
         }
     };
 
@@ -80,12 +90,12 @@ public class PerfanaClientBuilder {
     }
 
     public PerfanaClientBuilder setRampupTimeInSeconds(final String rampupTimeInSeconds) {
-        this.rampupTimeInSeconds = rampupTimeInSeconds;
+        this.rampupTime = Duration.ofSeconds(parseInt("rampupTime", rampupTimeInSeconds, DEFAULT_RAMPUP_TIME_SECONDS));
         return this;
     }
 
     public PerfanaClientBuilder setConstantLoadTimeInSeconds(final String constantLoadTimeInSeconds) {
-        this.constantLoadTimeInSeconds = constantLoadTimeInSeconds;
+        this.constantLoadTime = Duration.ofSeconds(parseInt("constantLoadTime", constantLoadTimeInSeconds, DEFAULT_CONSTANT_LOAD_TIME_SECONDS));
         return this;
     }
 
@@ -119,6 +129,21 @@ public class PerfanaClientBuilder {
         return this;
     }
 
+    public PerfanaClientBuilder setKeepAliveTimeInSeconds(final String keepAliveTimeInSeconds) {
+        this.keepAliveTime = Duration.ofSeconds(parseInt("keepAliveTimeInSeconds", keepAliveTimeInSeconds, DEFAULT_KEEP_ALIVE_TIME_SECONDS));
+        return this;
+    }
+
+    public PerfanaClientBuilder setRetryMaxCount(final String retryMaxCount) {
+        this.retryMaxCount = parseInt("retryMaxCount", retryMaxCount, DEFAULT_RETRY_MAX_COUNT);
+        return this;
+    }
+
+    public PerfanaClientBuilder setRetryTimeInSeconds(final String retryTimeInSeconds) {
+        this.retryDuration = Duration.ofSeconds(parseInt("retryTimeInSeconds", retryTimeInSeconds, DEFAULT_RETRY_TIME_SECONDS));
+        return this;
+    }
+
     /**
      * Add properties to be passed on to the event implementation class.
      * @param eventImplementationName the fully qualified implementation class name (class.getName())
@@ -143,9 +168,29 @@ public class PerfanaClientBuilder {
         if (broadcaster == null) logger.info("Creating default Perfana event broadcaster.");
         PerfanaEventBroadcaster broadcaster = this.broadcaster == null ? PerfanaEventProvider.getInstance() : this.broadcaster;
 
-        PerfanaClient perfanaClient = new PerfanaClient(application, testType, testEnvironment, testRunId, ciBuildResultsUrl, applicationRelease, rampupTimeInSeconds, constantLoadTimeInSeconds, perfanaUrl, annotations, variables, assertResultsEnabled, broadcaster, eventProperties);
+        PerfanaClient perfanaClient = new PerfanaClient(
+                application, testType, testEnvironment, testRunId,
+                ciBuildResultsUrl, applicationRelease, rampupTime,
+                constantLoadTime, perfanaUrl, annotations,
+                variables, assertResultsEnabled, broadcaster, eventProperties,
+                retryMaxCount, retryDuration, keepAliveTime);
         perfanaClient.injectLogger(logger);
         return perfanaClient;
+    }
+
+    private int parseInt(String variableName, String timeString) {
+        return parseInt(variableName, timeString, 0);
+    }
+    
+    private int parseInt(String variableName, String timeString, int defaultValue) {
+        int time;
+        try {
+            time = Integer.parseInt(timeString);
+        } catch (NumberFormatException e) {
+            logger.error(String.format("Unable to parse %s, will use %d instead: %s", variableName, defaultValue, e.getMessage()));
+            time = defaultValue;
+        }
+        return time;
     }
 
 }
