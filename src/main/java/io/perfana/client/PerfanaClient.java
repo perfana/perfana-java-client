@@ -1,9 +1,12 @@
 package io.perfana.client;
 
 import com.jayway.jsonpath.Configuration;
+import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.Option;
 import com.jayway.jsonpath.ParseContext;
+import io.perfana.event.PerfanaEventBroadcaster;
+import io.perfana.event.PerfanaEventProperties;
 import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
 import okhttp3.MediaType;
@@ -28,6 +31,10 @@ public final class PerfanaClient {
             = MediaType.parse("application/json; charset=utf-8");
 
     private final OkHttpClient client = new OkHttpClient();
+    private final PerfanaEventBroadcaster broadcaster;
+    private final PerfanaEventProperties eventProperties;
+
+    private Logger logger;
 
     private final String application;
     private final String testType;
@@ -41,11 +48,10 @@ public final class PerfanaClient {
     private final String annotations;
     private final Properties variables;
     private final boolean assertResultsEnabled;
-    private Logger logger;
 
     private ScheduledExecutorService executor;
 
-    PerfanaClient(String application, String testType, String testEnvironment, String testRunId, String CIBuildResultsUrl, String applicationRelease, String rampupTimeInSeconds, String constantLoadTimeInSeconds, String perfanaUrl, String annotations, Properties variables, final boolean assertResultsEnabled) {
+    PerfanaClient(String application, String testType, String testEnvironment, String testRunId, String CIBuildResultsUrl, String applicationRelease, String rampupTimeInSeconds, String constantLoadTimeInSeconds, String perfanaUrl, String annotations, Properties variables, boolean assertResultsEnabled, PerfanaEventBroadcaster broadcaster, PerfanaEventProperties eventProperties) {
         this.application = application;
         this.testType = testType;
         this.testEnvironment = testEnvironment;
@@ -58,10 +64,15 @@ public final class PerfanaClient {
         this.annotations = annotations;
         this.variables = variables;
         this.assertResultsEnabled = assertResultsEnabled;
+        this.broadcaster = broadcaster;
+        this.eventProperties = eventProperties;
     }
 
     public void startSession() {
         logger.info("Perfana start session");
+
+        logger.info("Perfana broadcast event before test");
+        broadcaster.broadcastBeforeTest(testRunId, eventProperties);
 
         if (executor != null) {
             throw new RuntimeException("Cannot start perfana session multiple times!");
@@ -69,9 +80,30 @@ public final class PerfanaClient {
         final int periodInSeconds = 15;
         logger.info(String.format("Calling Perfana (%s) keep alive every %d seconds.", perfanaUrl, periodInSeconds));
 
-        final PerfanaClient.KeepAliveRunner keepAliveRunner = new PerfanaClient.KeepAliveRunner(this);
         executor = Executors.newSingleThreadScheduledExecutor();
+
+        final PerfanaClient.KeepAliveRunner keepAliveRunner = new PerfanaClient.KeepAliveRunner(this);
         executor.scheduleAtFixedRate(keepAliveRunner, 0, periodInSeconds, TimeUnit.SECONDS);
+
+        int rampupTimeSeconds = parseRampupTime();
+
+        final long failoverSleepInSeconds = rampupTimeSeconds + TimeUnit.MINUTES.toSeconds(5);
+        logger.info("Failover event is scheduled to run in " + failoverSleepInSeconds + " seconds. " +
+                "This is the rampup time plus 5 minutes.");
+        final PerfanaClient.FailoverRunner failoverRunner = new PerfanaClient.FailoverRunner(this);
+        executor.schedule(failoverRunner, failoverSleepInSeconds, TimeUnit.SECONDS);
+
+    }
+
+    private int parseRampupTime() {
+        int rampupTime;
+        try {
+            rampupTime = Integer.parseInt(rampupTimeSeconds);
+        } catch (NumberFormatException e) {
+            logger.error("Unable to parse rampupTimeSeconds, will use 0 as rampup time. " + e.getMessage());
+            rampupTime = 0;
+        }
+        return rampupTime;
     }
 
     public void stopSession() throws PerfanaClientException {
@@ -80,6 +112,10 @@ public final class PerfanaClient {
             executor.shutdownNow();
         }
         executor = null;
+
+        logger.info("Perfana broadcast event after test");
+        broadcaster.broadcastAfterTest(testRunId, eventProperties);
+
         callPerfana(true);
         assertResults();
     }
@@ -194,12 +230,14 @@ public final class PerfanaClient {
             try (Response response = client.newCall(request).execute()) {
                 ResponseBody responseBody = response.body();
                 if (response.code() == 200) {
-                    assertions = responseBody == null ? "null" : responseBody.string();
+                    assertions = (responseBody == null) ? "null" : responseBody.string();
                     assertionsAvailable = true;
                     break;
                 } else {
-                    String message = responseBody == null ? response.message() : responseBody.string();
-                    logger.info(String.format("failed to retrieve assertions for url [%s] code [%d] retry [%d/%d] %s", url, response.code(), retryCount, MAX_RETRIES, message));
+                    String message = (responseBody == null) ? response.message() : responseBody.string();
+                    logger.info(
+                            String.format("failed to retrieve assertions for url [%s] code [%d] retry [%d/%d] %s",
+                            url, response.code(), retryCount, MAX_RETRIES, message));
                 }
             } catch (IOException e) {
                 throw new PerfanaClientException(String.format("Unable to retrieve assertions for url [%s]", url), e);
@@ -223,6 +261,22 @@ public final class PerfanaClient {
         @Override
         public void run() {
             client.callPerfana(false);
+            client.broadcaster.broadCastKeepAlive(client.testRunId, client.eventProperties);
+        }
+    }
+
+    public static class FailoverRunner implements Runnable {
+
+        private final PerfanaClient client;
+
+        FailoverRunner(PerfanaClient client) {
+            this.client = client;
+        }
+
+        @Override
+        public void run() {
+            client.logger.info("Perfana broadcast event failover");
+            client.broadcaster.broadcastFailover(client.testRunId, client.eventProperties);
         }
     }
 
@@ -236,54 +290,67 @@ public final class PerfanaClient {
     private String assertResults() throws PerfanaClientException {
 
         if (!assertResultsEnabled) {
-            String message = "Perfana assert results not enalbled";
+            String message = "Perfana assert results is not enabled.";
             logger.info(message);
             return message;
         }
 
         final String assertions = callCheckAsserts();
         if (assertions == null) {
-            throw new PerfanaClientException("Perfana assertions could not be checked, received null");
+            throw new PerfanaClientException("Perfana assertions could not be checked, received null.");
         }
 
         Configuration config = Configuration.defaultConfiguration()
                 .addOptions(Option.SUPPRESS_EXCEPTIONS);
 
-        ParseContext jsonPath = JsonPath.using(config);
+        ParseContext parseContext = JsonPath.using(config);
+        DocumentContext documentContext = parseContext.parse(assertions);
 
-        Boolean benchmarkBaselineTestRunResult = jsonPath.parse(assertions).read("$.benchmarkBaselineTestRun.result");
-        String benchmarkBaselineTestRunDeeplink = jsonPath.parse(assertions).read("$.benchmarkBaselineTestRun.deeplink");
-        Boolean benchmarkPreviousTestRunResult = jsonPath.parse(assertions).read("$.benchmarkPreviousTestRun.result");
-        String benchmarkPreviousTestRunDeeplink = jsonPath.parse(assertions).read("$.benchmarkPreviousTestRun.deeplink");
-        Boolean requirementsResult = jsonPath.parse(assertions).read("$.requirements.result");
-        String requirementsDeeplink = jsonPath.parse(assertions).read("$.requirements.deeplink");
+        Boolean benchmarkBaselineTestRunResult = documentContext.read("$.benchmarkBaselineTestRun.result");
+        String benchmarkBaselineTestRunDeeplink = documentContext.read("$.benchmarkBaselineTestRun.deeplink");
+        Boolean benchmarkPreviousTestRunResult = documentContext.read("$.benchmarkPreviousTestRun.result");
+        String benchmarkPreviousTestRunDeeplink = documentContext.read("$.benchmarkPreviousTestRun.deeplink");
+        Boolean requirementsResult = documentContext.read("$.requirements.result");
+        String requirementsDeeplink = documentContext.read("$.requirements.deeplink");
 
         logger.info(String.format("benchmarkBaselineTestRunResult: %s", benchmarkBaselineTestRunResult));
         logger.info(String.format("benchmarkPreviousTestRunResult: %s", benchmarkPreviousTestRunResult));
         logger.info(String.format("requirementsResult: %s", requirementsResult));
 
-        StringBuilder assertionText = new StringBuilder();
+        StringBuilder text = new StringBuilder();
         if (assertions.contains("false")) {
 
-            assertionText.append("One or more Perfana assertions are failing: \n");
-            if(requirementsResult != null && !requirementsResult) assertionText.append(String.format("Requirements failed: %s\n", requirementsDeeplink)) ;
-            if(benchmarkPreviousTestRunResult != null && !benchmarkPreviousTestRunResult) assertionText.append(String.format("Benchmark to previous test run failed: %s\n", benchmarkPreviousTestRunDeeplink));
-            if(benchmarkBaselineTestRunResult != null && !benchmarkBaselineTestRunResult) assertionText.append(String.format("Benchmark to baseline test run failed: %s", benchmarkBaselineTestRunDeeplink));
+            text.append("One or more Perfana assertions are failing: \n");
+            if (requirementsResult != null && !requirementsResult) {
+                text.append(String.format("Requirements failed: %s\n", requirementsDeeplink)) ;
+            }
+            if (benchmarkPreviousTestRunResult != null && !benchmarkPreviousTestRunResult) {
+                text.append(String.format("Benchmark to previous test run failed: %s\n", benchmarkPreviousTestRunDeeplink));
+            }
+            if (benchmarkBaselineTestRunResult != null && !benchmarkBaselineTestRunResult) {
+                text.append(String.format("Benchmark to baseline test run failed: %s", benchmarkBaselineTestRunDeeplink));
+            }
 
-            logger.info(String.format("assertionText: %s", assertionText));
+            logger.info(String.format("assertionText: %s", text));
 
-            throw new PerfanaClientException(assertionText.toString());
+            throw new PerfanaClientException(text.toString());
         }
         else {
 
-            assertionText.append("All Perfana assertions are OK: \n");
-            if(requirementsResult) assertionText.append(requirementsDeeplink).append("\n");
-            if(benchmarkPreviousTestRunResult != null && benchmarkPreviousTestRunResult) assertionText.append(benchmarkPreviousTestRunDeeplink).append("\n");
-            if(benchmarkBaselineTestRunResult != null && benchmarkBaselineTestRunResult) assertionText.append(benchmarkBaselineTestRunDeeplink);
+            text.append("All Perfana assertions are OK: \n");
+            if (requirementsResult) {
+                text.append(requirementsDeeplink).append("\n");
+            }
+            if (benchmarkPreviousTestRunResult != null && benchmarkPreviousTestRunResult) {
+                text.append(benchmarkPreviousTestRunDeeplink).append("\n");
+            }
+            if (benchmarkBaselineTestRunResult != null && benchmarkBaselineTestRunResult) {
+                text.append(benchmarkBaselineTestRunDeeplink);
+            }
 
-            logger.info(String.format("assertionText: %s", assertionText));
+            logger.info(String.format("The assertionText: %s", text));
         }
-        return assertionText.toString();
+        return text.toString();
     }
     
 }

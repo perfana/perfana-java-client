@@ -1,13 +1,12 @@
 package io.perfana.test;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-
 import io.perfana.client.PerfanaClient;
 import io.perfana.client.PerfanaClientBuilder;
 import org.junit.Test;
 
 import java.util.Properties;
+
+import static org.junit.Assert.assertNotNull;
 
 /**
  * Put in another package to check access package private fields.
@@ -15,27 +14,30 @@ import java.util.Properties;
 public class PerfanaClientTest
 {
     @Test
-    public void create()
-    {
+    public void create() {
         PerfanaClient.Logger testLogger = new PerfanaClient.Logger() {
             @Override
             public void info(final String message) {
-                System.out.println("test info; " + message);
+                say("INFO ", message);
             }
 
             @Override
             public void warn(final String message) {
-                System.out.println("test warn; " + message);
+                say("WARN ", message);
             }
 
             @Override
             public void error(final String message) {
-                System.out.println("test error; " + message);
+                say("ERROR", message);
             }
 
             @Override
             public void debug(final String message) {
-                System.out.println("test debug; " + message);
+                say("DEBUG", message);
+            }
+
+            private void say(String level, String something) {
+                System.out.printf("## %s ## %s%n", level, something);
             }
         };
         
@@ -45,17 +47,21 @@ public class PerfanaClientTest
                         .setTestType("testType")
                         .setTestEnvironment("testEnv")
                         .setTestRunId("testRunId")
-                        .setCIBuildResultsUrl("url")
+                        .setCIBuildResultsUrl("http://url")
                         .setApplicationRelease("release")
                         .setRampupTimeInSeconds("10")
                         .setConstantLoadTimeInSeconds("60")
-                        .setPerfanaUrl("perfUrl")
+                        .setPerfanaUrl("http://perfUrl")
                         .setAnnotations("annotations")
                         .setVariables(new Properties())
                         .setAssertResultsEnabled(true)
                         .setLogger(testLogger)
+                        .addEventProperty("myClass", "name", "value")
                         .createPerfanaClient();
 
         assertNotNull(client);
+
+//        client.startSession();
+//        client.stopSession();
     }
 }
