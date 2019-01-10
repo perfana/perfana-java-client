@@ -57,11 +57,26 @@ public class PerfanaClientTest
                         .setAssertResultsEnabled(true)
                         .setLogger(testLogger)
                         .addEventProperty("myClass", "name", "value")
+                        .setRetryTimeInSeconds("5")
+                        .setRetryMaxCount("6")
+                        .setKeepAliveTimeInSeconds("7")
                         .createPerfanaClient();
 
         assertNotNull(client);
 
 //        client.startSession();
 //        client.stopSession();
+    }
+
+    @Test
+    public void createWithFail() {
+
+        PerfanaClient client =
+                new PerfanaClientBuilder()
+                        .setRetryTimeInSeconds("P5")
+                        .createPerfanaClient();
+
+        assertNotNull(client);
+
     }
 }

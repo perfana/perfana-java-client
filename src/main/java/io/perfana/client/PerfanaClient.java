@@ -19,6 +19,8 @@ import okhttp3.ResponseBody;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.Enumeration;
 import java.util.Properties;
 import java.util.concurrent.Executors;
@@ -43,29 +45,40 @@ public final class PerfanaClient {
     private final String CIBuildResultsUrl;
     private final String applicationRelease;
     private final String perfanaUrl;
-    private final String rampupTimeSeconds;
-    private final int plannedDurationInSeconds;
+    private final Duration rampupTime;
+    private final Duration plannedDuration;
     private final String annotations;
     private final Properties variables;
     private final boolean assertResultsEnabled;
+    private final int retryMaxCount;
+    private final Duration retryDuration;
+    private final Duration keepAliveDuration;
 
     private ScheduledExecutorService executor;
 
-    PerfanaClient(String application, String testType, String testEnvironment, String testRunId, String CIBuildResultsUrl, String applicationRelease, String rampupTimeInSeconds, String constantLoadTimeInSeconds, String perfanaUrl, String annotations, Properties variables, boolean assertResultsEnabled, PerfanaEventBroadcaster broadcaster, PerfanaEventProperties eventProperties) {
+    PerfanaClient(String application, String testType, String testEnvironment, String testRunId,
+                  String CIBuildResultsUrl, String applicationRelease, Duration rampupTime,
+                  Duration constantLoadTime, String perfanaUrl, String annotations,
+                  Properties variables, boolean assertResultsEnabled, PerfanaEventBroadcaster broadcaster,
+                  PerfanaEventProperties eventProperties,
+                  int retryMaxCount, Duration retryDuration, Duration keepAliveDuration) {
         this.application = application;
         this.testType = testType;
         this.testEnvironment = testEnvironment;
         this.testRunId = testRunId;
         this.CIBuildResultsUrl = CIBuildResultsUrl;
         this.applicationRelease = applicationRelease;
-        this.rampupTimeSeconds = rampupTimeInSeconds;
-        this.plannedDurationInSeconds = parseIntNullIsZero(rampupTimeInSeconds) + parseIntNullIsZero(constantLoadTimeInSeconds);
+        this.rampupTime = rampupTime;
+        this.plannedDuration = rampupTime.plus(constantLoadTime);
         this.perfanaUrl = perfanaUrl;
         this.annotations = annotations;
         this.variables = variables;
         this.assertResultsEnabled = assertResultsEnabled;
         this.broadcaster = broadcaster;
         this.eventProperties = eventProperties;
+        this.retryMaxCount = retryMaxCount;
+        this.retryDuration = retryDuration;
+        this.keepAliveDuration = keepAliveDuration;
     }
 
     public void startSession() {
@@ -77,33 +90,20 @@ public final class PerfanaClient {
         if (executor != null) {
             throw new RuntimeException("Cannot start perfana session multiple times!");
         }
-        final int periodInSeconds = 15;
-        logger.info(String.format("Calling Perfana (%s) keep alive every %d seconds.", perfanaUrl, periodInSeconds));
+
+        logger.info(String.format("Calling Perfana (%s) keep alive every %d seconds.", perfanaUrl, keepAliveDuration.getSeconds()));
 
         executor = Executors.newSingleThreadScheduledExecutor();
 
         final PerfanaClient.KeepAliveRunner keepAliveRunner = new PerfanaClient.KeepAliveRunner(this);
-        executor.scheduleAtFixedRate(keepAliveRunner, 0, periodInSeconds, TimeUnit.SECONDS);
+        executor.scheduleAtFixedRate(keepAliveRunner, 0, keepAliveDuration.getSeconds(), TimeUnit.SECONDS);
 
-        int rampupTimeSeconds = parseRampupTime();
-
-        final long failoverSleepInSeconds = rampupTimeSeconds + TimeUnit.MINUTES.toSeconds(5);
-        logger.info("Failover event is scheduled to run in " + failoverSleepInSeconds + " seconds. " +
-                "This is the rampup time plus 5 minutes.");
+        final Duration failoverSleep = rampupTime.plus(5, ChronoUnit.MINUTES);
+        logger.info("Failover event is scheduled to run in " + failoverSleep.toString()
+                + " (the rampup time plus 5 minutes)");
         final PerfanaClient.FailoverRunner failoverRunner = new PerfanaClient.FailoverRunner(this);
-        executor.schedule(failoverRunner, failoverSleepInSeconds, TimeUnit.SECONDS);
+        executor.schedule(failoverRunner, failoverSleep.getSeconds(), TimeUnit.SECONDS);
 
-    }
-
-    private int parseRampupTime() {
-        int rampupTime;
-        try {
-            rampupTime = Integer.parseInt(rampupTimeSeconds);
-        } catch (NumberFormatException e) {
-            logger.error("Unable to parse rampupTimeSeconds, will use 0 as rampup time. " + e.getMessage());
-            rampupTime = 0;
-        }
-        return rampupTime;
     }
 
     public void stopSession() throws PerfanaClientException {
@@ -119,17 +119,13 @@ public final class PerfanaClient {
         callPerfana(true);
         assertResults();
     }
-
-    private static int parseIntNullIsZero(final String value) {
-        return value == null ? 0 : Integer.valueOf(value);
-    }
-
+    
     void injectLogger(Logger logger) {
         this.logger = logger;
     }
 
     private void callPerfana(Boolean completed) {
-        String json = perfanaJson(application, testType, testEnvironment, testRunId, CIBuildResultsUrl, applicationRelease, rampupTimeSeconds, plannedDurationInSeconds, annotations, variables, completed);
+        String json = perfanaJson(application, testType, testEnvironment, testRunId, CIBuildResultsUrl, applicationRelease, rampupTime.getSeconds(), plannedDuration.getSeconds(), annotations, variables, completed);
         logger.debug(String.join(" ", "Call to endpoint:", perfanaUrl, "with json:", json));
         try {
             String result = post(perfanaUrl + "/test", json);
@@ -151,7 +147,7 @@ public final class PerfanaClient {
         }
     }
 
-    private String perfanaJson(String application, String testType, String testEnvironment, String testRunId, String CIBuildResultsUrl, String applicationRelease, String rampupTimeSeconds, int plannedDurationInSeconds, String annotations, Properties variables, Boolean completed) {
+    private String perfanaJson(String application, String testType, String testEnvironment, String testRunId, String CIBuildResultsUrl, String applicationRelease, long rampupTimeSeconds, long plannedDurationInSeconds, String annotations, Properties variables, Boolean completed) {
 
         JSONObject perfanaJson = new JSONObject();
 
@@ -177,9 +173,7 @@ public final class PerfanaClient {
         /* If annotations are passed add them to the json */
 
         if(!"".equals(annotations) && annotations != null ){
-
             perfanaJson.put("annotations", annotations);
-
         }
 
         perfanaJson.put("testRunId", testRunId);
@@ -188,13 +182,11 @@ public final class PerfanaClient {
         perfanaJson.put("application", application);
         perfanaJson.put("applicationRelease", applicationRelease);
         perfanaJson.put("CIBuildResultsUrl", CIBuildResultsUrl);
-        perfanaJson.put("rampUp", rampupTimeSeconds);
+        perfanaJson.put("rampUp", String.valueOf(rampupTimeSeconds));
         perfanaJson.put("duration", String.valueOf(plannedDurationInSeconds));
         perfanaJson.put("completed", completed);
 
         return perfanaJson.toJSONString();
-
-
     }
 
     /**
@@ -216,14 +208,12 @@ public final class PerfanaClient {
                 .build();
 
         int retryCount = 0;
-        final int MAX_RETRIES = 12;
-        final long sleepInMillis = 10000;
         String assertions = null;
 
         boolean assertionsAvailable = false;
-        while (retryCount++ < MAX_RETRIES) {
+        while (retryCount++ < retryMaxCount) {
             try {
-                Thread.sleep(sleepInMillis);
+                Thread.sleep(retryDuration.toMillis());
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt(); // ignore
             }
@@ -237,7 +227,7 @@ public final class PerfanaClient {
                     String message = (responseBody == null) ? response.message() : responseBody.string();
                     logger.info(
                             String.format("failed to retrieve assertions for url [%s] code [%d] retry [%d/%d] %s",
-                            url, response.code(), retryCount, MAX_RETRIES, message));
+                            url, response.code(), retryCount, retryMaxCount, message));
                 }
             } catch (IOException e) {
                 throw new PerfanaClientException(String.format("Unable to retrieve assertions for url [%s]", url), e);

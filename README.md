@@ -21,11 +21,16 @@ PerfanaClient client =
                 .setAnnotations("annotations")
                 .setVariables(new Properties())
                 .setAssertResultsEnabled(true)
+                .setRetryTimeInSeconds("15")
+                .setRetryMaxCount("10")
+                .setKeepAliveTimeInSeconds("30")
                 .createPerfanaClient();
-
 ```
 
-Then call these methods when appropriate:
+Note that a lot of properties have decent defaults and do not need to be 
+called, such as the retry and keep alive properties.
+
+Then call these methods at the appropriate time:
 
 ### client.startSession()
 Call when the load test starts. 
