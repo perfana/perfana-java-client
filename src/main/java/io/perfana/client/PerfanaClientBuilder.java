@@ -5,6 +5,9 @@ import io.perfana.event.PerfanaEventProperties;
 import io.perfana.event.PerfanaEventProvider;
 
 import java.time.Duration;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 
 public class PerfanaClientBuilder {
@@ -28,7 +31,7 @@ public class PerfanaClientBuilder {
     private Duration keepAliveTime = Duration.ofSeconds(DEFAULT_KEEP_ALIVE_TIME_SECONDS);
     private int retryMaxCount = DEFAULT_RETRY_MAX_COUNT;
     private Duration retryDuration = Duration.ofSeconds(DEFAULT_RETRY_TIME_SECONDS);
-    private Properties variables = new Properties();
+    private Map<String, String> variables = Collections.emptyMap();
     private boolean assertResultsEnabled = false;
     private PerfanaEventBroadcaster broadcaster;
     private PerfanaEventProperties eventProperties = new PerfanaEventProperties();
@@ -109,7 +112,15 @@ public class PerfanaClientBuilder {
         return this;
     }
 
+    @Deprecated
     public PerfanaClientBuilder setVariables(final Properties variables) {
+        Map<String, String> keyValueMap = new HashMap<>(variables.size(), 1);
+        variables.forEach((key,value) -> keyValueMap.put((String)key,(String)value));
+        this.variables = keyValueMap;
+        return this;
+    }
+    
+    public PerfanaClientBuilder setVariables(final Map<String, String> variables) {
         this.variables = variables;
         return this;
     }

@@ -21,8 +21,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
-import java.util.Enumeration;
-import java.util.Properties;
+import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -48,7 +47,7 @@ public final class PerfanaClient {
     private final Duration rampupTime;
     private final Duration plannedDuration;
     private final String annotations;
-    private final Properties variables;
+    private final Map<String, String> variables;
     private final boolean assertResultsEnabled;
     private final int retryMaxCount;
     private final Duration retryDuration;
@@ -59,7 +58,7 @@ public final class PerfanaClient {
     PerfanaClient(String application, String testType, String testEnvironment, String testRunId,
                   String CIBuildResultsUrl, String applicationRelease, Duration rampupTime,
                   Duration constantLoadTime, String perfanaUrl, String annotations,
-                  Properties variables, boolean assertResultsEnabled, PerfanaEventBroadcaster broadcaster,
+                  Map<String, String> variables, boolean assertResultsEnabled, PerfanaEventBroadcaster broadcaster,
                   PerfanaEventProperties eventProperties,
                   int retryMaxCount, Duration retryDuration, Duration keepAliveDuration) {
         this.application = application;
@@ -85,6 +84,7 @@ public final class PerfanaClient {
         logger.info("Perfana start session");
 
         logger.info("Perfana broadcast event before test");
+        callPerfanaEvent("Test start");
         broadcaster.broadcastBeforeTest(testRunId, eventProperties);
 
         if (executor != null) {
@@ -114,21 +114,33 @@ public final class PerfanaClient {
         executor = null;
 
         logger.info("Perfana broadcast event after test");
+        callPerfanaEvent("Test finish");
         broadcaster.broadcastAfterTest(testRunId, eventProperties);
 
         callPerfana(true);
         assertResults();
     }
-    
+
     void injectLogger(Logger logger) {
         this.logger = logger;
     }
 
-    private void callPerfana(Boolean completed) {
-        String json = perfanaJson(application, testType, testEnvironment, testRunId, CIBuildResultsUrl, applicationRelease, rampupTime.getSeconds(), plannedDuration.getSeconds(), annotations, variables, completed);
-        logger.debug(String.join(" ", "Call to endpoint:", perfanaUrl, "with json:", json));
+    private void callPerfana(boolean completed) {
+        String json = perfanaMessageToJson(application, testType, testEnvironment, testRunId, CIBuildResultsUrl, applicationRelease, rampupTime, plannedDuration, annotations, variables, completed);
+        logger.debug(String.format("Call to endpoint: %s with json: %s", perfanaUrl, json));
         try {
             String result = post(perfanaUrl + "/test", json);
+            logger.debug("Result: " + result);
+        } catch (IOException e) {
+            logger.error("Failed to call perfana: " + e.getMessage());
+        }
+    }
+
+    private void callPerfanaEvent(String eventDescription) {
+        String json = perfanaEventToJson(application, testType, testEnvironment, testRunId, eventDescription);
+        logger.debug(String.format("Call to endpoint: %s with json: %s", perfanaUrl, json));
+        try {
+            String result = post(perfanaUrl + "/events", json);
             logger.debug("Result: " + result);
         } catch (IOException e) {
             logger.error("Failed to call perfana: " + e.getMessage());
@@ -147,46 +159,54 @@ public final class PerfanaClient {
         }
     }
 
-    private String perfanaJson(String application, String testType, String testEnvironment, String testRunId, String CIBuildResultsUrl, String applicationRelease, long rampupTimeSeconds, long plannedDurationInSeconds, String annotations, Properties variables, Boolean completed) {
+    private String perfanaMessageToJson(String application, String testType, String testEnvironment, String testRunId, String CIBuildResultsUrl, String applicationRelease, Duration rampupTime, Duration plannedDuration, String annotations, Map<String, String> variables, boolean completed) {
 
-        JSONObject perfanaJson = new JSONObject();
+        JSONObject json = new JSONObject();
 
         /* If variables parameter exists add them to the json */
-
         if(variables != null && !variables.isEmpty()) {
-
-            JSONArray variablesArrayJson = new JSONArray();
-
-            Enumeration<?> enumeration = variables.propertyNames();
-            while (enumeration.hasMoreElements()) {
-                String name = (String) enumeration.nextElement();
-                String value = (String) variables.get(name);
-                JSONObject variablesJson = new JSONObject();
-                variablesJson.put("placeholder", name);
-                variablesJson.put("value", value);
-                variablesArrayJson.add(variablesJson);
-            }
-
-            perfanaJson.put("variables", variablesArrayJson);
+            JSONArray variablesArray = new JSONArray();
+            variables.forEach((key, value) -> variablesArray.add(createVariables(key, value)));
+            json.put("variables", variablesArray);
         }
 
         /* If annotations are passed add them to the json */
-
-        if(!"".equals(annotations) && annotations != null ){
-            perfanaJson.put("annotations", annotations);
+        if(annotations != null && annotations.isEmpty()){
+            json.put("annotations", annotations);
         }
 
-        perfanaJson.put("testRunId", testRunId);
-        perfanaJson.put("testType", testType);
-        perfanaJson.put("testEnvironment", testEnvironment);
-        perfanaJson.put("application", application);
-        perfanaJson.put("applicationRelease", applicationRelease);
-        perfanaJson.put("CIBuildResultsUrl", CIBuildResultsUrl);
-        perfanaJson.put("rampUp", String.valueOf(rampupTimeSeconds));
-        perfanaJson.put("duration", String.valueOf(plannedDurationInSeconds));
-        perfanaJson.put("completed", completed);
+        json.put("testRunId", testRunId);
+        json.put("testType", testType);
+        json.put("testEnvironment", testEnvironment);
+        json.put("application", application);
+        json.put("applicationRelease", applicationRelease);
+        json.put("CIBuildResultsUrl", CIBuildResultsUrl);
+        json.put("rampUp", String.valueOf(rampupTime.getSeconds()));
+        json.put("duration", String.valueOf(plannedDuration.getSeconds()));
+        json.put("completed", completed);
 
-        return perfanaJson.toJSONString();
+        return json.toJSONString();
+    }
+
+    private static JSONObject createVariables(String name, String value) {
+        JSONObject variables = new JSONObject();
+        variables.put("placeholder", name);
+        variables.put("value", value);
+        return variables;
+    }
+
+    private String perfanaEventToJson(String application, String testType, String testEnvironment, String testRunId, String eventDescription) {
+
+        JSONObject json = createVariables(application, testEnvironment);
+        json.put("testEnvironment", testEnvironment);
+        json.put("title", testRunId);
+        json.put("description", eventDescription);
+
+        JSONArray tags = new JSONArray();
+        tags.add(testType);
+        json.put("tags", tags);
+
+        return json.toJSONString();
     }
 
     /**
@@ -266,6 +286,7 @@ public final class PerfanaClient {
         @Override
         public void run() {
             client.logger.info("Perfana broadcast event failover");
+            client.callPerfanaEvent("Fail over");
             client.broadcaster.broadcastFailover(client.testRunId, client.eventProperties);
         }
     }
