@@ -25,16 +25,16 @@ public class PerfanaEventProvider implements PerfanaEventBroadcaster {
     public void broadcastAfterTest(String testId, PerfanaEventProperties properties) {
         perfanaEventLoader.forEach(event -> event.afterTest(testId, properties.get(event)));
     }
-
+    
     @Override
-    public void broadcastFailover(String testId, PerfanaEventProperties properties) {
-        perfanaEventLoader.forEach(event -> event.failover(testId, properties.get(event)));
+    public void broadCastKeepAlive(String testId, PerfanaEventProperties properties) {
+        perfanaEventLoader.forEach(event -> event.keepAlive(testId, properties.get(event)));
+
     }
 
     @Override
-    public void broadCastKeepAlive(final String testId, PerfanaEventProperties properties) {
-        perfanaEventLoader.forEach(event -> event.keepAlive(testId, properties.get(event)));
-
+    public void broadcastCustomEvent(String testId, PerfanaEventProperties properties, ScheduleEvent scheduleEvent) {
+        perfanaEventLoader.forEach(event -> event.customEvent(testId, properties.get(event), scheduleEvent));
     }
 
 

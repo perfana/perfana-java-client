@@ -30,14 +30,7 @@ public interface PerfanaTestEvent {
      * @param eventProperties properties for this event, e.g. REST_URL="https://my-rest-url"
      */
     void afterTest(String testId, Map<String,String> eventProperties);
-
-    /**
-     * Called when a failover situation should be tested in the middle of the test run.
-     * @param testId the test run id
-     * @param eventProperties properties for this event, e.g. REST_URL="https://my-rest-url"
-     */
-    void failover(String testId, Map<String,String> eventProperties);
-
+    
     /**
      * Called for each keep alive event for this test run.
      * @param testId the test run id
@@ -45,4 +38,12 @@ public interface PerfanaTestEvent {
      */
     void keepAlive(String testId, Map<String,String> eventProperties);
 
+    /**
+     * Called for each custom event, according to the custom even schedule.
+     * @param testId the test run id
+     * @param eventProperties properties for this event, e.g. REST_URL="https://my-rest-url"
+     * @param scheduleEvent the custom event, use to execute specific behaviour in the event handler
+     */
+    void customEvent(String testId, Map<String,String> eventProperties, ScheduleEvent scheduleEvent);
+    
 }

@@ -40,6 +40,12 @@ public class PerfanaClientTest
                 System.out.printf("## %s ## %s%n", level, something);
             }
         };
+
+        String eventSchedule =
+                "PT1S|restart|{ 'server':'myserver' 'replicas':2, 'tags': [ 'first', 'second' ] }\n" +
+                "PT600S|scale-down|{ 'replicas':1 }\n" +
+                "PT660S|heapdump|server=myserver.example.com;port=1567\n" +
+                "PT900S|scale-up|{ 'replicas':2 }\n";
         
         PerfanaClient client =
                 new PerfanaClientBuilder()
@@ -60,6 +66,7 @@ public class PerfanaClientTest
                         .setRetryTimeInSeconds("5")
                         .setRetryMaxCount("6")
                         .setKeepAliveTimeInSeconds("7")
+                        .setScheduleEvents(eventSchedule)
                         .createPerfanaClient();
 
         assertNotNull(client);

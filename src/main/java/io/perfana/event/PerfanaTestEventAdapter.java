@@ -9,22 +9,22 @@ import java.util.Map;
 public abstract class PerfanaTestEventAdapter implements PerfanaTestEvent {
 
     @Override
-    public void beforeTest(final String testId, final Map<String, String> eventProperties) {
+    public void beforeTest(String testId, Map<String, String> eventProperties) {
 
     }
 
     @Override
-    public void afterTest(final String testId, final Map<String, String> eventProperties) {
+    public void afterTest(String testId, Map<String, String> eventProperties) {
 
     }
 
     @Override
-    public void failover(final String testId, final Map<String, String> eventProperties) {
+    public void keepAlive(String testId, Map<String, String> eventProperties) {
 
     }
 
     @Override
-    public void keepAlive(final String testId, final Map<String, String> eventProperties) {
+    public void customEvent(String testId, Map<String, String> eventProperties, ScheduleEvent scheduleEvent) {
 
     }
 }

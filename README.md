@@ -48,20 +48,61 @@ and add your own code to these events.
 
 Events available, with example usage:
 * _before test_ - use to restart servers or setup/cleanup environment
-* _keep alive calls_ - send calls to any remote API for instance
-* _failover_ - initiate a failover during the test 
 * _after test_ - start generating reports, clean up environment
-
-The failover is scheduled 5 minutes after the end of the rampup.
+* _keep alive calls_ - send calls to any remote API for instance
+* _custom events_ - any event you can define in the event scheduler, e.g. failover, increase stub delay times or scale-down events 
 
 The keep alive is scheduled each 15 seconds during the test.
 
 The events will also be given a set of properties per implementation class.
 The properties can be added before the test run using the `PerfanaClientBuilder`.
 
-To add a property:
-    
-	builder.addEventProperty("nl.stokpop.MyEventClass", "name", "value")
+To add a property, use the addEventProperty when creating the client:
+
+```java
+builder.addEventProperty("nl.stokpop.MyEventClass", "name", "value")
+```
+	
+## custom events
+
+You can provide custom events via a list of <duration,eventName,eventSettings> tuples, 
+one on each line.
+
+The eventName can be any unique name among the custom events. You can use this eventName
+in your own implementation of the PerfanaTestEvent interface to select what code to execute.
+
+You can even send some specific settings to the event, using the eventSettings String.
+Decide for your self if you want this to be just one value, a list of key-value pairs, 
+json snippet or event base64 encoded contents.
+
+Example:
+
+```java
+builder.setEventSchedule(eventSchedule)
+```    
+And as input:
+
+```java
+String eventSchedule =
+        "PT5S|restart|{ server:'myserver' replicas:2 tags: [ 'first', 'second' ] }\n" +
+        "PT10M|scale-down\n" +
+        "PT10M45S|heapdump|server=myserver.example.com;port=1567\n" +
+        "PT15M|scale-up|{ replicas:2 }\n";
+```
+
+Note the usage of ISO-8601 duration or period format, defined as PT(n)H(n)M(n)S.
+Each period is from the start of the test, so not between events!
+
+Above can be read as: 
+* send restart event 5 seconds after start of test run. 
+* send scale-down event 10 minutes after start of the test run.
+* send heapdump event 10 minutes and 45 seconds after start of test run.
+* send scale-up event 15 minutes after start of test run.
+
+The setting will be send along with the event as well, for your own code to interpret.
+
+When no settings are present, like with de scale-down event in this example, the settings
+event will receive null for settings.
 
 ## Use of events in maven plugin
 
@@ -81,6 +122,12 @@ For example:
         <perfanaUrl>http://localhost:4000</perfanaUrl>
         <assertResultsEnabled>true</assertResultsEnabled>
         <simulationClass>afterburner.AfterburnerBasicSimulation</simulationClass>
+        <scheduleEvents>
+            <scheduleEvent>PT5S|restart|{ server:'myserver' replicas:2 tags: [ 'first', 'second' ] }</scheduleEvent>
+            <scheduleEvent>PT10M|scale-down</scheduleEvent>
+            <scheduleEvent>PT10M45S|heapdump|server=myserver.example.com;port=1567</scheduleEvent>
+            <scheduleEvent>PT15M|scale-up|{ replicas:2 }</scheduleEvent>
+        </scheduleEvents>
         <perfanaEventProperties>
             <nl.stokpop.perfana.event.StokpopHelloPerfanaEvent>
                 <myRestServer>https://my-rest-api</myName>

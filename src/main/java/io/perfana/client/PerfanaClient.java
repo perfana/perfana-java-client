@@ -7,6 +7,7 @@ import com.jayway.jsonpath.Option;
 import com.jayway.jsonpath.ParseContext;
 import io.perfana.event.PerfanaEventBroadcaster;
 import io.perfana.event.PerfanaEventProperties;
+import io.perfana.event.ScheduleEvent;
 import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
 import okhttp3.MediaType;
@@ -20,7 +21,7 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.time.Duration;
-import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -32,8 +33,6 @@ public final class PerfanaClient {
             = MediaType.parse("application/json; charset=utf-8");
 
     private final OkHttpClient client = new OkHttpClient();
-    private final PerfanaEventBroadcaster broadcaster;
-    private final PerfanaEventProperties eventProperties;
 
     private Logger logger;
 
@@ -53,14 +52,20 @@ public final class PerfanaClient {
     private final Duration retryDuration;
     private final Duration keepAliveDuration;
 
-    private ScheduledExecutorService executor;
+    private final PerfanaEventBroadcaster broadcaster;
+    private final PerfanaEventProperties eventProperties;
+    private final List<ScheduleEvent> scheduleEvents;
+
+    private ScheduledExecutorService executorKeepAlive;
+    private ScheduledExecutorService executorCustomEvents;
 
     PerfanaClient(String application, String testType, String testEnvironment, String testRunId,
                   String CIBuildResultsUrl, String applicationRelease, Duration rampupTime,
                   Duration constantLoadTime, String perfanaUrl, String annotations,
                   Map<String, String> variables, boolean assertResultsEnabled, PerfanaEventBroadcaster broadcaster,
                   PerfanaEventProperties eventProperties,
-                  int retryMaxCount, Duration retryDuration, Duration keepAliveDuration) {
+                  int retryMaxCount, Duration retryDuration, Duration keepAliveDuration,
+                  List<ScheduleEvent> scheduleEvents) {
         this.application = application;
         this.testType = testType;
         this.testEnvironment = testEnvironment;
@@ -78,6 +83,7 @@ public final class PerfanaClient {
         this.retryMaxCount = retryMaxCount;
         this.retryDuration = retryDuration;
         this.keepAliveDuration = keepAliveDuration;
+        this.scheduleEvents = scheduleEvents;
     }
 
     public void startSession() {
@@ -87,31 +93,58 @@ public final class PerfanaClient {
         callPerfanaEvent("Test start");
         broadcaster.broadcastBeforeTest(testRunId, eventProperties);
 
-        if (executor != null) {
+        startCustomEventScheduler(scheduleEvents);
+
+        if (executorKeepAlive != null) {
             throw new RuntimeException("Cannot start perfana session multiple times!");
         }
 
         logger.info(String.format("Calling Perfana (%s) keep alive every %d seconds.", perfanaUrl, keepAliveDuration.getSeconds()));
 
-        executor = Executors.newSingleThreadScheduledExecutor();
+        executorKeepAlive = Executors.newSingleThreadScheduledExecutor();
 
         final PerfanaClient.KeepAliveRunner keepAliveRunner = new PerfanaClient.KeepAliveRunner(this);
-        executor.scheduleAtFixedRate(keepAliveRunner, 0, keepAliveDuration.getSeconds(), TimeUnit.SECONDS);
+        executorKeepAlive.scheduleAtFixedRate(keepAliveRunner, 0, keepAliveDuration.getSeconds(), TimeUnit.SECONDS);
+        
+    }
 
-        final Duration failoverSleep = rampupTime.plus(5, ChronoUnit.MINUTES);
-        logger.info("Failover event is scheduled to run in " + failoverSleep.toString()
-                + " (the rampup time plus 5 minutes)");
-        final PerfanaClient.FailoverRunner failoverRunner = new PerfanaClient.FailoverRunner(this);
-        executor.schedule(failoverRunner, failoverSleep.getSeconds(), TimeUnit.SECONDS);
+    private void startCustomEventScheduler(final List<ScheduleEvent> scheduleEvents) {
+        if (!(scheduleEvents == null || scheduleEvents.isEmpty())) {
 
+            logger.info(createEventScheduleMessage(scheduleEvents));
+
+            this.executorCustomEvents = Executors.newScheduledThreadPool(4);
+            scheduleEvents.forEach(event -> addToExecutor(executorCustomEvents, event));
+        }
+        else {
+            logger.info("No custom Perfana schedule events found.");
+        }
+    }
+
+    private String createEventScheduleMessage(List<ScheduleEvent> scheduleEvents) {
+        StringBuilder message = new StringBuilder();
+        message.append("=== custom Perfana events schedule ===");
+        scheduleEvents.forEach(event -> message.append("\n==> ").append(event));
+        return message.toString();
+    }
+
+    private void addToExecutor(final ScheduledExecutorService executorService, final ScheduleEvent event) {
+        executorService.schedule(new EventRunner(testRunId, eventProperties, event, broadcaster, this), event.getDuration().getSeconds(), TimeUnit.SECONDS);
     }
 
     public void stopSession() throws PerfanaClientException {
         logger.info("Perfana end session.");
-        if (executor != null) {
-            executor.shutdownNow();
+        if (executorKeepAlive != null) {
+            executorKeepAlive.shutdown();
         }
-        executor = null;
+        if (executorCustomEvents != null) {
+            List<Runnable> runnables = executorCustomEvents.shutdownNow();
+            if (runnables.size() > 0) {
+                logger.warn("There are " + runnables.size() + " custom Perfana events that are not (fully) executed!");
+            }
+        }
+        executorKeepAlive = null;
+        executorCustomEvents = null;
 
         logger.info("Perfana broadcast event after test");
         callPerfanaEvent("Test finish");
@@ -188,7 +221,7 @@ public final class PerfanaClient {
         return json.toJSONString();
     }
 
-    private static JSONObject createVariables(String name, String value) {
+        private static JSONObject createVariables(String name, String value) {
         JSONObject variables = new JSONObject();
         variables.put("placeholder", name);
         variables.put("value", value);
@@ -273,21 +306,10 @@ public final class PerfanaClient {
             client.callPerfana(false);
             client.broadcaster.broadCastKeepAlive(client.testRunId, client.eventProperties);
         }
-    }
-
-    public static class FailoverRunner implements Runnable {
-
-        private final PerfanaClient client;
-
-        FailoverRunner(PerfanaClient client) {
-            this.client = client;
-        }
 
         @Override
-        public void run() {
-            client.logger.info("Perfana broadcast event failover");
-            client.callPerfanaEvent("Fail over");
-            client.broadcaster.broadcastFailover(client.testRunId, client.eventProperties);
+        public String toString() {
+            return "KeepAliveRunner for " + client;
         }
     }
 
@@ -363,5 +385,40 @@ public final class PerfanaClient {
         }
         return text.toString();
     }
-    
+
+    public class EventRunner implements Runnable {
+        private final String testId;
+        private final PerfanaEventProperties eventProperties;
+
+        private final ScheduleEvent event;
+
+        private final PerfanaEventBroadcaster eventBroadcaster;
+        private final PerfanaClient client;
+
+        public EventRunner(String testId, PerfanaEventProperties eventProperties, ScheduleEvent event, PerfanaEventBroadcaster eventBroadcaster, PerfanaClient perfanaClient) {
+            this.testId = testId;
+            this.eventProperties = eventProperties;
+            this.event = event;
+            this.eventBroadcaster = eventBroadcaster;
+            this.client = perfanaClient;
+        }
+
+        @Override
+        public void run() {
+            client.logger.info("Fire Perfana custom event [" + event + "]");
+            client.callPerfanaEvent(event.getName());
+            eventBroadcaster.broadcastCustomEvent(testId, eventProperties, event);
+        }
+
+        @Override
+        public String toString() {
+            return String.format("EventRunner for event %s for testId %s", event, testId);
+        }
+    }
+
+    @Override
+    public String toString() {
+        return String.format("PerfanaClient [testRunId:%s testType:%s testEnv:%s perfanaUrl:%s]",
+                this.testRunId, this.testType, this.testEnvironment, this.perfanaUrl);
+    }
 }

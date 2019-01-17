@@ -6,7 +6,7 @@ public interface PerfanaEventBroadcaster {
 
     void broadcastAfterTest(String testId, PerfanaEventProperties eventProperties);
 
-    void broadcastFailover(String testId, PerfanaEventProperties eventProperties);
-
     void broadCastKeepAlive(String testd, PerfanaEventProperties eventProperties);
+
+    void broadcastCustomEvent(String testd, PerfanaEventProperties eventProperties, ScheduleEvent event);
 }

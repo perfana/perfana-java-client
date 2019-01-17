@@ -3,12 +3,17 @@ package io.perfana.client;
 import io.perfana.event.PerfanaEventBroadcaster;
 import io.perfana.event.PerfanaEventProperties;
 import io.perfana.event.PerfanaEventProvider;
+import io.perfana.event.ScheduleEvent;
 
+import java.io.BufferedReader;
+import java.io.StringReader;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.stream.Collectors;
 
 public class PerfanaClientBuilder {
 
@@ -21,7 +26,7 @@ public class PerfanaClientBuilder {
     private String application = "unknown";
     private String testType = "unknown";
     private String testEnvironment = "unknown";
-    private String testRunId = "unknown";
+    private String testRunId = "unknown_" + System.currentTimeMillis();
     private String ciBuildResultsUrl = "unknown";
     private String applicationRelease = "unknown";
     private Duration rampupTime = Duration.ofSeconds(DEFAULT_RAMPUP_TIME_SECONDS);
@@ -35,25 +40,26 @@ public class PerfanaClientBuilder {
     private boolean assertResultsEnabled = false;
     private PerfanaEventBroadcaster broadcaster;
     private PerfanaEventProperties eventProperties = new PerfanaEventProperties();
+    private List<ScheduleEvent> scheduleEvents = Collections.emptyList();
 
     private PerfanaClient.Logger logger = new PerfanaClient.Logger() {
         @Override
-        public void info(final String message) {
+        public void info(String message) {
             say("INFO ", message);
         }
 
         @Override
-        public void warn(final String message) {
+        public void warn(String message) {
             say("WARN ", message);
         }
 
         @Override
-        public void error(final String message) {
+        public void error(String message) {
             say("ERROR", message);
         }
 
         @Override
-        public void debug(final String message) {
+        public void debug(String message) {
             say("DEBUG", message);
         }
 
@@ -62,95 +68,98 @@ public class PerfanaClientBuilder {
         }
     };
 
-    public PerfanaClientBuilder setApplication(final String application) {
+    public PerfanaClientBuilder setApplication(String application) {
         this.application = application;
         return this;
     }
 
-    public PerfanaClientBuilder setTestType(final String testType) {
+    public PerfanaClientBuilder setTestType(String testType) {
         this.testType = testType;
         return this;
     }
 
-    public PerfanaClientBuilder setTestEnvironment(final String testEnvironment) {
+    public PerfanaClientBuilder setTestEnvironment(String testEnvironment) {
         this.testEnvironment = testEnvironment;
         return this;
     }
 
-    public PerfanaClientBuilder setTestRunId(final String testRunId) {
+    public PerfanaClientBuilder setTestRunId(String testRunId) {
         this.testRunId = testRunId;
         return this;
     }
 
-    public PerfanaClientBuilder setCIBuildResultsUrl(final String ciBuildResultsUrl) {
+    public PerfanaClientBuilder setCIBuildResultsUrl(String ciBuildResultsUrl) {
         this.ciBuildResultsUrl = ciBuildResultsUrl;
         return this;
     }
 
-    public PerfanaClientBuilder setApplicationRelease(final String applicationRelease) {
+    public PerfanaClientBuilder setApplicationRelease(String applicationRelease) {
         this.applicationRelease = applicationRelease;
         return this;
     }
 
-    public PerfanaClientBuilder setRampupTimeInSeconds(final String rampupTimeInSeconds) {
+    public PerfanaClientBuilder setRampupTimeInSeconds(String rampupTimeInSeconds) {
         this.rampupTime = Duration.ofSeconds(parseInt("rampupTime", rampupTimeInSeconds, DEFAULT_RAMPUP_TIME_SECONDS));
         return this;
     }
 
-    public PerfanaClientBuilder setConstantLoadTimeInSeconds(final String constantLoadTimeInSeconds) {
+    public PerfanaClientBuilder setConstantLoadTimeInSeconds(String constantLoadTimeInSeconds) {
         this.constantLoadTime = Duration.ofSeconds(parseInt("constantLoadTime", constantLoadTimeInSeconds, DEFAULT_CONSTANT_LOAD_TIME_SECONDS));
         return this;
     }
 
-    public PerfanaClientBuilder setPerfanaUrl(final String perfanaUrl) {
+    public PerfanaClientBuilder setPerfanaUrl(String perfanaUrl) {
         this.perfanaUrl = perfanaUrl;
         return this;
     }
 
-    public PerfanaClientBuilder setAnnotations(final String annotations) {
+    public PerfanaClientBuilder setAnnotations(String annotations) {
         this.annotations = annotations;
         return this;
     }
 
+    /**
+     * @deprecated use setter with Map&lt;String,String&gt;
+     */
     @Deprecated
-    public PerfanaClientBuilder setVariables(final Properties variables) {
+    public PerfanaClientBuilder setVariables(Properties variables) {
         Map<String, String> keyValueMap = new HashMap<>(variables.size(), 1);
         variables.forEach((key,value) -> keyValueMap.put((String)key,(String)value));
         this.variables = keyValueMap;
         return this;
     }
     
-    public PerfanaClientBuilder setVariables(final Map<String, String> variables) {
+    public PerfanaClientBuilder setVariables(Map<String, String> variables) {
         this.variables = variables;
         return this;
     }
 
-    public PerfanaClientBuilder setAssertResultsEnabled(final boolean assertResultsEnabled) {
+    public PerfanaClientBuilder setAssertResultsEnabled(boolean assertResultsEnabled) {
         this.assertResultsEnabled = assertResultsEnabled;
         return this;
     }
 
-    public PerfanaClientBuilder setLogger(final PerfanaClient.Logger logger) {
+    public PerfanaClientBuilder setLogger(PerfanaClient.Logger logger) {
         this.logger = logger;
         return this;
     }
 
-    public PerfanaClientBuilder setBroadcaster(final PerfanaEventBroadcaster broadcaster) {
+    public PerfanaClientBuilder setBroadcaster(PerfanaEventBroadcaster broadcaster) {
         this.broadcaster = broadcaster;
         return this;
     }
 
-    public PerfanaClientBuilder setKeepAliveTimeInSeconds(final String keepAliveTimeInSeconds) {
+    public PerfanaClientBuilder setKeepAliveTimeInSeconds(String keepAliveTimeInSeconds) {
         this.keepAliveTime = Duration.ofSeconds(parseInt("keepAliveTimeInSeconds", keepAliveTimeInSeconds, DEFAULT_KEEP_ALIVE_TIME_SECONDS));
         return this;
     }
 
-    public PerfanaClientBuilder setRetryMaxCount(final String retryMaxCount) {
+    public PerfanaClientBuilder setRetryMaxCount(String retryMaxCount) {
         this.retryMaxCount = parseInt("retryMaxCount", retryMaxCount, DEFAULT_RETRY_MAX_COUNT);
         return this;
     }
 
-    public PerfanaClientBuilder setRetryTimeInSeconds(final String retryTimeInSeconds) {
+    public PerfanaClientBuilder setRetryTimeInSeconds(String retryTimeInSeconds) {
         this.retryDuration = Duration.ofSeconds(parseInt("retryTimeInSeconds", retryTimeInSeconds, DEFAULT_RETRY_TIME_SECONDS));
         return this;
     }
@@ -184,7 +193,7 @@ public class PerfanaClientBuilder {
                 ciBuildResultsUrl, applicationRelease, rampupTime,
                 constantLoadTime, perfanaUrl, annotations,
                 variables, assertResultsEnabled, broadcaster, eventProperties,
-                retryMaxCount, retryDuration, keepAliveTime);
+                retryMaxCount, retryDuration, keepAliveTime, scheduleEvents);
         perfanaClient.injectLogger(logger);
         return perfanaClient;
     }
@@ -198,10 +207,36 @@ public class PerfanaClientBuilder {
         try {
             time = Integer.parseInt(timeString);
         } catch (NumberFormatException e) {
-            logger.error(String.format("Unable to parse %s, will use %d instead: %s", variableName, defaultValue, e.getMessage()));
+            logger.error(String.format("Unable to parse value of [%s=%s]: using default value [%d]. Error message: %s.", variableName, timeString, defaultValue, e.getMessage()));
             time = defaultValue;
         }
         return time;
     }
 
+    /**
+     * Provide schedule event as "duration|eventname|json-settings(optional)".
+     * The duration is in ISO-8601 format period format, e.g. 3 minutes 15 seconds
+     * is P3M15S.
+     *
+     * One schedule event per line.
+     */
+    public PerfanaClientBuilder setScheduleEvents(String eventSchedule) {
+        BufferedReader eventReader = new BufferedReader(new StringReader(eventSchedule));
+        return setScheduleEvents(eventReader.lines().collect(Collectors.toList()));
+    }
+
+    /**
+     * Provide list of schedule events.
+     * @see PerfanaClientBuilder#setScheduleEvents(String) 
+     */
+    public PerfanaClientBuilder setScheduleEvents(List<String> scheduleEvents) {
+        this.scheduleEvents = parseScheduleEvents(scheduleEvents);
+        return this;
+    }
+
+    private List<ScheduleEvent> parseScheduleEvents(List<String> eventSchedule) {
+        return eventSchedule.stream()
+                .map(ScheduleEvent::createFromLine)
+                .collect(Collectors.toList());
+    }
 }
