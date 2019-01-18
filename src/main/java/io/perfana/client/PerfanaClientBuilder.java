@@ -69,22 +69,30 @@ public class PerfanaClientBuilder {
     };
 
     public PerfanaClientBuilder setApplication(String application) {
-        this.application = application;
+        if (!isEmpty(application)) {
+            this.application = application;
+        }
         return this;
     }
 
     public PerfanaClientBuilder setTestType(String testType) {
-        this.testType = testType;
+        if (!isEmpty(testType)) {
+            this.testType = testType;
+        }
         return this;
     }
 
     public PerfanaClientBuilder setTestEnvironment(String testEnvironment) {
-        this.testEnvironment = testEnvironment;
+        if (!isEmpty(testEnvironment)) {
+            this.testEnvironment = testEnvironment;
+        }
         return this;
     }
 
     public PerfanaClientBuilder setTestRunId(String testRunId) {
-        this.testRunId = testRunId;
+        if (!isEmpty(testRunId)) {
+            this.testRunId = testRunId;
+        }
         return this;
     }
 
@@ -94,7 +102,9 @@ public class PerfanaClientBuilder {
     }
 
     public PerfanaClientBuilder setApplicationRelease(String applicationRelease) {
-        this.applicationRelease = applicationRelease;
+        if (!isEmpty(applicationRelease)) {
+            this.applicationRelease = applicationRelease;
+        }
         return this;
     }
 
@@ -163,6 +173,10 @@ public class PerfanaClientBuilder {
         this.retryDuration = Duration.ofSeconds(parseInt("retryTimeInSeconds", retryTimeInSeconds, DEFAULT_RETRY_TIME_SECONDS));
         return this;
     }
+    
+    private static boolean isEmpty(String variable) {
+        return variable == null || variable.isEmpty();
+    }
 
     /**
      * Add properties to be passed on to the event implementation class.
@@ -222,7 +236,10 @@ public class PerfanaClientBuilder {
      */
     public PerfanaClientBuilder setScheduleEvents(String eventSchedule) {
         BufferedReader eventReader = new BufferedReader(new StringReader(eventSchedule));
-        return setScheduleEvents(eventReader.lines().collect(Collectors.toList()));
+        return setScheduleEvents(eventReader.lines()
+                .map(String::trim)
+                .filter(e -> !e.isEmpty())
+                .collect(Collectors.toList()));
     }
 
     /**

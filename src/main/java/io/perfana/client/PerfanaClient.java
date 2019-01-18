@@ -25,7 +25,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public final class PerfanaClient {
 
@@ -90,10 +92,7 @@ public final class PerfanaClient {
         logger.info("Perfana start session");
 
         logger.info("Perfana broadcast event before test");
-        callPerfanaEvent("Test start");
         broadcaster.broadcastBeforeTest(testRunId, eventProperties);
-
-        startCustomEventScheduler(scheduleEvents);
 
         if (executorKeepAlive != null) {
             throw new RuntimeException("Cannot start perfana session multiple times!");
@@ -101,11 +100,19 @@ public final class PerfanaClient {
 
         logger.info(String.format("Calling Perfana (%s) keep alive every %d seconds.", perfanaUrl, keepAliveDuration.getSeconds()));
 
-        executorKeepAlive = Executors.newSingleThreadScheduledExecutor();
+        executorKeepAlive = createKeepAliveScheduler();
+        executorKeepAlive.scheduleAtFixedRate(new KeepAliveRunner(this), 0, keepAliveDuration.getSeconds(), TimeUnit.SECONDS);
 
-        final PerfanaClient.KeepAliveRunner keepAliveRunner = new PerfanaClient.KeepAliveRunner(this);
-        executorKeepAlive.scheduleAtFixedRate(keepAliveRunner, 0, keepAliveDuration.getSeconds(), TimeUnit.SECONDS);
-        
+        callPerfanaEvent("Test start");
+        startCustomEventScheduler(scheduleEvents);
+    }
+
+    private ScheduledExecutorService createKeepAliveScheduler() {
+        return Executors.newSingleThreadScheduledExecutor(r -> {
+            String threadName = "Perfana-Keep-Alive-Thread";
+            logger.info("Creating new thead: " + threadName);
+            return new Thread(r, threadName);
+        });
     }
 
     private void startCustomEventScheduler(final List<ScheduleEvent> scheduleEvents) {
@@ -113,12 +120,24 @@ public final class PerfanaClient {
 
             logger.info(createEventScheduleMessage(scheduleEvents));
 
-            this.executorCustomEvents = Executors.newScheduledThreadPool(4);
+            executorCustomEvents = createCustomEventScheduler();
             scheduleEvents.forEach(event -> addToExecutor(executorCustomEvents, event));
         }
         else {
             logger.info("No custom Perfana schedule events found.");
         }
+    }
+
+    private ScheduledExecutorService createCustomEventScheduler() {
+        return Executors.newScheduledThreadPool(4, new ThreadFactory() {
+            private final AtomicInteger perfanaThreadCount = new AtomicInteger(0);
+            @Override
+            public Thread newThread(Runnable r) {
+                String threadName = "Perfana-Custom-Event-Thread-" + perfanaThreadCount.incrementAndGet();
+                logger.info("Creating new thead: " + threadName);
+                return new Thread(r, threadName);
+            }
+        });
     }
 
     private String createEventScheduleMessage(List<ScheduleEvent> scheduleEvents) {
@@ -134,8 +153,35 @@ public final class PerfanaClient {
 
     public void stopSession() throws PerfanaClientException {
         logger.info("Perfana end session.");
+        shutdownThreadsNow();
+
+        logger.info("Perfana broadcast event after test");
+        callPerfanaEvent("Test finish");
+        broadcaster.broadcastAfterTest(testRunId, eventProperties);
+
+        callPerfana(true);
+        assertResults();
+    }
+
+    /**
+     * Call to abort this test run.
+     * 
+     * @throw PerfanaClientException
+     */
+    public void abortSession() throws PerfanaClientException {
+        logger.warn("Perfana session abort called.");
+        shutdownThreadsNow();
+
+        logger.info("Perfana broadcast event after test");
+        callPerfanaEvent("Test aborted");
+        broadcaster.broadcastAfterTest(testRunId, eventProperties);
+
+        assertResults();
+    }
+
+    private void shutdownThreadsNow() {
         if (executorKeepAlive != null) {
-            executorKeepAlive.shutdown();
+            executorKeepAlive.shutdownNow();
         }
         if (executorCustomEvents != null) {
             List<Runnable> runnables = executorCustomEvents.shutdownNow();
@@ -145,13 +191,6 @@ public final class PerfanaClient {
         }
         executorKeepAlive = null;
         executorCustomEvents = null;
-
-        logger.info("Perfana broadcast event after test");
-        callPerfanaEvent("Test finish");
-        broadcaster.broadcastAfterTest(testRunId, eventProperties);
-
-        callPerfana(true);
-        assertResults();
     }
 
     void injectLogger(Logger logger) {
@@ -190,6 +229,9 @@ public final class PerfanaClient {
                 .build();
         try (Response response = client.newCall(request).execute()) {
             ResponseBody responseBody = response.body();
+            if (!response.isSuccessful()) {
+                logger.warn("Post was not successful: " + response);
+            }
             return responseBody == null ? "null" : responseBody.string();
         }
     }
@@ -296,33 +338,6 @@ public final class PerfanaClient {
         return assertions;
     }
 
-    public static class KeepAliveRunner implements Runnable {
-
-        private final PerfanaClient client;
-
-        KeepAliveRunner(PerfanaClient client) {
-            this.client = client;
-        }
-
-        @Override
-        public void run() {
-            client.callPerfana(false);
-            client.broadcaster.broadCastKeepAlive(client.testRunId, client.eventProperties);
-        }
-
-        @Override
-        public String toString() {
-            return "KeepAliveRunner for " + client;
-        }
-    }
-
-    public interface Logger {
-        void info(String message);
-        void warn(String message);
-        void error(String message);
-        void debug(String message);
-    }
-    
     private String assertResults() throws PerfanaClientException {
 
         if (!assertResultsEnabled) {
@@ -357,13 +372,13 @@ public final class PerfanaClient {
         if (assertions.contains("false")) {
 
             text.append("One or more Perfana assertions are failing: \n");
-            if (requirementsResult != null && !requirementsResult) {
+            if (hasFailed(requirementsResult)) {
                 text.append(String.format("Requirements failed: %s\n", requirementsDeeplink)) ;
             }
-            if (benchmarkPreviousTestRunResult != null && !benchmarkPreviousTestRunResult) {
+            if (hasFailed(benchmarkPreviousTestRunResult)) {
                 text.append(String.format("Benchmark to previous test run failed: %s\n", benchmarkPreviousTestRunDeeplink));
             }
-            if (benchmarkBaselineTestRunResult != null && !benchmarkBaselineTestRunResult) {
+            if (hasFailed(benchmarkBaselineTestRunResult)) {
                 text.append(String.format("Benchmark to baseline test run failed: %s", benchmarkBaselineTestRunDeeplink));
             }
 
@@ -377,10 +392,10 @@ public final class PerfanaClient {
             if (requirementsResult) {
                 text.append(requirementsDeeplink).append("\n");
             }
-            if (benchmarkPreviousTestRunResult != null && benchmarkPreviousTestRunResult) {
+            if (hasSucceeded(benchmarkPreviousTestRunResult)) {
                 text.append(benchmarkPreviousTestRunDeeplink).append("\n");
             }
-            if (benchmarkBaselineTestRunResult != null && benchmarkBaselineTestRunResult) {
+            if (hasSucceeded(benchmarkBaselineTestRunResult)) {
                 text.append(benchmarkBaselineTestRunDeeplink);
             }
 
@@ -389,7 +404,42 @@ public final class PerfanaClient {
         return text.toString();
     }
 
-    public class EventRunner implements Runnable {
+    private static boolean hasSucceeded(Boolean testResult) {
+        return testResult != null && testResult;
+    }
+
+    private static boolean hasFailed(Boolean testResult) {
+        return testResult != null && !testResult;
+    }
+
+    public interface Logger {
+        void info(String message);
+        void warn(String message);
+        void error(String message);
+        void debug(String message);
+    }
+
+    public static class KeepAliveRunner implements Runnable {
+
+        private final PerfanaClient client;
+
+        KeepAliveRunner(PerfanaClient client) {
+            this.client = client;
+        }
+
+        @Override
+        public void run() {
+            client.callPerfana(false);
+            client.broadcaster.broadCastKeepAlive(client.testRunId, client.eventProperties);
+        }
+
+        @Override
+        public String toString() {
+            return "KeepAliveRunner for " + client;
+        }
+    }
+
+    public static class EventRunner implements Runnable {
         private final String testId;
         private final PerfanaEventProperties eventProperties;
 

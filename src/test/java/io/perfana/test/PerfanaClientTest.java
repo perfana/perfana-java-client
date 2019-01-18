@@ -42,11 +42,13 @@ public class PerfanaClientTest
         };
 
         String eventSchedule =
-                "PT1S|restart|{ 'server':'myserver' 'replicas':2, 'tags': [ 'first', 'second' ] }\n" +
-                "PT600S|scale-down|{ 'replicas':1 }\n" +
-                "PT660S|heapdump|server=myserver.example.com;port=1567\n" +
-                "PT900S|scale-up|{ 'replicas':2 }\n";
-        
+                "   \n" +
+                "    PT1S  |restart   |{ 'server':'myserver' 'replicas':2, 'tags': [ 'first', 'second' ] }    \n" +
+                "PT600S   |scale-down |   { 'replicas':1 }   \n" +
+                "PT660S|    heapdump|server=    myserver.example.com;   port=1567  \n" +
+                "   PT900S|scale-up|{ 'replicas':2 }\n" +
+                "  \n";
+
         PerfanaClient client =
                 new PerfanaClientBuilder()
                         .setApplication("application")

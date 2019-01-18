@@ -122,12 +122,12 @@ For example:
         <perfanaUrl>http://localhost:4000</perfanaUrl>
         <assertResultsEnabled>true</assertResultsEnabled>
         <simulationClass>afterburner.AfterburnerBasicSimulation</simulationClass>
-        <scheduleEvents>
-            <scheduleEvent>PT5S|restart|{ server:'myserver' replicas:2 tags: [ 'first', 'second' ] }</scheduleEvent>
-            <scheduleEvent>PT10M|scale-down</scheduleEvent>
-            <scheduleEvent>PT10M45S|heapdump|server=myserver.example.com;port=1567</scheduleEvent>
-            <scheduleEvent>PT15M|scale-up|{ replicas:2 }</scheduleEvent>
-        </scheduleEvents>
+        <eventScheduleScript>
+            PT5S|restart|{ server:'myserver' replicas:2 tags: [ 'first', 'second' ] }
+            PT10M|scale-down
+            PT10M45S|heapdump|server=myserver.example.com;port=1567
+            PT15M|scale-up|{ replicas:2 }
+        </eventScheduleScript>
         <perfanaEventProperties>
             <nl.stokpop.perfana.event.StokpopHelloPerfanaEvent>
                 <myRestServer>https://my-rest-api</myName>
