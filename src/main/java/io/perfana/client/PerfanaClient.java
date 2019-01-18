@@ -160,9 +160,10 @@ public final class PerfanaClient {
 
     private void callPerfana(boolean completed) {
         String json = perfanaMessageToJson(application, testType, testEnvironment, testRunId, CIBuildResultsUrl, applicationRelease, rampupTime, plannedDuration, annotations, variables, completed);
-        logger.debug(String.format("Call to endpoint: %s with json: %s", perfanaUrl, json));
+        String testUrl = perfanaUrl + "/test";
+        logger.debug(String.format("Call to endpoint: %s with json: %s", testUrl, json));
         try {
-            String result = post(perfanaUrl + "/test", json);
+            String result = post(testUrl, json);
             logger.debug("Result: " + result);
         } catch (IOException e) {
             logger.error("Failed to call perfana: " + e.getMessage());
@@ -171,9 +172,10 @@ public final class PerfanaClient {
 
     private void callPerfanaEvent(String eventDescription) {
         String json = perfanaEventToJson(application, testType, testEnvironment, testRunId, eventDescription);
-        logger.debug(String.format("Call to endpoint: %s with json: %s", perfanaUrl, json));
+        String eventsUrl = perfanaUrl + "/events";
+        logger.debug(String.format("Add perfana event to endpoint: %s with json: %s", eventsUrl, json));
         try {
-            String result = post(perfanaUrl + "/events", json);
+            String result = post(eventsUrl, json);
             logger.debug("Result: " + result);
         } catch (IOException e) {
             logger.error("Failed to call perfana: " + e.getMessage());
@@ -221,7 +223,7 @@ public final class PerfanaClient {
         return json.toJSONString();
     }
 
-        private static JSONObject createVariables(String name, String value) {
+    private static JSONObject createVariables(String name, String value) {
         JSONObject variables = new JSONObject();
         variables.put("placeholder", name);
         variables.put("value", value);
@@ -229,8 +231,9 @@ public final class PerfanaClient {
     }
 
     private String perfanaEventToJson(String application, String testType, String testEnvironment, String testRunId, String eventDescription) {
+        JSONObject json = new JSONObject();
 
-        JSONObject json = createVariables(application, testEnvironment);
+        json.put("application", application);
         json.put("testEnvironment", testEnvironment);
         json.put("title", testRunId);
         json.put("description", eventDescription);
@@ -238,7 +241,7 @@ public final class PerfanaClient {
         JSONArray tags = new JSONArray();
         tags.add(testType);
         json.put("tags", tags);
-
+        
         return json.toJSONString();
     }
 
