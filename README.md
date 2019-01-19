@@ -46,7 +46,7 @@ Call when the load test starts.
 
 ### client.stopSession()
 Call when the load test stops. When assert results is enabled, 
-a `PerfanaClientException` will be thrown when the assert check 
+a `PerfanaAssertionsAreFalse` will be thrown when the assert check 
 is not ok.
 
 ## Perfana Test Events

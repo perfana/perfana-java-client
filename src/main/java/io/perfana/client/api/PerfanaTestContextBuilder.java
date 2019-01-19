@@ -3,6 +3,8 @@ package io.perfana.client.api;
 import io.perfana.client.PerfanaUtils;
 
 import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.Map;
 
@@ -10,11 +12,13 @@ public class PerfanaTestContextBuilder {
     private static final int DEFAULT_RAMPUP_TIME_SECONDS = 0;
     private static final int DEFAULT_CONSTANT_LOAD_TIME_SECONDS = 600;
 
+    private static DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("YYYY-MM-dd'T'HH-mm-ss");
+
     private String annotations = "";
     private String application = "unknown";
     private String testType = "unknown";
     private String testEnvironment = "unknown";
-    private String testRunId = "unknown_" + System.currentTimeMillis();
+    private String testRunId = "unknown_" + dateTimeFormatter.format(LocalDateTime.now());
     private String ciBuildResultsUrl = "unknown";
     private String applicationRelease = "unknown";
     private Duration rampupTime = Duration.ofSeconds(DEFAULT_RAMPUP_TIME_SECONDS);
