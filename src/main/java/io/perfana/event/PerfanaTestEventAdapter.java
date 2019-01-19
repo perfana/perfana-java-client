@@ -1,5 +1,7 @@
 package io.perfana.event;
 
+import io.perfana.client.api.PerfanaTestContext;
+
 import java.util.Map;
 
 /**
@@ -9,22 +11,22 @@ import java.util.Map;
 public abstract class PerfanaTestEventAdapter implements PerfanaTestEvent {
 
     @Override
-    public void beforeTest(String testId, Map<String, String> eventProperties) {
+    public void beforeTest(PerfanaTestContext context, Map<String, String> eventProperties) {
 
     }
 
     @Override
-    public void afterTest(String testId, Map<String, String> eventProperties) {
+    public void afterTest(PerfanaTestContext context, Map<String, String> eventProperties) {
 
     }
 
     @Override
-    public void keepAlive(String testId, Map<String, String> eventProperties) {
+    public void keepAlive(PerfanaTestContext context, Map<String, String> eventProperties) {
 
     }
 
     @Override
-    public void customEvent(String testId, Map<String, String> eventProperties, ScheduleEvent scheduleEvent) {
+    public void customEvent(PerfanaTestContext context, Map<String, String> eventProperties, ScheduleEvent scheduleEvent) {
 
     }
 }

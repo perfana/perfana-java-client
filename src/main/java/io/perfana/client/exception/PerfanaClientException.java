@@ -1,4 +1,4 @@
-package io.perfana.client;
+package io.perfana.client.exception;
 
 public class PerfanaClientException extends Exception {
     

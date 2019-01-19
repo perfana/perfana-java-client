@@ -2,10 +2,16 @@ package io.perfana.test;
 
 import io.perfana.client.PerfanaClient;
 import io.perfana.client.PerfanaClientBuilder;
+import io.perfana.client.api.PerfanaClientLogger;
+import io.perfana.client.api.PerfanaConnectionSettings;
+import io.perfana.client.api.PerfanaConnectionSettingsBuilder;
+import io.perfana.client.api.PerfanaTestContext;
+import io.perfana.client.api.PerfanaTestContextBuilder;
 import org.junit.Test;
 
-import java.util.Properties;
+import java.util.HashMap;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 /**
@@ -15,7 +21,7 @@ public class PerfanaClientTest
 {
     @Test
     public void create() {
-        PerfanaClient.Logger testLogger = new PerfanaClient.Logger() {
+        PerfanaClientLogger testLogger = new PerfanaClientLogger() {
             @Override
             public void info(final String message) {
                 say("INFO ", message);
@@ -49,29 +55,35 @@ public class PerfanaClientTest
                 "   PT900S|scale-up|{ 'replicas':2 }\n" +
                 "  \n";
 
-        PerfanaClient client =
-                new PerfanaClientBuilder()
-                        .setApplication("application")
-                        .setTestType("testType")
-                        .setTestEnvironment("testEnv")
-                        .setTestRunId("testRunId")
-                        .setCIBuildResultsUrl("http://url")
-                        .setApplicationRelease("release")
-                        .setRampupTimeInSeconds("10")
-                        .setConstantLoadTimeInSeconds("60")
-                        .setPerfanaUrl("http://perfUrl")
-                        .setAnnotations("annotations")
-                        .setVariables(new Properties())
-                        .setAssertResultsEnabled(true)
-                        .setLogger(testLogger)
-                        .addEventProperty("myClass", "name", "value")
-                        .setRetryTimeInSeconds("5")
-                        .setRetryMaxCount("6")
-                        .setKeepAliveTimeInSeconds("7")
-                        .setScheduleEvents(eventSchedule)
-                        .createPerfanaClient();
+        PerfanaConnectionSettings settings = new PerfanaConnectionSettingsBuilder()
+                .setPerfanaUrl("http://perfUrl")
+                .setRetryMaxCount("5")
+                .setRetryTimeInSeconds("3")
+                .build();
+
+        PerfanaTestContext context = new PerfanaTestContextBuilder()
+                .setTestType("testType")
+                .setTestEnvironment("testEnv")
+                .setTestRunId("testRunId")
+                .setCIBuildResultsUrl("http://url")
+                .setApplicationRelease("release")
+                .setRampupTimeInSeconds("10")
+                .setConstantLoadTimeInSeconds("300")
+                .setAnnotations("annotation")
+                .setVariables(new HashMap<>())
+                .build();
+
+        PerfanaClient client = new PerfanaClientBuilder()
+                .setPerfanaConnectionSettings(settings)
+                .setPerfanaTestContext(context)
+                .setAssertResultsEnabled(true)
+                .setLogger(testLogger)
+                .addEventProperty("myClass", "name", "value")
+                .setScheduleEvents(eventSchedule)
+                .build();
 
         assertNotNull(client);
+        assertEquals("http://perfUrl", settings.getPerfanaUrl());
 
 //        client.startSession();
 //        client.stopSession();
@@ -80,12 +92,12 @@ public class PerfanaClientTest
     @Test
     public void createWithFail() {
 
-        PerfanaClient client =
-                new PerfanaClientBuilder()
+        PerfanaConnectionSettings settings =
+                new PerfanaConnectionSettingsBuilder()
                         .setRetryTimeInSeconds("P5")
-                        .createPerfanaClient();
+                        .build();
 
-        assertNotNull(client);
+        assertNotNull(settings);
 
     }
 }

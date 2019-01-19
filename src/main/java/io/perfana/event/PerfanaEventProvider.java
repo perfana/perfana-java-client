@@ -1,5 +1,7 @@
 package io.perfana.event;
 
+import io.perfana.client.api.PerfanaTestContext;
+
 import java.util.ServiceLoader;
 
 public class PerfanaEventProvider implements PerfanaEventBroadcaster {
@@ -17,24 +19,24 @@ public class PerfanaEventProvider implements PerfanaEventBroadcaster {
     }
 
     @Override
-    public void broadcastBeforeTest(String testId, PerfanaEventProperties properties) {
-        perfanaEventLoader.forEach(event -> event.beforeTest(testId, properties.get(event)));
+    public void broadcastBeforeTest(PerfanaTestContext context, PerfanaEventProperties properties) {
+        perfanaEventLoader.forEach(event -> event.beforeTest(context, properties.get(event)));
     }
 
     @Override
-    public void broadcastAfterTest(String testId, PerfanaEventProperties properties) {
-        perfanaEventLoader.forEach(event -> event.afterTest(testId, properties.get(event)));
+    public void broadcastAfterTest(PerfanaTestContext context, PerfanaEventProperties properties) {
+        perfanaEventLoader.forEach(event -> event.afterTest(context, properties.get(event)));
     }
     
     @Override
-    public void broadCastKeepAlive(String testId, PerfanaEventProperties properties) {
-        perfanaEventLoader.forEach(event -> event.keepAlive(testId, properties.get(event)));
+    public void broadCastKeepAlive(PerfanaTestContext context, PerfanaEventProperties properties) {
+        perfanaEventLoader.forEach(event -> event.keepAlive(context, properties.get(event)));
 
     }
 
     @Override
-    public void broadcastCustomEvent(String testId, PerfanaEventProperties properties, ScheduleEvent scheduleEvent) {
-        perfanaEventLoader.forEach(event -> event.customEvent(testId, properties.get(event), scheduleEvent));
+    public void broadcastCustomEvent(PerfanaTestContext context, PerfanaEventProperties properties, ScheduleEvent scheduleEvent) {
+        perfanaEventLoader.forEach(event -> event.customEvent(context, properties.get(event), scheduleEvent));
     }
 
 

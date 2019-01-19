@@ -152,6 +152,13 @@
                     <configuration>
                         <header>${header.basedir}/src/etc/header.txt</header>
                         <strictCheck>false</strictCheck>
+                        <excludes>
+                            <exclude>src/main/resources/*</exclude>
+                            <exclude>**/LICENSE</exclude>
+                            <exclude>**/*.md</exclude>
+                            <exclude>.gitignore</exclude>
+                            <exclude>make_credentials.py</exclude>
+                        </excludes>
                     </configuration>
                     <executions>
                         <execution>
@@ -171,19 +178,6 @@
                         <serverId>sonatype-nexus-staging</serverId>
                         <nexusUrl>https://oss.sonatype.org/</nexusUrl>
                         <autoReleaseAfterClose>true</autoReleaseAfterClose>
-                    </configuration>
-                </plugin>
-                <plugin>
-                    <groupId>com.mycila.maven-license-plugin</groupId>
-                    <artifactId>maven-license-plugin</artifactId>
-                    <configuration>
-                        <excludes>
-                            <exclude>src/main/resources/*</exclude>
-                            <exclude>**/LICENSE</exclude>
-                            <exclude>**/*.md</exclude>
-                            <exclude>.gitignore</exclude>
-                            <exclude>make_credentials.py</exclude>
-                        </excludes>
                     </configuration>
                 </plugin>
                 <plugin>
@@ -237,10 +231,6 @@
                         </goals>
                     </execution>
                 </executions>
-            </plugin>
-            <plugin>
-                <groupId>com.mycila.maven-license-plugin</groupId>
-                <artifactId>maven-license-plugin</artifactId>
             </plugin>
             <plugin>
                 <groupId>org.sonatype.plugins</groupId>

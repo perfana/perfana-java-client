@@ -40,30 +40,38 @@ public class ScheduleEvent {
      */
     public static ScheduleEvent createFromLine(String line) {
 
-        if (line == null || line.isEmpty() || !line.contains("|")) {
-            throw new ScheduleEventWrongFormat("line: [" + line + "]");
+        if (line == null || line.trim().isEmpty()) {
+            throw new ScheduleEventWrongFormat("empty line: [" + line + "]");
         }
 
-        List<String> elements = Arrays.stream(line.split("\\|")).map(String::trim).collect(Collectors.toList());
+        if (!line.contains("|")) {
+            throw new ScheduleEventWrongFormat("line should contain at least a duration and event name, separated by '|': [" + line + "]");
+        }
+
+        List<String> elements = Arrays.stream(line.split("\\|"))
+                .map(String::trim)
+                .collect(Collectors.toList());
 
         if (!(elements.size() == 2 || elements.size() == 3)) {
-            throw new ScheduleEventWrongFormat("Wrong number of elements in line, expected 2 or 3 separated by '|': " + line);
+            throw new ScheduleEventWrongFormat("Wrong number of elements in line, expected 'duration|name|setting(optional)': [" + line + "]");
         }
         
         Duration duration;
-        try {
-            duration = Duration.parse(elements.get(0));
-        } catch (Exception e) {
-            throw new ScheduleEventWrongFormat("Failed to parse duration: " + elements.get(0) + " from line: " + line, e);
-        }
-
+        String textDuration = elements.get(0);
         String name = elements.get(1);
+
+        try {
+            duration = Duration.parse(textDuration);
+        } catch (Exception e) {
+            throw new ScheduleEventWrongFormat("Failed to parse duration: [" + textDuration + "] from line: [" + line + "]", e);
+        }
         
         if (elements.size() == 2) {
             return new ScheduleEvent(duration, name);
         }
         else {
-            return new ScheduleEvent(duration, name, elements.get(2));
+            String settings = elements.get(2);
+            return new ScheduleEvent(duration, name, settings);
         }
     }
 

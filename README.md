@@ -4,27 +4,36 @@ Add this java library to your project to easily integrate with Perfana.
 
 # usage
 
-Create a PerfanaClient using the builder:
+Create a PerfanaClient using the builders:
 
 ```java
-PerfanaClient client =
-        new PerfanaClientBuilder()
-                .setApplication("application")
+        PerfanaConnectionSettings settings = new PerfanaConnectionSettingsBuilder()
+                .setPerfanaUrl("http://perfanaUrl")
+                .setRetryMaxCount("5")
+                .setRetryTimeInSeconds("3")
+                .build();
+
+        PerfanaTestContext context = new PerfanaTestContextBuilder()
                 .setTestType("testType")
                 .setTestEnvironment("testEnv")
                 .setTestRunId("testRunId")
-                .setCIBuildResultsUrl("url")
+                .setCIBuildResultsUrl("http://url")
                 .setApplicationRelease("release")
                 .setRampupTimeInSeconds("10")
-                .setConstantLoadTimeInSeconds("60")
-                .setPerfanaUrl("perfUrl")
-                .setAnnotations("annotations")
-                .setVariables(new Properties())
+                .setConstantLoadTimeInSeconds("300")
+                .setAnnotations("annotation")
+                .setVariables(new HashMap<>())
+                .build();
+
+        PerfanaClient client = new PerfanaClientBuilder()
+                .setPerfanaConnectionSettings(settings)
+                .setPerfanaTestContext(context)
                 .setAssertResultsEnabled(true)
-                .setRetryTimeInSeconds("15")
-                .setRetryMaxCount("10")
-                .setKeepAliveTimeInSeconds("30")
-                .createPerfanaClient();
+                .setLogger(testLogger)
+                .addEventProperty("myClass", "name", "value")
+                .setScheduleEvents(eventSchedule)
+                .build();
+
 ```
 
 Note that a lot of properties have decent defaults and do not need to be 
@@ -139,7 +148,7 @@ For example:
         <dependency>
             <groupId>nl.stokpop</groupId>
             <artifactId>perfana-hello-world-events</artifactId>
-            <version>1.0.0</version>
+            <version>1.2.0</version>
         </dependency>
     </dependencies>
 </plugin>
