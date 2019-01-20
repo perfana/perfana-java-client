@@ -49,6 +49,8 @@ public final class PerfanaClient implements PerfanaCaller {
 
     private PerfanaExecutorEngine executorEngine;
 
+    private boolean isSessionStopped = false;
+
     PerfanaClient(PerfanaTestContext context, PerfanaConnectionSettings settings,
                   boolean assertResultsEnabled, PerfanaEventBroadcaster broadcaster,
                   PerfanaEventProperties eventProperties,
@@ -67,6 +69,7 @@ public final class PerfanaClient implements PerfanaCaller {
      */
     public void startSession() {
         logger.info("Perfana start session");
+        isSessionStopped = false;
 
         executorEngine = new PerfanaExecutorEngine(logger);
 
@@ -86,6 +89,8 @@ public final class PerfanaClient implements PerfanaCaller {
      */
     public void stopSession() throws PerfanaClientException, PerfanaAssertionsAreFalse {
         logger.info("Perfana end session.");
+        isSessionStopped = true;
+        
         executorEngine.shutdownThreadsNow();
 
         logger.info("Perfana broadcast event after test");
@@ -98,6 +103,10 @@ public final class PerfanaClient implements PerfanaCaller {
         logger.info(String.format("The assertionText: %s", text));
     }
 
+    public boolean isSessionStopped() {
+        return isSessionStopped;
+    }
+
     /**
      * Call to abort this test run.
      * A Perfana abort event is created.
@@ -105,6 +114,8 @@ public final class PerfanaClient implements PerfanaCaller {
      */
     public void abortSession() {
         logger.warn("Perfana session abort called.");
+        isSessionStopped = true;
+        
         executorEngine.shutdownThreadsNow();
 
         logger.info("Perfana broadcast event after test");
@@ -132,6 +143,7 @@ public final class PerfanaClient implements PerfanaCaller {
 
     @Override
     public void callPerfanaEvent(PerfanaTestContext context, String eventDescription) {
+        logger.info("Perfana Event: " + eventDescription);
         String json = perfanaEventToJson(context, eventDescription);
         String eventsUrl = settings.getPerfanaUrl() + "/events";
         logger.debug(String.format("Add perfana event to endpoint: %s with json: %s", eventsUrl, json));

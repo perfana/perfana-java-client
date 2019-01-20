@@ -48,6 +48,7 @@ public class PerfanaExecutorEngine {
     }
 
     void shutdownThreadsNow() {
+        logger.info("Shutdown Perfana Executor threads");
         if (executorKeepAlive != null) {
             executorKeepAlive.shutdownNow();
         }
@@ -77,7 +78,9 @@ public class PerfanaExecutorEngine {
     private String createEventScheduleMessage(List<ScheduleEvent> scheduleEvents) {
         StringBuilder message = new StringBuilder();
         message.append("=== custom Perfana events schedule ===");
-        scheduleEvents.forEach(event -> message.append("\n==> ").append(event));
+        scheduleEvents.forEach(event -> message
+                .append("\n==> ")
+                .append(String.format("ScheduleEvent %-16s [fire-at=%-8s settings=%s]", event.getName(), event.getDuration(), event.getSettings())));
         return message.toString();
     }
 

@@ -78,8 +78,8 @@ public class ScheduleEvent {
     @Override
     public String toString() {
         return settings == null ?
-                String.format("ScheduleEvent %s [execute after=%s]", name, duration) :
-                String.format("ScheduleEvent %s [execute after=%s settings=%s]", name, duration, settings);
+                String.format("ScheduleEvent %s [fire-at=%s]", name, duration) :
+                String.format("ScheduleEvent %s [fire-at=%s settings=%s]", name, duration, settings);
     }
 
     public static class ScheduleEventWrongFormat extends RuntimeException {
