@@ -124,11 +124,14 @@ public class PerfanaClientBuilder {
      * One schedule event per line.
      */
     public PerfanaClientBuilder setScheduleEvents(String eventSchedule) {
-        BufferedReader eventReader = new BufferedReader(new StringReader(eventSchedule));
-        return setScheduleEvents(eventReader.lines()
-                .map(String::trim)
-                .filter(e -> !e.isEmpty())
-                .collect(Collectors.toList()));
+        if (eventSchedule != null) {
+            BufferedReader eventReader = new BufferedReader(new StringReader(eventSchedule));
+            setScheduleEvents(eventReader.lines()
+                    .map(String::trim)
+                    .filter(e -> !e.isEmpty())
+                    .collect(Collectors.toList()));
+        }
+        return this;
     }
 
     /**
@@ -136,7 +139,9 @@ public class PerfanaClientBuilder {
      * @see PerfanaClientBuilder#setScheduleEvents(String) 
      */
     public PerfanaClientBuilder setScheduleEvents(List<String> scheduleEvents) {
-        this.scheduleEvents = parseScheduleEvents(scheduleEvents);
+        if (scheduleEvents != null) {
+            this.scheduleEvents = parseScheduleEvents(scheduleEvents);
+        }
         return this;
     }
 

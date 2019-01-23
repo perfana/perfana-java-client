@@ -10,6 +10,7 @@ import io.perfana.client.api.PerfanaTestContextBuilder;
 import org.junit.Test;
 
 import java.util.HashMap;
+import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -79,7 +80,7 @@ public class PerfanaClientTest
                 .setAssertResultsEnabled(true)
                 .setLogger(testLogger)
                 .addEventProperty("myClass", "name", "value")
-                .setScheduleEvents(eventSchedule)
+                .setScheduleEvents((String)null)
                 .build();
 
         assertNotNull(client);
@@ -87,6 +88,46 @@ public class PerfanaClientTest
 
 //        client.startSession();
 //        client.stopSession();
+    }
+
+    /**
+     * Regression: no exceptions expected feeding null
+     */
+    @Test
+    public void createWithNulls() {
+
+        PerfanaTestContext context = new PerfanaTestContextBuilder()
+                .setAnnotations(null)
+                .setApplicationRelease(null)
+                .setApplication(null)
+                .setCIBuildResultsUrl(null)
+                .setConstantLoadTimeInSeconds(null)
+                .setConstantLoadTime(null)
+                .setRampupTimeInSeconds(null)
+                .setRampupTime(null)
+                .setTestEnvironment(null)
+                .setTestRunId(null)
+                .setTestType(null)
+                .setVariables(null)
+                .build();
+
+        PerfanaConnectionSettings settings = new PerfanaConnectionSettingsBuilder()
+                .setPerfanaUrl(null)
+                .setRetryMaxCount(null)
+                .setRetryTimeInSeconds(null)
+                .setKeepAliveInterval(null)
+                .setKeepAliveTimeInSeconds(null)
+                .setRetryDuration(null).build();
+
+        new PerfanaClientBuilder()
+                .setPerfanaTestContext(context)
+                .setPerfanaConnectionSettings(settings)
+                .setScheduleEvents((String) null)
+                .setScheduleEvents((List<String>) null)
+                .setLogger(null)
+                .setBroadcaster(null)
+                .build();
+
     }
 
     @Test

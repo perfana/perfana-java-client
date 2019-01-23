@@ -87,7 +87,7 @@ public class PerfanaExecutorEngine {
     private ScheduledExecutorService createKeepAliveScheduler() {
         return Executors.newSingleThreadScheduledExecutor(r -> {
             String threadName = "Perfana-Keep-Alive-Thread";
-            logger.info("Creating new thead: " + threadName);
+            logger.info("Create new thread: " + threadName);
             return new Thread(r, threadName);
         });
     }
@@ -98,7 +98,7 @@ public class PerfanaExecutorEngine {
             @Override
             public Thread newThread(Runnable r) {
                 String threadName = "Perfana-Custom-Event-Thread-" + perfanaThreadCount.incrementAndGet();
-                logger.info("Creating new thead: " + threadName);
+                logger.info("Create new thread: " + threadName);
                 return new Thread(r, threadName);
             }
         });
