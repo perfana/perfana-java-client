@@ -74,11 +74,15 @@ builder.addEventProperty("nl.stokpop.MyEventClass", "name", "value")
 	
 ## custom events
 
-You can provide custom events via a list of <duration,eventName,eventSettings> tuples, 
+You can provide custom events via a list of <duration,eventName(description),eventSettings> tuples, 
 one on each line.
 
 The eventName can be any unique name among the custom events. You can use this eventName
 in your own implementation of the PerfanaTestEvent interface to select what code to execute.
+
+The description can be any text to explain what the event at that time is about. It will
+be sent to Perfana and shown in the graphs as an event. If no description is provided, the
+description is 'eventName-duration'.
 
 You can even send some specific settings to the event, using the eventSettings String.
 Decide for your self if you want this to be just one value, a list of key-value pairs, 
@@ -93,9 +97,9 @@ And as input:
 
 ```java
 String eventSchedule =
-        "PT5S|restart|{ server:'myserver' replicas:2 tags: [ 'first', 'second' ] }\n" +
+        "PT5S|restart(restart with 2 replicas)|{ server:'myserver' replicas:2 tags: [ 'first', 'second' ] }\n" +
         "PT10M|scale-down\n" +
-        "PT10M45S|heapdump|server=myserver.example.com;port=1567\n" +
+        "PT10M45S|heapdump(generate heapdump on port 1567)|server=myserver.example.com;port=1567\n" +
         "PT15M|scale-up|{ replicas:2 }\n";
 ```
 
@@ -148,7 +152,7 @@ For example:
         <dependency>
             <groupId>nl.stokpop</groupId>
             <artifactId>perfana-hello-world-events</artifactId>
-            <version>1.2.0</version>
+            <version>1.2.2</version>
         </dependency>
     </dependencies>
 </plugin>

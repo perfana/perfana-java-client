@@ -155,7 +155,7 @@ public class PerfanaExecutorEngine {
 
         @Override
         public void run() {
-            perfana.callPerfanaEvent(context, event.getName());
+            perfana.callPerfanaEvent(context, event.getDescription());
             eventBroadcaster.broadcastCustomEvent(context, eventProperties, event);
         }
 

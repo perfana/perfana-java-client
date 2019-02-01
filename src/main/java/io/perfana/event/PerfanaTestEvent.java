@@ -20,7 +20,7 @@ public interface PerfanaTestEvent {
     /**
      * @return name of the test event.
      */
-    String name();
+    String getName();
 
     /**
      * Called before the test run starts. You can for instance cleanup the test environment and/or

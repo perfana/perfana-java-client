@@ -13,11 +13,6 @@ import java.util.Map;
 public abstract class PerfanaTestEventAdapter implements PerfanaTestEvent {
 
     @Override
-    public String name() {
-        return getClass().getSimpleName();
-    }
-
-    @Override
     public void beforeTest(PerfanaTestContext context, Map<String, String> eventProperties) {
 
     }

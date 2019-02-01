@@ -63,7 +63,7 @@ public class PerfanaEventProvider implements PerfanaEventBroadcaster {
             try {
                 consumer.accept(event);
             } catch (Exception e) {
-                String message = String.format("exception in perfana event (%s)", event.name());
+                String message = String.format("exception in perfana event (%s)", event.getName());
                 if (logger != null) {
                     logger.error(message, e);
                 }

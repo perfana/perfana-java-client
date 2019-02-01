@@ -19,7 +19,11 @@ public class PerfanaEventPropertiesTest {
     }
 
     private static final class MyPerfanaEvent extends PerfanaTestEventAdapter {
-        // no implementation needed for this test
+        @Override
+        public String getName() {
+            return "MyPerfanaEvent";
+        }
+        // no further implementation needed for this test
     }
 
     @Test

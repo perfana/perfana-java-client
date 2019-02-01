@@ -24,7 +24,7 @@ public class PerfanaEventProviderTest {
         List<PerfanaTestEvent> events = new ArrayList<>();
         events.add(new PerfanaTestEventAdapter() {
             @Override
-            public String name() {
+            public String getName() {
                 return "MyTestEventThatFails";
             }
             @Override
@@ -35,7 +35,7 @@ public class PerfanaEventProviderTest {
         });
         events.add(new PerfanaTestEventAdapter() {
             @Override
-            public String name() {
+            public String getName() {
                 return "MyTestEventThatShouldRun";
             }
             @Override

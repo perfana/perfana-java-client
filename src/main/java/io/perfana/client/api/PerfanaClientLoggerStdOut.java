@@ -34,7 +34,7 @@ public class PerfanaClientLoggerStdOut implements PerfanaClientLogger {
             System.out.printf("## %s ## %s%n", level, something);
         }
         private void say(String level, String something, Throwable throwable) {
-            System.out.printf("## %s ## %s %s%n", level, something, throwable.getMessage());
+            System.out.printf("## %s ## %s %s: %s%n", level, something, throwable.getClass().getName(), throwable.getMessage());
             throwable.printStackTrace();
         }
 }

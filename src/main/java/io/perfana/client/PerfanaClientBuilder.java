@@ -95,7 +95,7 @@ public class PerfanaClientBuilder {
     }
     
     /**
-     * Provide schedule event as "duration|eventname|json-settings(optional)".
+     * Provide schedule event as "duration|eventname(description)|json-settings".
      * The duration is in ISO-8601 format period format, e.g. 3 minutes 15 seconds
      * is P3M15S.
      *
