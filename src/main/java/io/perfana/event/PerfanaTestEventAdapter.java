@@ -7,8 +7,15 @@ import java.util.Map;
 /**
  * Adapter class with empty method implementations of the PerfanaTestEvent interface.
  * Extend this class so you only have to implement the methods that are used.
+ *
+ * Always provide a proper name for a PerfanaTestEvent for traceability.
  */
 public abstract class PerfanaTestEventAdapter implements PerfanaTestEvent {
+
+    @Override
+    public String name() {
+        return getClass().getSimpleName();
+    }
 
     @Override
     public void beforeTest(PerfanaTestContext context, Map<String, String> eventProperties) {

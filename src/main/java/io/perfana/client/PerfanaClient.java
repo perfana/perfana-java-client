@@ -73,13 +73,12 @@ public final class PerfanaClient implements PerfanaCaller {
 
         executorEngine = new PerfanaExecutorEngine(logger);
 
-        logger.info("Perfana broadcast event before test");
         broadcaster.broadcastBeforeTest(context, eventProperties);
 
         executorEngine.startKeepAliveThread(this, context, settings, broadcaster, eventProperties);
+        executorEngine.startCustomEventScheduler(this, context, scheduleEvents, broadcaster, eventProperties);
 
         callPerfanaEvent(context, "Test start");
-        executorEngine.startCustomEventScheduler(this, context, scheduleEvents, broadcaster, eventProperties);
     }
 
     /**
@@ -93,14 +92,13 @@ public final class PerfanaClient implements PerfanaCaller {
         
         executorEngine.shutdownThreadsNow();
 
-        logger.info("Perfana broadcast event after test");
         callPerfanaEvent(context, "Test finish");
         broadcaster.broadcastAfterTest(context, eventProperties);
 
         callPerfanaTestEndpoint(context, true);
 
         String text = assertResults();
-        logger.info(String.format("The assertionText: %s", text));
+        logger.info(String.format("the assertion text: %s", text));
     }
 
     public boolean isSessionStopped() {
@@ -118,7 +116,6 @@ public final class PerfanaClient implements PerfanaCaller {
         
         executorEngine.shutdownThreadsNow();
 
-        logger.info("Perfana broadcast event after test");
         callPerfanaEvent(context, "Test aborted");
         broadcaster.broadcastAfterTest(context, eventProperties);
     }
@@ -132,12 +129,12 @@ public final class PerfanaClient implements PerfanaCaller {
     public void callPerfanaTestEndpoint(PerfanaTestContext context, boolean completed) {
         String json = perfanaMessageToJson(context, completed);
         String testUrl = settings.getPerfanaUrl() + "/test";
-        logger.debug(String.format("Call to endpoint: %s with json: %s", testUrl, json));
+        logger.debug(String.format("call to endpoint: %s with json: %s", testUrl, json));
         try {
             String result = post(testUrl, json);
-            logger.debug("Result: " + result);
+            logger.debug("result: " + result);
         } catch (IOException e) {
-            logger.error("Failed to call perfana: " + e.getMessage());
+            logger.error("failed to call perfana: " + e.getMessage());
         }
     }
 
@@ -146,12 +143,12 @@ public final class PerfanaClient implements PerfanaCaller {
         logger.info("Perfana Event: " + eventDescription);
         String json = perfanaEventToJson(context, eventDescription);
         String eventsUrl = settings.getPerfanaUrl() + "/events";
-        logger.debug(String.format("Add perfana event to endpoint: %s with json: %s", eventsUrl, json));
+        logger.debug(String.format("add perfana event to endpoint: %s with json: %s", eventsUrl, json));
         try {
             String result = post(eventsUrl, json);
-            logger.debug("Result: " + result);
+            logger.debug("result: " + result);
         } catch (IOException e) {
-            logger.error("Failed to call perfana: " + e.getMessage());
+            logger.error("failed to call perfana: " + e.getMessage());
         }
     }
 
@@ -164,7 +161,7 @@ public final class PerfanaClient implements PerfanaCaller {
         try (Response response = client.newCall(request).execute()) {
             ResponseBody responseBody = response.body();
             if (!response.isSuccessful()) {
-                logger.warn(String.format("Post was not successful: %s for request: %s and body: %s", response, request, json));
+                logger.warn(String.format("POST was not successful: %s for request: %s and body: %s", response, request, json));
             }
             return responseBody == null ? "null" : responseBody.string();
         }
@@ -234,7 +231,7 @@ public final class PerfanaClient implements PerfanaCaller {
         try {
             url = String.join("/", settings.getPerfanaUrl(), "get-benchmark-results", encodeForURL(context.getApplication()), encodeForURL(context.getTestRunId()));
         } catch (UnsupportedEncodingException e) {
-            throw new PerfanaClientException("Cannot encode perfana url.", e);
+            throw new PerfanaClientException("cannot encode perfana url.", e);
         }
         
         Request request = new Request.Builder()
@@ -269,8 +266,8 @@ public final class PerfanaClient implements PerfanaCaller {
             }
         }
         if (!assertionsAvailable) {
-            logger.warn(String.format("Failed to retrieve assertions for url [%s], no more retries left!", url));
-            throw new PerfanaClientException(String.format("Unable to retrieve assertions for url [%s]", url));
+            logger.warn(String.format("failed to retrieve assertions for url [%s], no more retries left!", url));
+            throw new PerfanaClientException(String.format("unable to retrieve assertions for url [%s]", url));
         }
         return assertions;
     }
@@ -296,14 +293,14 @@ public final class PerfanaClient implements PerfanaCaller {
                 .addOptions(Option.SUPPRESS_EXCEPTIONS);
 
         ParseContext parseContext = JsonPath.using(config);
-        DocumentContext documentContext = parseContext.parse(assertions);
+        DocumentContext doc = parseContext.parse(assertions);
 
-        Boolean benchmarkBaselineTestRunResult = documentContext.read("$.benchmarkBaselineTestRun.result");
-        String benchmarkBaselineTestRunDeeplink = documentContext.read("$.benchmarkBaselineTestRun.deeplink");
-        Boolean benchmarkPreviousTestRunResult = documentContext.read("$.benchmarkPreviousTestRun.result");
-        String benchmarkPreviousTestRunDeeplink = documentContext.read("$.benchmarkPreviousTestRun.deeplink");
-        Boolean requirementsResult = documentContext.read("$.requirements.result");
-        String requirementsDeeplink = documentContext.read("$.requirements.deeplink");
+        Boolean benchmarkBaselineTestRunResult = doc.read("$.benchmarkBaselineTestRun.result");
+        String benchmarkBaselineTestRunDeeplink = doc.read("$.benchmarkBaselineTestRun.deeplink");
+        Boolean benchmarkPreviousTestRunResult = doc.read("$.benchmarkPreviousTestRun.result");
+        String benchmarkPreviousTestRunDeeplink = doc.read("$.benchmarkPreviousTestRun.deeplink");
+        Boolean requirementsResult = doc.read("$.requirements.result");
+        String requirementsDeeplink = doc.read("$.requirements.deeplink");
 
         logger.info(String.format("benchmarkBaselineTestRunResult: %s", benchmarkBaselineTestRunResult));
         logger.info(String.format("benchmarkPreviousTestRunResult: %s", benchmarkPreviousTestRunResult));

@@ -3,6 +3,7 @@ package io.perfana.test;
 import io.perfana.client.PerfanaClient;
 import io.perfana.client.PerfanaClientBuilder;
 import io.perfana.client.api.PerfanaClientLogger;
+import io.perfana.client.api.PerfanaClientLoggerStdOut;
 import io.perfana.client.api.PerfanaConnectionSettings;
 import io.perfana.client.api.PerfanaConnectionSettingsBuilder;
 import io.perfana.client.api.PerfanaTestContext;
@@ -22,32 +23,9 @@ public class PerfanaClientTest
 {
     @Test
     public void create() {
-        PerfanaClientLogger testLogger = new PerfanaClientLogger() {
-            @Override
-            public void info(final String message) {
-                say("INFO ", message);
-            }
 
-            @Override
-            public void warn(final String message) {
-                say("WARN ", message);
-            }
-
-            @Override
-            public void error(final String message) {
-                say("ERROR", message);
-            }
-
-            @Override
-            public void debug(final String message) {
-                say("DEBUG", message);
-            }
-
-            private void say(String level, String something) {
-                System.out.printf("## %s ## %s%n", level, something);
-            }
-        };
-
+        PerfanaClientLogger testLogger = new PerfanaClientLoggerStdOut();
+        
         String eventSchedule =
                 "   \n" +
                 "    PT1S  |restart   |{ 'server':'myserver' 'replicas':2, 'tags': [ 'first', 'second' ] }    \n" +

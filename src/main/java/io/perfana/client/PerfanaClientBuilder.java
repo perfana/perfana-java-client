@@ -1,6 +1,7 @@
 package io.perfana.client;
 
 import io.perfana.client.api.PerfanaClientLogger;
+import io.perfana.client.api.PerfanaClientLoggerStdOut;
 import io.perfana.client.api.PerfanaConnectionSettings;
 import io.perfana.client.api.PerfanaTestContext;
 import io.perfana.client.exception.PerfanaClientRuntimeException;
@@ -27,31 +28,7 @@ public class PerfanaClientBuilder {
     private PerfanaEventProperties eventProperties = new PerfanaEventProperties();
     private List<ScheduleEvent> scheduleEvents = Collections.emptyList();
 
-    private PerfanaClientLogger logger = new PerfanaClientLogger() {
-        @Override
-        public void info(String message) {
-            say("INFO ", message);
-        }
-
-        @Override
-        public void warn(String message) {
-            say("WARN ", message);
-        }
-
-        @Override
-        public void error(String message) {
-            say("ERROR", message);
-        }
-
-        @Override
-        public void debug(String message) {
-            say("DEBUG", message);
-        }
-
-        private void say(String level, String something) {
-            System.out.printf("[%s] %s%n", level, something);
-        }
-    };
+    private PerfanaClientLogger logger = new PerfanaClientLoggerStdOut();
 
     public PerfanaClientBuilder setPerfanaTestContext(PerfanaTestContext context) {
         this.perfanaTestContext = context;
@@ -101,8 +78,9 @@ public class PerfanaClientBuilder {
     public PerfanaClient build() {
 
         // get default broadcaster if no broadcaster was given
-        if (broadcaster == null) logger.info("Creating default Perfana event broadcaster.");
-        PerfanaEventBroadcaster broadcaster = this.broadcaster == null ? PerfanaEventProvider.getInstance() : this.broadcaster;
+        if (broadcaster == null) logger.info("create default Perfana event broadcaster");
+        PerfanaEventBroadcaster broadcaster = this.broadcaster == null ?
+                PerfanaEventProvider.createInstanceWithEventsFromClasspath(logger) : this.broadcaster;
 
         if (perfanaTestContext == null) {
             throw new PerfanaClientRuntimeException("PerfanaTestContext must be set, it is null.");

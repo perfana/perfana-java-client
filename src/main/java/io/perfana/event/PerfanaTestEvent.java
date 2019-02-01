@@ -18,6 +18,11 @@ import java.util.Map;
 public interface PerfanaTestEvent {
 
     /**
+     * @return name of the test event.
+     */
+    String name();
+
+    /**
      * Called before the test run starts. You can for instance cleanup the test environment and/or
      * restart the server under test.
      * @param context the test run context

@@ -25,17 +25,17 @@ public class PerfanaExecutorEngine {
 
     public PerfanaExecutorEngine(PerfanaClientLogger logger) {
         if (logger == null) {
-            throw new PerfanaClientRuntimeException("Logger is null");
+            throw new PerfanaClientRuntimeException("logger is null");
         }
         this.logger = logger;
     }
 
     public void startKeepAliveThread(PerfanaCaller perfana, PerfanaTestContext context, PerfanaConnectionSettings settings, PerfanaEventBroadcaster broadcaster, PerfanaEventProperties eventProperties) {
         if (executorKeepAlive != null) {
-            throw new RuntimeException("Cannot start keep alive thread multiple times!");
+            throw new RuntimeException("cannot start keep alive thread multiple times!");
         }
 
-        logger.info(String.format("Calling Perfana (%s) keep alive every %s.", settings.getPerfanaUrl(), settings.getKeepAliveDuration()));
+        logger.info(String.format("calling Perfana (%s) keep alive every %s", settings.getPerfanaUrl(), settings.getKeepAliveDuration()));
 
         executorKeepAlive = createKeepAliveScheduler();
         
@@ -48,14 +48,19 @@ public class PerfanaExecutorEngine {
     }
 
     void shutdownThreadsNow() {
-        logger.info("Shutdown Perfana Executor threads");
+        logger.info("shutdown Perfana Executor threads");
         if (executorKeepAlive != null) {
             executorKeepAlive.shutdownNow();
         }
         if (executorCustomEvents != null) {
             List<Runnable> runnables = executorCustomEvents.shutdownNow();
             if (runnables.size() > 0) {
-                logger.warn("There are " + runnables.size() + " custom Perfana events that are not (fully) executed!");
+                if (runnables.size() == 1) {
+                    logger.warn("there is 1 custom Perfana event that is not (fully) executed!");
+                }
+                else {
+                    logger.warn("there are " + runnables.size() + " custom Perfana events that are not (fully) executed!");
+                }
             }
         }
         executorKeepAlive = null;
@@ -71,7 +76,7 @@ public class PerfanaExecutorEngine {
             scheduleEvents.forEach(event -> addToExecutor(executorCustomEvents, context, event, eventProperties, perfana, broadcaster));
         }
         else {
-            logger.info("No custom Perfana schedule events found.");
+            logger.info("no custom Perfana schedule events found");
         }
     }
 
@@ -87,7 +92,7 @@ public class PerfanaExecutorEngine {
     private ScheduledExecutorService createKeepAliveScheduler() {
         return Executors.newSingleThreadScheduledExecutor(r -> {
             String threadName = "Perfana-Keep-Alive-Thread";
-            logger.info("Create new thread: " + threadName);
+            logger.info("create new thread: " + threadName);
             return new Thread(r, threadName);
         });
     }
@@ -98,7 +103,7 @@ public class PerfanaExecutorEngine {
             @Override
             public Thread newThread(Runnable r) {
                 String threadName = "Perfana-Custom-Event-Thread-" + perfanaThreadCount.incrementAndGet();
-                logger.info("Create new thread: " + threadName);
+                logger.info("create new thread: " + threadName);
                 return new Thread(r, threadName);
             }
         });
