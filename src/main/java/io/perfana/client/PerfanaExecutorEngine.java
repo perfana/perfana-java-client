@@ -16,21 +16,34 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class PerfanaExecutorEngine {
+class PerfanaExecutorEngine {
 
-    private PerfanaClientLogger logger;
+    private final PerfanaClientLogger logger;
 
     private ScheduledExecutorService executorKeepAlive;
     private ScheduledExecutorService executorCustomEvents;
 
-    public PerfanaExecutorEngine(PerfanaClientLogger logger) {
+    PerfanaExecutorEngine(PerfanaClientLogger logger) {
         if (logger == null) {
             throw new PerfanaClientRuntimeException("logger is null");
         }
         this.logger = logger;
     }
 
-    public void startKeepAliveThread(PerfanaCaller perfana, PerfanaTestContext context, PerfanaConnectionSettings settings, PerfanaEventBroadcaster broadcaster, PerfanaEventProperties eventProperties) {
+    void startKeepAliveThread(PerfanaCaller perfana, PerfanaTestContext context, PerfanaConnectionSettings settings, PerfanaEventBroadcaster broadcaster, PerfanaEventProperties eventProperties) {
+        if (perfana == null) {
+            throw new NullPointerException("PerfanaCaller cannot be null");
+        }
+        if (context == null) {
+            throw new NullPointerException("PerfanaTestContext cannot be null");
+        }
+        if (broadcaster == null) {
+            throw new NullPointerException("PerfanaEventBroadcaster cannot be null");
+        }
+        if (eventProperties == null) {
+            throw new NullPointerException("PerfanaEventProperties cannot be null");
+        }
+
         if (executorKeepAlive != null) {
             throw new RuntimeException("cannot start keep alive thread multiple times!");
         }
@@ -67,7 +80,20 @@ public class PerfanaExecutorEngine {
         executorCustomEvents = null;
     }
 
-    public void startCustomEventScheduler(PerfanaCaller perfana, PerfanaTestContext context, List<ScheduleEvent> scheduleEvents, PerfanaEventBroadcaster broadcaster, PerfanaEventProperties eventProperties) {
+    void startCustomEventScheduler(PerfanaCaller perfana, PerfanaTestContext context, List<ScheduleEvent> scheduleEvents, PerfanaEventBroadcaster broadcaster, PerfanaEventProperties eventProperties) {
+        if (perfana == null) {
+            throw new NullPointerException("PerfanaCaller cannot be null");
+        }
+        if (context == null) {
+            throw new NullPointerException("PerfanaTestContext cannot be null");
+        }
+        if (broadcaster == null) {
+            throw new NullPointerException("PerfanaEventBroadcaster cannot be null");
+        }
+        if (eventProperties == null) {
+            throw new NullPointerException("PerfanaEventProperties cannot be null");
+        }
+
         if (!(scheduleEvents == null || scheduleEvents.isEmpty())) {
 
             logger.info(createEventScheduleMessage(scheduleEvents));
@@ -80,12 +106,12 @@ public class PerfanaExecutorEngine {
         }
     }
 
-    private String createEventScheduleMessage(List<ScheduleEvent> scheduleEvents) {
+    public static String createEventScheduleMessage(List<ScheduleEvent> scheduleEvents) {
         StringBuilder message = new StringBuilder();
         message.append("=== custom Perfana events schedule ===");
         scheduleEvents.forEach(event -> message
                 .append("\n==> ")
-                .append(String.format("ScheduleEvent %-16s [fire-at=%-8s settings=%s]", event.getName(), event.getDuration(), event.getSettings())));
+                .append(String.format("ScheduleEvent %-36.36s [fire-at=%-8s settings=%s]", event.getNameDescription(), event.getDuration(), event.getSettings())));
         return message.toString();
     }
 
@@ -109,7 +135,7 @@ public class PerfanaExecutorEngine {
         });
     }
     
-    public static class KeepAliveRunner implements Runnable {
+    class KeepAliveRunner implements Runnable {
 
         private final PerfanaCaller perfana;
         private final PerfanaTestContext context;
@@ -125,8 +151,17 @@ public class PerfanaExecutorEngine {
 
         @Override
         public void run() {
-            perfana.callPerfanaTestEndpoint(context, false);
-            broadcaster.broadCastKeepAlive(context, eventProperties);
+            try {
+                perfana.callPerfanaTestEndpoint(context, false);
+            } catch (Exception e) {
+                logger.error("Perfana call for keep-alive failed", e);
+            }
+            try {
+                broadcaster.broadCastKeepAlive(context, eventProperties);
+            } catch (Exception e) {
+                logger.error("Perfana broadcast keep-alive failed", e);
+            }
+
         }
 
         @Override
@@ -135,7 +170,7 @@ public class PerfanaExecutorEngine {
         }
     }
 
-    public static class EventRunner implements Runnable {
+    class EventRunner implements Runnable {
 
         private final ScheduleEvent event;
 
@@ -155,8 +190,16 @@ public class PerfanaExecutorEngine {
 
         @Override
         public void run() {
-            perfana.callPerfanaEvent(context, event.getDescription());
-            eventBroadcaster.broadcastCustomEvent(context, eventProperties, event);
+            try {
+                perfana.callPerfanaEvent(context, event.getDescription());
+            } catch (Exception e) {
+                logger.error("Perfana call event failed", e);
+            }
+            try {
+                eventBroadcaster.broadcastCustomEvent(context, eventProperties, event);
+            } catch (Exception e) {
+                logger.error("Perfana broadcast event failed", e);
+            }
         }
 
         @Override

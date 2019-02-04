@@ -140,7 +140,7 @@ public final class PerfanaClient implements PerfanaCaller {
 
     @Override
     public void callPerfanaEvent(PerfanaTestContext context, String eventDescription) {
-        logger.info("Perfana Event: " + eventDescription);
+        logger.info("add Perfana event: " + eventDescription);
         String json = perfanaEventToJson(context, eventDescription);
         String eventsUrl = settings.getPerfanaUrl() + "/events";
         logger.debug(String.format("add perfana event to endpoint: %s with json: %s", eventsUrl, json));

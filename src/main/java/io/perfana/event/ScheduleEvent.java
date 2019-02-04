@@ -1,6 +1,5 @@
 package io.perfana.event;
 
-import io.perfana.client.PerfanaUtils;
 import io.perfana.client.exception.PerfanaClientRuntimeException;
 
 import java.time.Duration;
@@ -9,9 +8,11 @@ import java.util.List;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import static io.perfana.client.PerfanaUtils.hasValue;
+
 public class ScheduleEvent {
 
-    private static final Pattern nonAlphaNumsPattern = Pattern.compile("[^A-Za-z0-9\\- %\\+=]");
+    private static final Pattern nonAlphaNumsPattern = Pattern.compile("[^A-Za-z0-9\\- %\\+=:]");
     
     private Duration duration;
     private String name;
@@ -21,7 +22,7 @@ public class ScheduleEvent {
     public ScheduleEvent(Duration duration, String name, String description, String settings) {
         this.duration = duration;
         this.name = name;
-        this.description = PerfanaUtils.hasValue(description) ? description : name + "-" + duration.toString();
+        this.description = hasValue(description) ? description : name + "-" + duration.toString();
         this.settings = settings;
     }
 
@@ -35,6 +36,12 @@ public class ScheduleEvent {
 
     public String getName() {
         return name;
+    }
+
+    public String getNameDescription() {
+        return hasValue(description)
+                ? "(" + description + ")"
+                : "";
     }
 
     public String getSettings() {
@@ -112,28 +119,30 @@ public class ScheduleEvent {
      * @return array of size two with name and description (possibly empty string when not present)
      */
      static String[] extractNameAndDescription(String nameWithDescription) {
-        if (!PerfanaUtils.hasValue(nameWithDescription)) return new String[] { "" , "" };
+        if (!hasValue(nameWithDescription)) return new String[] { "" , "" };
         if (!nameWithDescription.contains("(")) {
             return new String[] { nameWithDescription, "" };
         }
         int indexOpen = nameWithDescription.indexOf("(");
         int indexClose = nameWithDescription.lastIndexOf(")");
-        if (indexClose == -1) { throw new PerfanaClientRuntimeException("closing parentheses ')' is missing"); }
+        if (indexClose == -1) { throw new PerfanaClientRuntimeException("closing parentheses ')' is missing in '" + nameWithDescription + "'"); }
 
         String name = nameWithDescription.substring(0, indexOpen).trim();
         String description = nameWithDescription.substring(indexOpen + 1, indexClose).trim();
 
-        String sanatizedName = nonAlphaNumsPattern.matcher(name).replaceAll("_");
-        String sanatizedDescription = nonAlphaNumsPattern.matcher(description).replaceAll("_");
+        String sanitizedName = nonAlphaNumsPattern.matcher(name).replaceAll("_");
+        String sanitizedDescription = nonAlphaNumsPattern.matcher(description).replaceAll("_");
         
-        return new String[] { sanatizedName, sanatizedDescription };
+        return new String[] { sanitizedName, sanitizedDescription };
     }
 
     @Override
     public String toString() {
-        return settings == null ?
-                String.format("ScheduleEvent %s [fire-at=%s]", name, duration) :
-                String.format("ScheduleEvent %s [fire-at=%s settings=%s]", name, duration, settings);
+         String formattedDesc = getNameDescription();
+
+         return settings == null
+                ? String.format("ScheduleEvent %s%s [fire-at=%s]", name, formattedDesc, duration)
+                : String.format("ScheduleEvent %s%s [fire-at=%s settings=%s]", name, formattedDesc, duration, settings);
     }
 
     public String getDescription() {

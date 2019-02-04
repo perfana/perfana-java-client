@@ -1,5 +1,8 @@
 package io.perfana.client;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 public class PerfanaUtils {
 
     private PerfanaUtils() {}
@@ -17,5 +20,12 @@ public class PerfanaUtils {
 
     public static boolean hasValue(String variable) {
         return variable != null && !variable.trim().isEmpty();
+    }
+
+    public static int countOccurrences(String search, String text) {
+        Matcher matcher = Pattern.compile(search).matcher(text);
+        int count = 0;
+        while (matcher.find()) { count = count + 1; }
+        return count;
     }
 }

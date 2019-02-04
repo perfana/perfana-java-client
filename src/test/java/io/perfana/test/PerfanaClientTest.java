@@ -17,7 +17,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 /**
- * Put in another package to check access package private fields.
+ * This test class is in another package to check access package private fields.
  */
 public class PerfanaClientTest
 {
@@ -25,10 +25,10 @@ public class PerfanaClientTest
     public void create() {
 
         PerfanaClientLogger testLogger = new PerfanaClientLoggerStdOut();
-        
+
         String eventSchedule =
                 "   \n" +
-                "    PT1S  |restart   |{ 'server':'myserver' 'replicas':2, 'tags': [ 'first', 'second' ] }    \n" +
+                "    PT1S  |restart   (   restart to reset replicas  )   |{ 'server':'myserver' 'replicas':2, 'tags': [ 'first', 'second' ] }    \n" +
                 "PT600S   |scale-down |   { 'replicas':1 }   \n" +
                 "PT660S|    heapdump|server=    myserver.example.com;   port=1567  \n" +
                 "   PT900S|scale-up|{ 'replicas':2 }\n" +

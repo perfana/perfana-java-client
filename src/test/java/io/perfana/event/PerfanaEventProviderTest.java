@@ -15,9 +15,9 @@ import static org.junit.Assert.assertTrue;
 public class PerfanaEventProviderTest {
 
     @Test
-    public void broadcastCustomEventWithFailureShouldProcede() {
+    public void broadcastCustomEventWithFailureShouldProceed() {
 
-        // not multithreading but used as a convenience to change an object in the inner classes below
+        // not multithreading code, but used as a convenience to change an object in the inner classes below
         // beware: expects a certain order for the events to be called, which can be different depending on implementation
         final AtomicInteger counter = new AtomicInteger(0);
 

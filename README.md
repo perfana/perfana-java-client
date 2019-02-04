@@ -152,7 +152,7 @@ For example:
         <dependency>
             <groupId>nl.stokpop</groupId>
             <artifactId>perfana-hello-world-events</artifactId>
-            <version>1.2.2</version>
+            <version>1.2.3</version>
         </dependency>
     </dependencies>
 </plugin>
