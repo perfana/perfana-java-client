@@ -11,7 +11,6 @@ import io.perfana.client.api.PerfanaTestContextBuilder;
 import org.junit.Test;
 
 import java.util.HashMap;
-import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -58,7 +57,7 @@ public class PerfanaClientTest
                 .setAssertResultsEnabled(true)
                 .setLogger(testLogger)
                 .addEventProperty("myClass", "name", "value")
-                .setScheduleEvents((String)null)
+                .setCustomPerfanaEvents(null)
                 .build();
 
         assertNotNull(client);
@@ -100,8 +99,7 @@ public class PerfanaClientTest
         new PerfanaClientBuilder()
                 .setPerfanaTestContext(context)
                 .setPerfanaConnectionSettings(settings)
-                .setScheduleEvents((String) null)
-                .setScheduleEvents((List<String>) null)
+                .setCustomPerfanaEvents(null)
                 .setLogger(null)
                 .setBroadcaster(null)
                 .build();

@@ -8,6 +8,7 @@ import io.perfana.client.exception.PerfanaClientRuntimeException;
 import io.perfana.event.PerfanaEventBroadcaster;
 import io.perfana.event.PerfanaEventProperties;
 import io.perfana.event.ScheduleEvent;
+import io.perfana.event.factory.PerfanaEventScheduleDefaultFactory;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -21,10 +22,12 @@ public class PerfanaExecutorEngineTest {
     @Test
     public void createEventScheduleMessage() {
 
-        List<ScheduleEvent> events = new ArrayList<>();
-        events.add(ScheduleEvent.createFromLine("PT1M|event(my description: phase 1(foo))|settings=true"));
-        events.add(ScheduleEvent.createFromLine("PT2M|event(my description: phase 2(bar))|settings=true"));
-        events.add(ScheduleEvent.createFromLine("PT3M|event(my description: phase 3(very long event description test))|settings=true"));
+        String eventsAsText =
+                "PT1M|event(my description: phase 1(foo))|settings=true\n" +
+                "PT2M|event(my description: phase 2(bar))|settings=true\n" +
+                "PT3M|event(my description: phase 3(very long event description test))|settings=true";
+
+        List<ScheduleEvent> events = new PerfanaEventScheduleDefaultFactory().createPerfanaTestEvents(eventsAsText);
 
         String eventScheduleMessage = PerfanaExecutorEngine.createEventScheduleMessage(events);
 

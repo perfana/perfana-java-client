@@ -156,4 +156,21 @@ For example:
         </dependency>
     </dependencies>
 </plugin>
-```   
+```
+
+# custom event schedule factory
+
+To create your own event schedule you can implement your own
+`io.perfana.event.factory.PerfanaEventScheduleFactory`.
+
+And add the following to the configuration of the plugin,
+instead of `<eventScheduleScript>`.
+
+```xml
+<perfanaEventScheduleFactory>
+	<nl.stokpop.perfana.event.StokpopEventScheduleFactory>
+		<myInputFile>data/events.json</myInputFile>
+	</nl.stokpop.perfana.event.StokpopEventScheduleFactory>
+</perfanaEventScheduleFactory>
+```
+   

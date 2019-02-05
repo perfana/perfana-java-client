@@ -9,16 +9,21 @@ import io.perfana.event.PerfanaEventBroadcaster;
 import io.perfana.event.PerfanaEventProperties;
 import io.perfana.event.PerfanaEventProvider;
 import io.perfana.event.ScheduleEvent;
+import io.perfana.event.factory.PerfanaEventScheduleDefaultFactory;
+import io.perfana.event.factory.PerfanaEventScheduleFactory;
+import io.perfana.event.factory.PerfanaEventScheduleFactoryProvider;
 
-import java.io.BufferedReader;
-import java.io.StringReader;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Map;
 
 public class PerfanaClientBuilder {
 
     private PerfanaTestContext perfanaTestContext;
+
+    private PerfanaEventScheduleFactory eventScheduleFactory;
+    private Map<String, String> eventScheduleFactoryProperties;
 
     private PerfanaConnectionSettings perfanaConnectionSettings;
 
@@ -26,7 +31,6 @@ public class PerfanaClientBuilder {
 
     private PerfanaEventBroadcaster broadcaster;
     private PerfanaEventProperties eventProperties = new PerfanaEventProperties();
-    private List<ScheduleEvent> scheduleEvents = Collections.emptyList();
 
     private PerfanaClientLogger logger = new PerfanaClientLoggerStdOut();
 
@@ -90,6 +94,11 @@ public class PerfanaClientBuilder {
             throw new PerfanaClientRuntimeException("PerfanaConnectionSettings must be set, it is null.");
         }
 
+        List<ScheduleEvent> scheduleEvents = Collections.emptyList();
+        if (eventScheduleFactory != null) {
+            scheduleEvents = eventScheduleFactory.createPerfanaTestEvents(perfanaTestContext, eventScheduleFactoryProperties);
+        }
+
         return new PerfanaClient(perfanaTestContext, perfanaConnectionSettings, assertResultsEnabled,
                 broadcaster, eventProperties, scheduleEvents, logger);
     }
@@ -101,31 +110,44 @@ public class PerfanaClientBuilder {
      *
      * One schedule event per line.
      */
-    public PerfanaClientBuilder setScheduleEvents(String eventSchedule) {
-        if (eventSchedule != null) {
-            BufferedReader eventReader = new BufferedReader(new StringReader(eventSchedule));
-            setScheduleEvents(eventReader.lines()
-                    .map(String::trim)
-                    .filter(e -> !e.isEmpty())
-                    .collect(Collectors.toList()));
+    public PerfanaClientBuilder setCustomPerfanaEvents(String perfanaCustomEventsText) {
+
+        if (perfanaCustomEventsText == null) {
+            this.eventScheduleFactory = new PerfanaEventScheduleDefaultFactory();
+            this.eventScheduleFactoryProperties = Collections.emptyMap();
+            return this;
+        }
+
+        if (perfanaCustomEventsText.contains("#factory-class")) {
+            PerfanaEventScheduleFactoryProvider provider =
+                    PerfanaEventScheduleFactoryProvider.createInstanceFromClasspath(logger);
+
+            // TODO parse
+            String factoryClassname = "nl.stokpop.perfana.event.StokpopEventScheduleFactory";
+
+            PerfanaEventScheduleFactory factory =
+                    provider.find(factoryClassname);
+
+            if (factory == null) {
+                throw new PerfanaClientRuntimeException("unable to find class: " + factoryClassname);
+            }
+
+            // TODO parse
+            Map<String, String> properties = new HashMap<>();
+            properties.put("slowbackend-file", "data/slowbackend.json");
+
+            this.eventScheduleFactory = factory;
+            this.eventScheduleFactoryProperties = properties;
+        }
+        else {
+            Map<String, String> properties = new HashMap<>();
+            properties.put("eventSchedule", perfanaCustomEventsText);
+
+            this.eventScheduleFactory = new PerfanaEventScheduleDefaultFactory();
+            this.eventScheduleFactoryProperties = properties;
+
         }
         return this;
     }
 
-    /**
-     * Provide list of schedule events.
-     * @see PerfanaClientBuilder#setScheduleEvents(String) 
-     */
-    public PerfanaClientBuilder setScheduleEvents(List<String> scheduleEvents) {
-        if (scheduleEvents != null) {
-            this.scheduleEvents = parseScheduleEvents(scheduleEvents);
-        }
-        return this;
-    }
-
-    private List<ScheduleEvent> parseScheduleEvents(List<String> eventSchedule) {
-        return eventSchedule.stream()
-                .map(ScheduleEvent::createFromLine)
-                .collect(Collectors.toList());
-    }
 }
