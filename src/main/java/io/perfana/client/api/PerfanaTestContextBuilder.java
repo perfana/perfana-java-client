@@ -24,6 +24,7 @@ public class PerfanaTestContextBuilder {
     private Duration rampupTime = Duration.ofSeconds(DEFAULT_RAMPUP_TIME_SECONDS);
     private Duration constantLoadTime = Duration.ofSeconds(DEFAULT_CONSTANT_LOAD_TIME_SECONDS);
     private Map<String, String> variables = Collections.emptyMap();
+    private PerfanaClientLogger logger = new PerfanaClientLoggerStdOut();
 
     public PerfanaTestContextBuilder setApplication(String application) {
         if (PerfanaUtils.hasValue(application)) {
@@ -95,8 +96,15 @@ public class PerfanaTestContextBuilder {
         return this;
     }
 
+    public PerfanaTestContextBuilder setLogger(PerfanaClientLogger logger) {
+        if (logger != null) {
+            this.logger = logger;
+        }
+        return this;
+    }
+
     public PerfanaTestContext build() {
-        return new PerfanaTestContext(application, testType, testEnvironment, testRunId, ciBuildResultsUrl, applicationRelease, rampupTime, constantLoadTime, annotations, variables);
+        return new PerfanaTestContext(application, testType, testEnvironment, testRunId, ciBuildResultsUrl, applicationRelease, rampupTime, constantLoadTime, annotations, variables, logger);
     }
 
     public PerfanaTestContextBuilder setRampupTimeInSeconds(String rampupTimeSeconds) {

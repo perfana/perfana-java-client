@@ -7,7 +7,7 @@ import java.util.Map;
 /**
  * This interface can be implemented in other jars and be put on the classpath.
  *
- * Provide a file in META-INF/services/io.perfana.service.PerfanaTestEvent that contains the
+ * Provide a file in META-INF/services/io.perfana.event.PerfanaEvent that contains the
  * fully qualified name of the implementing class.
  *
  * This class will be used when these events are called. Possibly you can even provide multiple implementations
@@ -15,7 +15,7 @@ import java.util.Map;
  *
  * For more information on how this technically works, check out javadoc of java.util.ServiceLoader.
  */
-public interface PerfanaTestEvent {
+public interface PerfanaEvent {
 
     /**
      * @return name of the test event.

@@ -18,7 +18,7 @@ public class PerfanaEventPropertiesTest {
         assertEquals(value, properties.get(new MyPerfanaEvent()).get(name));
     }
 
-    private static final class MyPerfanaEvent extends PerfanaTestEventAdapter {
+    private static final class MyPerfanaEvent extends PerfanaEventAdapter {
         @Override
         public String getName() {
             return "MyPerfanaEvent";

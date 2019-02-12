@@ -1,20 +1,22 @@
-package io.perfana.event.factory;
+package io.perfana.event.generator;
 
 import io.perfana.client.api.PerfanaTestContext;
+import io.perfana.event.EventScheduleGenerator;
 import io.perfana.event.ScheduleEvent;
 
 import java.io.BufferedReader;
 import java.io.StringReader;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
-public class PerfanaEventScheduleDefaultFactory implements PerfanaEventScheduleFactory {
+public class EventScheduleGeneratorDefault implements EventScheduleGenerator {
+
+    private static final String EVENT_SCHEDULE_TAG = "eventSchedule";
 
     @Override
-    public List<ScheduleEvent> createPerfanaTestEvents(PerfanaTestContext context, Map<String, String> parameters) {
-        return createPerfanaTestEvents(parameters.get("eventSchedule"));
+    public List<ScheduleEvent> generateEvents(PerfanaTestContext context, GeneratorProperties properties) {
+        return createPerfanaTestEvents(properties.getProperty(EVENT_SCHEDULE_TAG));
     }
 
 

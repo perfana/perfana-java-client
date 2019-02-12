@@ -13,18 +13,18 @@ public class PerfanaEventProvider implements PerfanaEventBroadcaster {
 
     private final PerfanaClientLogger logger;
 
-    private final List<PerfanaTestEvent> perfanaEvents;
+    private final List<PerfanaEvent> perfanaEvents;
 
-    PerfanaEventProvider(List<PerfanaTestEvent> perfanaEvents, PerfanaClientLogger logger) {
+    PerfanaEventProvider(List<PerfanaEvent> perfanaEvents, PerfanaClientLogger logger) {
         this.perfanaEvents = Collections.unmodifiableList(new ArrayList<>(perfanaEvents));
         this.logger = logger;
     }
 
     public static PerfanaEventProvider createInstanceWithEventsFromClasspath(PerfanaClientLogger logger) {
-        ServiceLoader<PerfanaTestEvent> perfanaEventLoader = ServiceLoader.load(PerfanaTestEvent.class);
+        ServiceLoader<PerfanaEvent> perfanaEventLoader = ServiceLoader.load(PerfanaEvent.class);
         // java 9+: List<PerfanaTestEvent> events = perfanaEventLoader.stream().map(ServiceLoader.Provider::get).collect(Collectors.toList());
-        List<PerfanaTestEvent> events = new ArrayList<>();
-        for (PerfanaTestEvent event : perfanaEventLoader) {
+        List<PerfanaEvent> events = new ArrayList<>();
+        for (PerfanaEvent event : perfanaEventLoader) {
             events.add(event);
         }
         return new PerfanaEventProvider(events, logger);
@@ -58,7 +58,7 @@ public class PerfanaEventProvider implements PerfanaEventBroadcaster {
     /**
      * Make sure events continue, even when exceptions are thrown.
      */
-    private Consumer<PerfanaTestEvent> catchExceptionWrapper(Consumer<PerfanaTestEvent> consumer) {
+    private Consumer<PerfanaEvent> catchExceptionWrapper(Consumer<PerfanaEvent> consumer) {
         return event -> {
             try {
                 consumer.accept(event);

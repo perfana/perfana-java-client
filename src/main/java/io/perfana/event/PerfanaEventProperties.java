@@ -6,17 +6,17 @@ import java.util.Map;
 
 /**
  * Store event properties per PerfanaTestEvent implementation class.
- * Uses getClass().getCanonicalName() so innerclasses will use . instead of $ as name separator.
- * $ can not be used in most situation, like in xml element name (e.g. maven pom.xml).
+ * Uses getClass().getCanonicalName() so inner classes will use '.' instead of '$' as name separator.
+ * '$' can not be used in most situation, like in xml element name (e.g. maven pom.xml).
  */
 public class PerfanaEventProperties {
     private Map<String,Map<String,String>> eventProperties = new HashMap<>();
 
-    public Map<String,String> get(PerfanaTestEvent event) {
+    public Map<String,String> get(PerfanaEvent event) {
         return eventProperties.getOrDefault(event.getClass().getCanonicalName(), Collections.emptyMap());
     }
 
-    public PerfanaEventProperties put(PerfanaTestEvent event, String name, String value) {
+    public PerfanaEventProperties put(PerfanaEvent event, String name, String value) {
         String classImplName = event.getClass().getCanonicalName();
         put(classImplName, name, value);
         return this;

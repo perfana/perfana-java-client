@@ -17,12 +17,12 @@ public class PerfanaEventProviderTest {
     @Test
     public void broadcastCustomEventWithFailureShouldProceed() {
 
-        // not multithreading code, but used as a convenience to change an object in the inner classes below
+        // not multi-threading code, but used as a convenience to change an object in the inner classes below
         // beware: expects a certain order for the events to be called, which can be different depending on implementation
         final AtomicInteger counter = new AtomicInteger(0);
 
-        List<PerfanaTestEvent> events = new ArrayList<>();
-        events.add(new PerfanaTestEventAdapter() {
+        List<PerfanaEvent> events = new ArrayList<>();
+        events.add(new PerfanaEventAdapter() {
             @Override
             public String getName() {
                 return "MyTestEventThatFails";
@@ -33,7 +33,7 @@ public class PerfanaEventProviderTest {
                 throw new RuntimeException("This custom event failed!");
             }
         });
-        events.add(new PerfanaTestEventAdapter() {
+        events.add(new PerfanaEventAdapter() {
             @Override
             public String getName() {
                 return "MyTestEventThatShouldRun";

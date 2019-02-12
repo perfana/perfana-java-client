@@ -15,8 +15,9 @@ public class PerfanaTestContext {
     private final Duration plannedDuration;
     private final String annotations;
     private final Map<String, String> variables;
+    private final PerfanaClientLogger logger;
 
-    PerfanaTestContext(String application, String testType, String testEnvironment, String testRunId, String CIBuildResultsUrl, String applicationRelease, Duration rampupTime, Duration plannedDuration, String annotations, Map<String, String> variables) {
+    PerfanaTestContext(String application, String testType, String testEnvironment, String testRunId, String CIBuildResultsUrl, String applicationRelease, Duration rampupTime, Duration plannedDuration, String annotations, Map<String, String> variables, PerfanaClientLogger logger) {
         this.application = application;
         this.testType = testType;
         this.testEnvironment = testEnvironment;
@@ -27,6 +28,7 @@ public class PerfanaTestContext {
         this.plannedDuration = plannedDuration;
         this.annotations = annotations;
         this.variables = variables;
+        this.logger = logger;
     }
 
     public String getApplication() {
@@ -67,5 +69,9 @@ public class PerfanaTestContext {
 
     public Map<String, String> getVariables() {
         return variables;
+    }
+
+    public PerfanaClientLogger getLogger() {
+        return logger;
     }
 }

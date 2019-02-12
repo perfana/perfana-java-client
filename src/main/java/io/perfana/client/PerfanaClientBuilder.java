@@ -1,17 +1,17 @@
 package io.perfana.client;
 
 import io.perfana.client.api.PerfanaClientLogger;
-import io.perfana.client.api.PerfanaClientLoggerStdOut;
 import io.perfana.client.api.PerfanaConnectionSettings;
 import io.perfana.client.api.PerfanaTestContext;
 import io.perfana.client.exception.PerfanaClientRuntimeException;
+import io.perfana.event.EventScheduleGenerator;
 import io.perfana.event.PerfanaEventBroadcaster;
 import io.perfana.event.PerfanaEventProperties;
 import io.perfana.event.PerfanaEventProvider;
 import io.perfana.event.ScheduleEvent;
-import io.perfana.event.factory.PerfanaEventScheduleDefaultFactory;
-import io.perfana.event.factory.PerfanaEventScheduleFactory;
-import io.perfana.event.factory.PerfanaEventScheduleFactoryProvider;
+import io.perfana.event.generator.EventScheduleGeneratorDefault;
+import io.perfana.event.generator.EventScheduleGeneratorProvider;
+import io.perfana.event.generator.GeneratorProperties;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -20,11 +20,10 @@ import java.util.Map;
 
 public class PerfanaClientBuilder {
 
+    private static final String GENERATOR_CLASS_META_TAG = "@generator-class";
+
     private PerfanaTestContext perfanaTestContext;
-
-    private PerfanaEventScheduleFactory eventScheduleFactory;
-    private Map<String, String> eventScheduleFactoryProperties;
-
+    
     private PerfanaConnectionSettings perfanaConnectionSettings;
 
     private boolean assertResultsEnabled = false;
@@ -32,7 +31,7 @@ public class PerfanaClientBuilder {
     private PerfanaEventBroadcaster broadcaster;
     private PerfanaEventProperties eventProperties = new PerfanaEventProperties();
 
-    private PerfanaClientLogger logger = new PerfanaClientLoggerStdOut();
+    private String customEventsText = "";
 
     public PerfanaClientBuilder setPerfanaTestContext(PerfanaTestContext context) {
         this.perfanaTestContext = context;
@@ -46,13 +45,6 @@ public class PerfanaClientBuilder {
 
     public PerfanaClientBuilder setAssertResultsEnabled(boolean assertResultsEnabled) {
         this.assertResultsEnabled = assertResultsEnabled;
-        return this;
-    }
-
-    public PerfanaClientBuilder setLogger(PerfanaClientLogger logger) {
-        if (logger != null) {
-            this.logger = logger;
-        }
         return this;
     }
 
@@ -82,10 +74,12 @@ public class PerfanaClientBuilder {
     public PerfanaClient build() {
 
         // get default broadcaster if no broadcaster was given
-        if (broadcaster == null) logger.info("create default Perfana event broadcaster");
-        PerfanaEventBroadcaster broadcaster = this.broadcaster == null ?
-                PerfanaEventProvider.createInstanceWithEventsFromClasspath(logger) : this.broadcaster;
-
+        if (broadcaster == null) {
+            PerfanaClientLogger logger = perfanaTestContext.getLogger();
+            logger.info("create default Perfana event broadcaster");
+            broadcaster = PerfanaEventProvider.createInstanceWithEventsFromClasspath(logger);
+        }
+        
         if (perfanaTestContext == null) {
             throw new PerfanaClientRuntimeException("PerfanaTestContext must be set, it is null.");
         }
@@ -94,60 +88,75 @@ public class PerfanaClientBuilder {
             throw new PerfanaClientRuntimeException("PerfanaConnectionSettings must be set, it is null.");
         }
 
-        List<ScheduleEvent> scheduleEvents = Collections.emptyList();
-        if (eventScheduleFactory != null) {
-            scheduleEvents = eventScheduleFactory.createPerfanaTestEvents(perfanaTestContext, eventScheduleFactoryProperties);
-        }
+        List<ScheduleEvent> scheduleEvents = generateEventSchedule(perfanaTestContext, customEventsText);
 
         return new PerfanaClient(perfanaTestContext, perfanaConnectionSettings, assertResultsEnabled,
-                broadcaster, eventProperties, scheduleEvents, logger);
+                broadcaster, eventProperties, scheduleEvents);
     }
-    
+
+    private static List<ScheduleEvent> generateEventSchedule(PerfanaTestContext context, String text) {
+        EventScheduleGenerator eventScheduleGenerator;
+        GeneratorProperties generatorProperties;
+
+        if (text == null) {
+            eventScheduleGenerator = new EventScheduleGeneratorDefault();
+            generatorProperties = new GeneratorProperties();
+        }
+        else if (text.contains(GENERATOR_CLASS_META_TAG)) {
+
+            generatorProperties = new GeneratorProperties(text);
+
+            String generatorClassname = generatorProperties.getMetaProperty(GENERATOR_CLASS_META_TAG);
+
+            eventScheduleGenerator = findAndCreateEventScheduleGenerator(context.getLogger(), generatorClassname);
+        }
+        else {
+            // assume the default input of lines of events
+            Map<String, String> properties = new HashMap<>();
+            properties.put("eventSchedule", text);
+
+            eventScheduleGenerator = new EventScheduleGeneratorDefault();
+            generatorProperties = new GeneratorProperties(properties);
+        }
+
+        List<ScheduleEvent> scheduleEvents = Collections.emptyList();
+        if (eventScheduleGenerator != null) {
+            scheduleEvents = eventScheduleGenerator.generateEvents(context, generatorProperties);
+        }
+        return scheduleEvents;
+    }
+
     /**
      * Provide schedule event as "duration|eventname(description)|json-settings".
      * The duration is in ISO-8601 format period format, e.g. 3 minutes 15 seconds
      * is P3M15S.
      *
      * One schedule event per line.
+     *
+     * Or provide an EventScheduleGenerator implementation as:
+     *
+     * <pre>
+     *      {@literal @}generator-class=nl.stokpop.event.MyEventGenerator
+     *      foo=bar
+     * </pre>
      */
-    public PerfanaClientBuilder setCustomPerfanaEvents(String perfanaCustomEventsText) {
-
-        if (perfanaCustomEventsText == null) {
-            this.eventScheduleFactory = new PerfanaEventScheduleDefaultFactory();
-            this.eventScheduleFactoryProperties = Collections.emptyMap();
-            return this;
-        }
-
-        if (perfanaCustomEventsText.contains("#factory-class")) {
-            PerfanaEventScheduleFactoryProvider provider =
-                    PerfanaEventScheduleFactoryProvider.createInstanceFromClasspath(logger);
-
-            // TODO parse
-            String factoryClassname = "nl.stokpop.perfana.event.StokpopEventScheduleFactory";
-
-            PerfanaEventScheduleFactory factory =
-                    provider.find(factoryClassname);
-
-            if (factory == null) {
-                throw new PerfanaClientRuntimeException("unable to find class: " + factoryClassname);
-            }
-
-            // TODO parse
-            Map<String, String> properties = new HashMap<>();
-            properties.put("slowbackend-file", "data/slowbackend.json");
-
-            this.eventScheduleFactory = factory;
-            this.eventScheduleFactoryProperties = properties;
-        }
-        else {
-            Map<String, String> properties = new HashMap<>();
-            properties.put("eventSchedule", perfanaCustomEventsText);
-
-            this.eventScheduleFactory = new PerfanaEventScheduleDefaultFactory();
-            this.eventScheduleFactoryProperties = properties;
-
+    public PerfanaClientBuilder setCustomEvents(String customEventsText) {
+        if (customEventsText != null) {
+            this.customEventsText = customEventsText;
         }
         return this;
     }
 
+    private static EventScheduleGenerator findAndCreateEventScheduleGenerator(PerfanaClientLogger logger, String generatorClassname) {
+        EventScheduleGeneratorProvider provider =
+                EventScheduleGeneratorProvider.createInstanceFromClasspath(logger);
+
+        EventScheduleGenerator generator = provider.find(generatorClassname);
+
+        if (generator == null) {
+            throw new PerfanaClientRuntimeException("unable to find EventScheduleGenerator implementation class: " + generatorClassname);
+        }
+        return generator;
+    }
+    
 }

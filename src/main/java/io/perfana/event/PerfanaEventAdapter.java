@@ -10,7 +10,7 @@ import java.util.Map;
  *
  * Always provide a proper name for a PerfanaTestEvent for traceability.
  */
-public abstract class PerfanaTestEventAdapter implements PerfanaTestEvent {
+public abstract class PerfanaEventAdapter implements PerfanaEvent {
 
     @Override
     public void beforeTest(PerfanaTestContext context, Map<String, String> eventProperties) {

@@ -49,15 +49,15 @@ public class PerfanaClientTest
                 .setConstantLoadTimeInSeconds("300")
                 .setAnnotations("annotation")
                 .setVariables(new HashMap<>())
+                .setLogger(testLogger)
                 .build();
 
         PerfanaClient client = new PerfanaClientBuilder()
                 .setPerfanaConnectionSettings(settings)
                 .setPerfanaTestContext(context)
                 .setAssertResultsEnabled(true)
-                .setLogger(testLogger)
                 .addEventProperty("myClass", "name", "value")
-                .setCustomPerfanaEvents(null)
+                .setCustomEvents(eventSchedule)
                 .build();
 
         assertNotNull(client);
@@ -86,6 +86,7 @@ public class PerfanaClientTest
                 .setTestRunId(null)
                 .setTestType(null)
                 .setVariables(null)
+                .setLogger(null)
                 .build();
 
         PerfanaConnectionSettings settings = new PerfanaConnectionSettingsBuilder()
@@ -99,8 +100,7 @@ public class PerfanaClientTest
         new PerfanaClientBuilder()
                 .setPerfanaTestContext(context)
                 .setPerfanaConnectionSettings(settings)
-                .setCustomPerfanaEvents(null)
-                .setLogger(null)
+                .setCustomEvents(null)
                 .setBroadcaster(null)
                 .build();
 

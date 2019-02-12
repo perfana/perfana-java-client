@@ -54,14 +54,14 @@ public final class PerfanaClient implements PerfanaCaller {
     PerfanaClient(PerfanaTestContext context, PerfanaConnectionSettings settings,
                   boolean assertResultsEnabled, PerfanaEventBroadcaster broadcaster,
                   PerfanaEventProperties eventProperties,
-                  List<ScheduleEvent> scheduleEvents, PerfanaClientLogger logger) {
+                  List<ScheduleEvent> scheduleEvents) {
         this.context = context;
         this.settings = settings;
         this.assertResultsEnabled = assertResultsEnabled;
         this.eventProperties = eventProperties;
         this.broadcaster = broadcaster;
         this.scheduleEvents = scheduleEvents;
-        this.logger = logger;
+        this.logger = context.getLogger();
     }
 
     /**
@@ -262,7 +262,7 @@ public final class PerfanaClient implements PerfanaCaller {
                             url, response.code(), retryCount, settings.getRetryMaxCount(), message));
                 }
             } catch (IOException e) {
-                throw new PerfanaClientException(String.format("Unable to retrieve assertions for url [%s]", url), e);
+                throw new PerfanaClientException(String.format("unable to retrieve assertions for url [%s]", url), e);
             }
         }
         if (!assertionsAvailable) {
