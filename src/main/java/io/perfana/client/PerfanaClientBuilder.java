@@ -73,9 +73,10 @@ public class PerfanaClientBuilder {
     
     public PerfanaClient build() {
 
+        PerfanaClientLogger logger = perfanaTestContext.getLogger();
+
         // get default broadcaster if no broadcaster was given
         if (broadcaster == null) {
-            PerfanaClientLogger logger = perfanaTestContext.getLogger();
             logger.info("create default Perfana event broadcaster");
             broadcaster = PerfanaEventProvider.createInstanceWithEventsFromClasspath(logger);
         }
@@ -89,6 +90,7 @@ public class PerfanaClientBuilder {
         }
 
         List<ScheduleEvent> scheduleEvents = generateEventSchedule(perfanaTestContext, customEventsText);
+
 
         return new PerfanaClient(perfanaTestContext, perfanaConnectionSettings, assertResultsEnabled,
                 broadcaster, eventProperties, scheduleEvents);

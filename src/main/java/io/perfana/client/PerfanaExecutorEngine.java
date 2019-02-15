@@ -31,6 +31,21 @@ class PerfanaExecutorEngine {
     }
 
     void startKeepAliveThread(PerfanaCaller perfana, PerfanaTestContext context, PerfanaConnectionSettings settings, PerfanaEventBroadcaster broadcaster, PerfanaEventProperties eventProperties) {
+        nullChecks(perfana, context, broadcaster, eventProperties);
+
+        if (executorKeepAlive != null) {
+            throw new RuntimeException("cannot start keep alive thread multiple times!");
+        }
+
+        logger.info(String.format("calling Perfana (%s) keep alive every %s", settings.getPerfanaUrl(), settings.getKeepAliveDuration()));
+
+        executorKeepAlive = createKeepAliveScheduler();
+        
+        KeepAliveRunner keepAliveRunner = new KeepAliveRunner(perfana, context, broadcaster, eventProperties);
+        executorKeepAlive.scheduleAtFixedRate(keepAliveRunner, 0, settings.getKeepAliveDuration().getSeconds(), TimeUnit.SECONDS);
+    }
+
+    private void nullChecks(PerfanaCaller perfana, PerfanaTestContext context, PerfanaEventBroadcaster broadcaster, PerfanaEventProperties eventProperties) {
         if (perfana == null) {
             throw new NullPointerException("PerfanaCaller cannot be null");
         }
@@ -43,17 +58,6 @@ class PerfanaExecutorEngine {
         if (eventProperties == null) {
             throw new NullPointerException("PerfanaEventProperties cannot be null");
         }
-
-        if (executorKeepAlive != null) {
-            throw new RuntimeException("cannot start keep alive thread multiple times!");
-        }
-
-        logger.info(String.format("calling Perfana (%s) keep alive every %s", settings.getPerfanaUrl(), settings.getKeepAliveDuration()));
-
-        executorKeepAlive = createKeepAliveScheduler();
-        
-        KeepAliveRunner keepAliveRunner = new KeepAliveRunner(perfana, context, broadcaster, eventProperties);
-        executorKeepAlive.scheduleAtFixedRate(keepAliveRunner, 0, settings.getKeepAliveDuration().getSeconds(), TimeUnit.SECONDS);
     }
 
     private void addToExecutor(ScheduledExecutorService executorService, PerfanaTestContext context, ScheduleEvent event, PerfanaEventProperties eventProperties, PerfanaCaller perfana, PerfanaEventBroadcaster broadcaster) {
@@ -81,18 +85,7 @@ class PerfanaExecutorEngine {
     }
 
     void startCustomEventScheduler(PerfanaCaller perfana, PerfanaTestContext context, List<ScheduleEvent> scheduleEvents, PerfanaEventBroadcaster broadcaster, PerfanaEventProperties eventProperties) {
-        if (perfana == null) {
-            throw new NullPointerException("PerfanaCaller cannot be null");
-        }
-        if (context == null) {
-            throw new NullPointerException("PerfanaTestContext cannot be null");
-        }
-        if (broadcaster == null) {
-            throw new NullPointerException("PerfanaEventBroadcaster cannot be null");
-        }
-        if (eventProperties == null) {
-            throw new NullPointerException("PerfanaEventProperties cannot be null");
-        }
+        nullChecks(perfana, context, broadcaster, eventProperties);
 
         if (!(scheduleEvents == null || scheduleEvents.isEmpty())) {
 
@@ -111,7 +104,7 @@ class PerfanaExecutorEngine {
         message.append("=== custom Perfana events schedule ===");
         scheduleEvents.forEach(event -> message
                 .append("\n==> ")
-                .append(String.format("ScheduleEvent %-36.36s [fire-at=%-8s settings=%s]", event.getNameDescription(), event.getDuration(), event.getSettings())));
+                .append(String.format("ScheduleEvent %-36.36s [fire-at=%-8s settings=%-50.50s]", event.getNameDescription(), event.getDuration(), event.getSettings())));
         return message.toString();
     }
 

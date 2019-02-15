@@ -12,7 +12,7 @@ import static io.perfana.client.PerfanaUtils.hasValue;
 
 public class ScheduleEvent {
 
-    private static final Pattern nonAlphaNumsPattern = Pattern.compile("[^A-Za-z0-9\\- %\\+=:]");
+    private static final Pattern nonAlphaNumsPattern = Pattern.compile("[^A-Za-z0-9\\- %+=:]");
     
     private Duration duration;
     private String name;
@@ -142,7 +142,16 @@ public class ScheduleEvent {
 
          return settings == null
                 ? String.format("ScheduleEvent %s%s [fire-at=%s]", name, formattedDesc, duration)
-                : String.format("ScheduleEvent %s%s [fire-at=%s settings=%s]", name, formattedDesc, duration, settings);
+                : String.format("ScheduleEvent %s%s [fire-at=%s settings=%s]", name, formattedDesc, duration, limitString(settings, 50));
+    }
+
+    private String limitString(String text, int maxLength) {
+         if (text.length() <= maxLength) {
+             return text;
+         }
+         else {
+             return text.substring(0, maxLength) + "...";
+         }
     }
 
     public String getDescription() {
