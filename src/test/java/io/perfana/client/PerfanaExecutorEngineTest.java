@@ -2,8 +2,8 @@ package io.perfana.client;
 
 import io.perfana.client.api.PerfanaCaller;
 import io.perfana.client.api.PerfanaClientLoggerStdOut;
-import io.perfana.client.api.PerfanaTestContext;
-import io.perfana.client.api.PerfanaTestContextBuilder;
+import io.perfana.client.api.TestContext;
+import io.perfana.client.api.TestContextBuilder;
 import io.perfana.client.exception.PerfanaClientRuntimeException;
 import io.perfana.event.PerfanaEventBroadcaster;
 import io.perfana.event.PerfanaEventProperties;
@@ -49,14 +49,14 @@ public class PerfanaExecutorEngineTest {
 
         PerfanaExecutorEngine engine = new PerfanaExecutorEngine(new PerfanaClientLoggerStdOut());
 
-        PerfanaTestContext context = new PerfanaTestContextBuilder().build();
+        TestContext context = new TestContextBuilder().build();
 
         final AtomicInteger callerCount = new AtomicInteger(0);
         final AtomicInteger broadcastCount = new AtomicInteger(0);
 
         PerfanaCaller caller = new PerfanaCaller() {
             @Override
-            public void callPerfanaEvent(PerfanaTestContext context, String eventDescription) {
+            public void callPerfanaEvent(TestContext context, String eventDescription) {
                 System.out.println("call perfana event: " + eventDescription);
                 callerCount.incrementAndGet();
                 if (callerCount.intValue() < 3) {
@@ -65,29 +65,29 @@ public class PerfanaExecutorEngineTest {
             }
 
             @Override
-            public void callPerfanaTestEndpoint(PerfanaTestContext context, boolean complete) {
+            public void callPerfanaTestEndpoint(TestContext context, boolean complete) {
                 System.out.println("call perfana test endpoint");
             }
         };
 
         PerfanaEventBroadcaster broadcaster = new PerfanaEventBroadcaster() {
             @Override
-            public void broadcastBeforeTest(PerfanaTestContext context, PerfanaEventProperties eventProperties) {
+            public void broadcastBeforeTest(TestContext context, PerfanaEventProperties eventProperties) {
                 System.out.println("broadcast: before test");
             }
 
             @Override
-            public void broadcastAfterTest(PerfanaTestContext context, PerfanaEventProperties eventProperties) {
+            public void broadcastAfterTest(TestContext context, PerfanaEventProperties eventProperties) {
                 System.out.println("broadcast: after test");
             }
 
             @Override
-            public void broadCastKeepAlive(PerfanaTestContext context, PerfanaEventProperties eventProperties) {
+            public void broadCastKeepAlive(TestContext context, PerfanaEventProperties eventProperties) {
                 System.out.println("broadcast: keep alive");
             }
 
             @Override
-            public void broadcastCustomEvent(PerfanaTestContext context, PerfanaEventProperties eventProperties, ScheduleEvent event) {
+            public void broadcastCustomEvent(TestContext context, PerfanaEventProperties eventProperties, ScheduleEvent event) {
                 System.out.println("broadcast: custom event: " + event);
                 broadcastCount.incrementAndGet();
                 if (broadcastCount.intValue() < 3) {

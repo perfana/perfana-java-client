@@ -1,14 +1,14 @@
 package io.perfana.event;
 
-import io.perfana.client.api.PerfanaTestContext;
+import io.perfana.client.api.TestContext;
 
 public interface PerfanaEventBroadcaster {
 
-    void broadcastBeforeTest(PerfanaTestContext context, PerfanaEventProperties eventProperties);
+    void broadcastBeforeTest(TestContext context, PerfanaEventProperties eventProperties);
 
-    void broadcastAfterTest(PerfanaTestContext context, PerfanaEventProperties eventProperties);
+    void broadcastAfterTest(TestContext context, PerfanaEventProperties eventProperties);
 
-    void broadCastKeepAlive(PerfanaTestContext context, PerfanaEventProperties eventProperties);
+    void broadCastKeepAlive(TestContext context, PerfanaEventProperties eventProperties);
 
-    void broadcastCustomEvent(PerfanaTestContext context, PerfanaEventProperties eventProperties, ScheduleEvent event);
+    void broadcastCustomEvent(TestContext context, PerfanaEventProperties eventProperties, ScheduleEvent event);
 }

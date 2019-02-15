@@ -6,8 +6,8 @@ import io.perfana.client.api.PerfanaClientLogger;
 import io.perfana.client.api.PerfanaClientLoggerStdOut;
 import io.perfana.client.api.PerfanaConnectionSettings;
 import io.perfana.client.api.PerfanaConnectionSettingsBuilder;
-import io.perfana.client.api.PerfanaTestContext;
-import io.perfana.client.api.PerfanaTestContextBuilder;
+import io.perfana.client.api.TestContext;
+import io.perfana.client.api.TestContextBuilder;
 import org.junit.Test;
 
 import java.util.HashMap;
@@ -39,7 +39,7 @@ public class PerfanaClientTest
                 .setRetryTimeInSeconds("3")
                 .build();
 
-        PerfanaTestContext context = new PerfanaTestContextBuilder()
+        TestContext context = new TestContextBuilder()
                 .setTestType("testType")
                 .setTestEnvironment("testEnv")
                 .setTestRunId("testRunId")
@@ -49,12 +49,11 @@ public class PerfanaClientTest
                 .setConstantLoadTimeInSeconds("300")
                 .setAnnotations("annotation")
                 .setVariables(new HashMap<>())
-                .setLogger(testLogger)
                 .build();
 
         PerfanaClient client = new PerfanaClientBuilder()
                 .setPerfanaConnectionSettings(settings)
-                .setPerfanaTestContext(context)
+                .setTestContext(context)
                 .setAssertResultsEnabled(true)
                 .addEventProperty("myClass", "name", "value")
                 .setCustomEvents(eventSchedule)
@@ -73,7 +72,7 @@ public class PerfanaClientTest
     @Test
     public void createWithNulls() {
 
-        PerfanaTestContext context = new PerfanaTestContextBuilder()
+        TestContext context = new TestContextBuilder()
                 .setAnnotations(null)
                 .setApplicationRelease(null)
                 .setApplication(null)
@@ -86,7 +85,6 @@ public class PerfanaClientTest
                 .setTestRunId(null)
                 .setTestType(null)
                 .setVariables(null)
-                .setLogger(null)
                 .build();
 
         PerfanaConnectionSettings settings = new PerfanaConnectionSettingsBuilder()
@@ -98,7 +96,7 @@ public class PerfanaClientTest
                 .setRetryDuration(null).build();
 
         new PerfanaClientBuilder()
-                .setPerfanaTestContext(context)
+                .setTestContext(context)
                 .setPerfanaConnectionSettings(settings)
                 .setCustomEvents(null)
                 .setBroadcaster(null)

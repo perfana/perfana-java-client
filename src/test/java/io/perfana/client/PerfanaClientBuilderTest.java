@@ -1,7 +1,7 @@
 package io.perfana.client;
 
 import io.perfana.client.api.PerfanaConnectionSettingsBuilder;
-import io.perfana.client.api.PerfanaTestContextBuilder;
+import io.perfana.client.api.TestContextBuilder;
 import org.junit.Test;
 
 public class PerfanaClientBuilderTest {
@@ -13,7 +13,7 @@ public class PerfanaClientBuilderTest {
 
          PerfanaClientBuilder perfanaClientBuilder = new PerfanaClientBuilder()
                  .setCustomEvents(alternativeClassCustomEvents)
-                 .setPerfanaTestContext(new PerfanaTestContextBuilder().build())
+                 .setTestContext(new TestContextBuilder().build())
                  .setPerfanaConnectionSettings(new PerfanaConnectionSettingsBuilder().build());
 
 

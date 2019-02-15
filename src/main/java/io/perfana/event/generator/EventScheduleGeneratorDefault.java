@@ -1,6 +1,6 @@
 package io.perfana.event.generator;
 
-import io.perfana.client.api.PerfanaTestContext;
+import io.perfana.client.api.TestContext;
 import io.perfana.event.EventScheduleGenerator;
 import io.perfana.event.ScheduleEvent;
 
@@ -15,10 +15,9 @@ public class EventScheduleGeneratorDefault implements EventScheduleGenerator {
     private static final String EVENT_SCHEDULE_TAG = "eventSchedule";
 
     @Override
-    public List<ScheduleEvent> generateEvents(PerfanaTestContext context, GeneratorProperties properties) {
+    public List<ScheduleEvent> generateEvents(TestContext context, GeneratorProperties properties) {
         return createPerfanaTestEvents(properties.getProperty(EVENT_SCHEDULE_TAG));
     }
-
 
     public List<ScheduleEvent> createPerfanaTestEvents(String eventsAsString) {
         if (eventsAsString != null) {
@@ -32,7 +31,6 @@ public class EventScheduleGeneratorDefault implements EventScheduleGenerator {
         else {
             return Collections.emptyList();
         }
-
     }
 
     private List<ScheduleEvent> parseScheduleEvents(List<String> eventSchedule) {

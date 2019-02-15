@@ -3,7 +3,7 @@ package io.perfana.client.api;
 import java.time.Duration;
 import java.util.Map;
 
-public class PerfanaTestContext {
+public class TestContext {
 
     private final String application;
     private final String testType;
@@ -15,9 +15,8 @@ public class PerfanaTestContext {
     private final Duration plannedDuration;
     private final String annotations;
     private final Map<String, String> variables;
-    private final PerfanaClientLogger logger;
 
-    PerfanaTestContext(String application, String testType, String testEnvironment, String testRunId, String CIBuildResultsUrl, String applicationRelease, Duration rampupTime, Duration plannedDuration, String annotations, Map<String, String> variables, PerfanaClientLogger logger) {
+    TestContext(String application, String testType, String testEnvironment, String testRunId, String CIBuildResultsUrl, String applicationRelease, Duration rampupTime, Duration plannedDuration, String annotations, Map<String, String> variables) {
         this.application = application;
         this.testType = testType;
         this.testEnvironment = testEnvironment;
@@ -28,7 +27,6 @@ public class PerfanaTestContext {
         this.plannedDuration = plannedDuration;
         this.annotations = annotations;
         this.variables = variables;
-        this.logger = logger;
     }
 
     public String getApplication() {
@@ -71,7 +69,4 @@ public class PerfanaTestContext {
         return variables;
     }
 
-    public PerfanaClientLogger getLogger() {
-        return logger;
-    }
 }

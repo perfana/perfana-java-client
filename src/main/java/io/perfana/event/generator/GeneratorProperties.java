@@ -8,6 +8,8 @@ import java.util.stream.Stream;
 /**
  * Properties for event schedule generators.
  * Names that start with @ are filtered out.
+ *
+ *  This is an immutable class and makes an unmodifiable copies of the given Map.
  */
 public class GeneratorProperties {
     private Map<String, String> properties;
@@ -50,7 +52,6 @@ public class GeneratorProperties {
                 .filter(split -> split[0] != null && split[1] != null)
                 .collect(Collectors.toMap(e -> e[0].trim(), e -> e[1].trim()));
     }
-
 
     @Override
     public String toString() {

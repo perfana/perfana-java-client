@@ -1,14 +1,12 @@
 package io.perfana.client;
 
 import io.perfana.client.api.PerfanaClientLogger;
+import io.perfana.client.api.PerfanaClientLoggerStdOut;
 import io.perfana.client.api.PerfanaConnectionSettings;
-import io.perfana.client.api.PerfanaTestContext;
+import io.perfana.client.api.TestContext;
 import io.perfana.client.exception.PerfanaClientRuntimeException;
-import io.perfana.event.EventScheduleGenerator;
-import io.perfana.event.PerfanaEventBroadcaster;
+import io.perfana.event.*;
 import io.perfana.event.PerfanaEventProperties;
-import io.perfana.event.PerfanaEventProvider;
-import io.perfana.event.ScheduleEvent;
 import io.perfana.event.generator.EventScheduleGeneratorDefault;
 import io.perfana.event.generator.EventScheduleGeneratorProvider;
 import io.perfana.event.generator.GeneratorProperties;
@@ -22,8 +20,8 @@ public class PerfanaClientBuilder {
 
     private static final String GENERATOR_CLASS_META_TAG = "@generator-class";
 
-    private PerfanaTestContext perfanaTestContext;
-    
+    private TestContext testContext;
+
     private PerfanaConnectionSettings perfanaConnectionSettings;
 
     private boolean assertResultsEnabled = false;
@@ -33,8 +31,15 @@ public class PerfanaClientBuilder {
 
     private String customEventsText = "";
 
-    public PerfanaClientBuilder setPerfanaTestContext(PerfanaTestContext context) {
-        this.perfanaTestContext = context;
+    private PerfanaClientLogger logger = new PerfanaClientLoggerStdOut();
+
+    public PerfanaClientBuilder setTestContext(TestContext context) {
+        this.testContext = context;
+        return this;
+    }
+
+    public PerfanaClientBuilder setLogger(PerfanaClientLogger logger) {
+        this.logger = logger;
         return this;
     }
 
@@ -73,30 +78,27 @@ public class PerfanaClientBuilder {
     
     public PerfanaClient build() {
 
-        PerfanaClientLogger logger = perfanaTestContext.getLogger();
-
         // get default broadcaster if no broadcaster was given
         if (broadcaster == null) {
             logger.info("create default Perfana event broadcaster");
             broadcaster = PerfanaEventProvider.createInstanceWithEventsFromClasspath(logger);
         }
         
-        if (perfanaTestContext == null) {
-            throw new PerfanaClientRuntimeException("PerfanaTestContext must be set, it is null.");
+        if (testContext == null) {
+            throw new PerfanaClientRuntimeException("TestContext must be set, it is null.");
         }
 
         if (perfanaConnectionSettings == null) {
             throw new PerfanaClientRuntimeException("PerfanaConnectionSettings must be set, it is null.");
         }
 
-        List<ScheduleEvent> scheduleEvents = generateEventSchedule(perfanaTestContext, customEventsText);
+        List<ScheduleEvent> scheduleEvents = generateEventSchedule(testContext, customEventsText, logger);
 
-
-        return new PerfanaClient(perfanaTestContext, perfanaConnectionSettings, assertResultsEnabled,
-                broadcaster, eventProperties, scheduleEvents);
+        return new PerfanaClient(testContext, perfanaConnectionSettings, assertResultsEnabled,
+                broadcaster, eventProperties, scheduleEvents, logger);
     }
 
-    private static List<ScheduleEvent> generateEventSchedule(PerfanaTestContext context, String text) {
+    private static List<ScheduleEvent> generateEventSchedule(TestContext context, String text, PerfanaClientLogger logger) {
         EventScheduleGenerator eventScheduleGenerator;
         GeneratorProperties generatorProperties;
 
@@ -110,7 +112,7 @@ public class PerfanaClientBuilder {
 
             String generatorClassname = generatorProperties.getMetaProperty(GENERATOR_CLASS_META_TAG);
 
-            eventScheduleGenerator = findAndCreateEventScheduleGenerator(context.getLogger(), generatorClassname);
+            eventScheduleGenerator = findAndCreateEventScheduleGenerator(logger, generatorClassname);
         }
         else {
             // assume the default input of lines of events

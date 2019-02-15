@@ -15,7 +15,7 @@ public class PerfanaEventPropertiesTest {
         String value = "my-value";
         properties.put("io.perfana.event.PerfanaEventPropertiesTest.MyPerfanaEvent", name, value);
 
-        assertEquals(value, properties.get(new MyPerfanaEvent()).get(name));
+        assertEquals(value, properties.get(new MyPerfanaEvent()).getProperty(name));
     }
 
     private static final class MyPerfanaEvent extends PerfanaEventAdapter {

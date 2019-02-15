@@ -1,7 +1,7 @@
 package io.perfana.event;
 
 import io.perfana.client.api.PerfanaClientLogger;
-import io.perfana.client.api.PerfanaTestContext;
+import io.perfana.client.api.TestContext;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -22,7 +22,7 @@ public class PerfanaEventProvider implements PerfanaEventBroadcaster {
 
     public static PerfanaEventProvider createInstanceWithEventsFromClasspath(PerfanaClientLogger logger) {
         ServiceLoader<PerfanaEvent> perfanaEventLoader = ServiceLoader.load(PerfanaEvent.class);
-        // java 9+: List<PerfanaTestEvent> events = perfanaEventLoader.stream().map(ServiceLoader.Provider::get).collect(Collectors.toList());
+        // java 9+: List<PerfanaEvent> events = perfanaEventLoader.stream().map(ServiceLoader.Provider::get).collect(Collectors.toList());
         List<PerfanaEvent> events = new ArrayList<>();
         for (PerfanaEvent event : perfanaEventLoader) {
             events.add(event);
@@ -31,26 +31,26 @@ public class PerfanaEventProvider implements PerfanaEventBroadcaster {
     }
 
     @Override
-    public void broadcastBeforeTest(PerfanaTestContext context, PerfanaEventProperties properties) {
+    public void broadcastBeforeTest(TestContext context, PerfanaEventProperties properties) {
         logger.info("broadcast before test event");
         perfanaEvents.forEach(catchExceptionWrapper(event -> event.beforeTest(context, properties.get(event))));
     }
 
     @Override
-    public void broadcastAfterTest(PerfanaTestContext context, PerfanaEventProperties properties) {
+    public void broadcastAfterTest(TestContext context, PerfanaEventProperties properties) {
         logger.info("broadcast after test event");
         perfanaEvents.forEach(catchExceptionWrapper(event -> event.afterTest(context, properties.get(event))));
     }
     
     @Override
-    public void broadCastKeepAlive(PerfanaTestContext context, PerfanaEventProperties properties) {
+    public void broadCastKeepAlive(TestContext context, PerfanaEventProperties properties) {
         logger.debug("broadcast keep alive event");
         perfanaEvents.forEach(catchExceptionWrapper(event -> event.keepAlive(context, properties.get(event))));
 
     }
 
     @Override
-    public void broadcastCustomEvent(PerfanaTestContext context, PerfanaEventProperties properties, ScheduleEvent scheduleEvent) {
+    public void broadcastCustomEvent(TestContext context, PerfanaEventProperties properties, ScheduleEvent scheduleEvent) {
         logger.info("broadcast " + scheduleEvent.getName() + " custom event");
         perfanaEvents.forEach(catchExceptionWrapper(event -> event.customEvent(context, properties.get(event), scheduleEvent)));
     }

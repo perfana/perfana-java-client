@@ -20,7 +20,7 @@ public class EventScheduleGeneratorProvider {
 
     public static EventScheduleGeneratorProvider createInstanceFromClasspath(PerfanaClientLogger logger) {
         ServiceLoader<EventScheduleGenerator> generatorLoader = ServiceLoader.load(EventScheduleGenerator.class);
-        // java 9+: List<PerfanaTestEvent> generators = perfanaEventLoader.stream().map(ServiceLoader.Provider::get).collect(Collectors.toList());
+        // java 9+: List<PerfanaEvent> generators = perfanaEventLoader.stream().map(ServiceLoader.Provider::get).collect(Collectors.toList());
         Map<String, EventScheduleGenerator> generators = new HashMap<>();
         for (EventScheduleGenerator generator : generatorLoader) {
             String generatorName = generator.getClass().getName();

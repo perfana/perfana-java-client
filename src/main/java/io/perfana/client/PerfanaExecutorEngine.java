@@ -3,7 +3,7 @@ package io.perfana.client;
 import io.perfana.client.api.PerfanaCaller;
 import io.perfana.client.api.PerfanaClientLogger;
 import io.perfana.client.api.PerfanaConnectionSettings;
-import io.perfana.client.api.PerfanaTestContext;
+import io.perfana.client.api.TestContext;
 import io.perfana.client.exception.PerfanaClientRuntimeException;
 import io.perfana.event.PerfanaEventBroadcaster;
 import io.perfana.event.PerfanaEventProperties;
@@ -30,7 +30,7 @@ class PerfanaExecutorEngine {
         this.logger = logger;
     }
 
-    void startKeepAliveThread(PerfanaCaller perfana, PerfanaTestContext context, PerfanaConnectionSettings settings, PerfanaEventBroadcaster broadcaster, PerfanaEventProperties eventProperties) {
+    void startKeepAliveThread(PerfanaCaller perfana, TestContext context, PerfanaConnectionSettings settings, PerfanaEventBroadcaster broadcaster, PerfanaEventProperties eventProperties) {
         nullChecks(perfana, context, broadcaster, eventProperties);
 
         if (executorKeepAlive != null) {
@@ -45,12 +45,12 @@ class PerfanaExecutorEngine {
         executorKeepAlive.scheduleAtFixedRate(keepAliveRunner, 0, settings.getKeepAliveDuration().getSeconds(), TimeUnit.SECONDS);
     }
 
-    private void nullChecks(PerfanaCaller perfana, PerfanaTestContext context, PerfanaEventBroadcaster broadcaster, PerfanaEventProperties eventProperties) {
+    private void nullChecks(PerfanaCaller perfana, TestContext context, PerfanaEventBroadcaster broadcaster, PerfanaEventProperties eventProperties) {
         if (perfana == null) {
             throw new NullPointerException("PerfanaCaller cannot be null");
         }
         if (context == null) {
-            throw new NullPointerException("PerfanaTestContext cannot be null");
+            throw new NullPointerException("TestContext cannot be null");
         }
         if (broadcaster == null) {
             throw new NullPointerException("PerfanaEventBroadcaster cannot be null");
@@ -60,7 +60,7 @@ class PerfanaExecutorEngine {
         }
     }
 
-    private void addToExecutor(ScheduledExecutorService executorService, PerfanaTestContext context, ScheduleEvent event, PerfanaEventProperties eventProperties, PerfanaCaller perfana, PerfanaEventBroadcaster broadcaster) {
+    private void addToExecutor(ScheduledExecutorService executorService, TestContext context, ScheduleEvent event, PerfanaEventProperties eventProperties, PerfanaCaller perfana, PerfanaEventBroadcaster broadcaster) {
         executorService.schedule(new EventRunner(context, eventProperties, event, broadcaster, perfana), event.getDuration().getSeconds(), TimeUnit.SECONDS);
     }
 
@@ -84,7 +84,7 @@ class PerfanaExecutorEngine {
         executorCustomEvents = null;
     }
 
-    void startCustomEventScheduler(PerfanaCaller perfana, PerfanaTestContext context, List<ScheduleEvent> scheduleEvents, PerfanaEventBroadcaster broadcaster, PerfanaEventProperties eventProperties) {
+    void startCustomEventScheduler(PerfanaCaller perfana, TestContext context, List<ScheduleEvent> scheduleEvents, PerfanaEventBroadcaster broadcaster, PerfanaEventProperties eventProperties) {
         nullChecks(perfana, context, broadcaster, eventProperties);
 
         if (!(scheduleEvents == null || scheduleEvents.isEmpty())) {
@@ -131,11 +131,11 @@ class PerfanaExecutorEngine {
     class KeepAliveRunner implements Runnable {
 
         private final PerfanaCaller perfana;
-        private final PerfanaTestContext context;
+        private final TestContext context;
         private final PerfanaEventBroadcaster broadcaster;
         private final PerfanaEventProperties eventProperties;
 
-        KeepAliveRunner(PerfanaCaller perfana, PerfanaTestContext context, PerfanaEventBroadcaster broadcaster, PerfanaEventProperties eventProperties) {
+        KeepAliveRunner(PerfanaCaller perfana, TestContext context, PerfanaEventBroadcaster broadcaster, PerfanaEventProperties eventProperties) {
             this.perfana = perfana;
             this.context = context;
             this.broadcaster = broadcaster;
@@ -167,13 +167,13 @@ class PerfanaExecutorEngine {
 
         private final ScheduleEvent event;
 
-        private final PerfanaTestContext context;
+        private final TestContext context;
         private final PerfanaEventProperties eventProperties;
 
         private final PerfanaEventBroadcaster eventBroadcaster;
         private final PerfanaCaller perfana;
 
-        public EventRunner(PerfanaTestContext context, PerfanaEventProperties eventProperties, ScheduleEvent event, PerfanaEventBroadcaster eventBroadcaster, PerfanaCaller perfana) {
+        public EventRunner(TestContext context, PerfanaEventProperties eventProperties, ScheduleEvent event, PerfanaEventBroadcaster eventBroadcaster, PerfanaCaller perfana) {
             this.event = event;
             this.context = context;
             this.eventProperties = eventProperties;

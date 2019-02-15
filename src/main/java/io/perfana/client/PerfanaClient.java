@@ -5,10 +5,7 @@ import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.Option;
 import com.jayway.jsonpath.ParseContext;
-import io.perfana.client.api.PerfanaCaller;
-import io.perfana.client.api.PerfanaClientLogger;
-import io.perfana.client.api.PerfanaConnectionSettings;
-import io.perfana.client.api.PerfanaTestContext;
+import io.perfana.client.api.*;
 import io.perfana.client.exception.PerfanaAssertionsAreFalse;
 import io.perfana.client.exception.PerfanaClientException;
 import io.perfana.event.PerfanaEventBroadcaster;
@@ -36,9 +33,9 @@ public final class PerfanaClient implements PerfanaCaller {
 
     private final OkHttpClient client = new OkHttpClient();
 
-    private PerfanaClientLogger logger;
+    private final PerfanaClientLogger logger;
 
-    private final PerfanaTestContext context;
+    private final TestContext context;
     private final PerfanaConnectionSettings settings;
     
     private final boolean assertResultsEnabled;
@@ -51,17 +48,17 @@ public final class PerfanaClient implements PerfanaCaller {
 
     private boolean isSessionStopped = false;
 
-    PerfanaClient(PerfanaTestContext context, PerfanaConnectionSettings settings,
+    PerfanaClient(TestContext context, PerfanaConnectionSettings settings,
                   boolean assertResultsEnabled, PerfanaEventBroadcaster broadcaster,
                   PerfanaEventProperties eventProperties,
-                  List<ScheduleEvent> scheduleEvents) {
+                  List<ScheduleEvent> scheduleEvents, PerfanaClientLogger logger) {
         this.context = context;
         this.settings = settings;
         this.assertResultsEnabled = assertResultsEnabled;
         this.eventProperties = eventProperties;
         this.broadcaster = broadcaster;
         this.scheduleEvents = scheduleEvents;
-        this.logger = context.getLogger();
+        this.logger = logger;
     }
 
     /**
@@ -120,13 +117,8 @@ public final class PerfanaClient implements PerfanaCaller {
         broadcaster.broadcastAfterTest(context, eventProperties);
     }
 
-
-    void injectLogger(PerfanaClientLogger logger) {
-        this.logger = logger;
-    }
-
     @Override
-    public void callPerfanaTestEndpoint(PerfanaTestContext context, boolean completed) {
+    public void callPerfanaTestEndpoint(TestContext context, boolean completed) {
         String json = perfanaMessageToJson(context, completed);
         String testUrl = settings.getPerfanaUrl() + "/test";
         logger.debug(String.format("call to endpoint: %s with json: %s", testUrl, json));
@@ -139,7 +131,7 @@ public final class PerfanaClient implements PerfanaCaller {
     }
 
     @Override
-    public void callPerfanaEvent(PerfanaTestContext context, String eventDescription) {
+    public void callPerfanaEvent(TestContext context, String eventDescription) {
         logger.info("add Perfana event: " + eventDescription);
         String json = perfanaEventToJson(context, eventDescription);
         String eventsUrl = settings.getPerfanaUrl() + "/events";
@@ -167,7 +159,7 @@ public final class PerfanaClient implements PerfanaCaller {
         }
     }
 
-    private String perfanaMessageToJson(PerfanaTestContext context, boolean completed) {
+    private String perfanaMessageToJson(TestContext context, boolean completed) {
 
         JSONObject json = new JSONObject();
 
@@ -205,7 +197,7 @@ public final class PerfanaClient implements PerfanaCaller {
         return variables;
     }
 
-    private String perfanaEventToJson(PerfanaTestContext context, String eventDescription) {
+    private String perfanaEventToJson(TestContext context, String eventDescription) {
         JSONObject json = new JSONObject();
 
         json.put("application", context.getApplication());

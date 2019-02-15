@@ -13,7 +13,7 @@ Create a PerfanaClient using the builders:
                 .setRetryTimeInSeconds("3")
                 .build();
 
-        PerfanaTestContext context = new PerfanaTestContextBuilder()
+        TestContext context = new TestContextBuilder()
                 .setTestType("testType")
                 .setTestEnvironment("testEnv")
                 .setTestRunId("testRunId")
@@ -27,7 +27,7 @@ Create a PerfanaClient using the builders:
 
         PerfanaClient client = new PerfanaClientBuilder()
                 .setPerfanaConnectionSettings(settings)
-                .setPerfanaTestContext(context)
+                .setTestContext(context)
                 .setAssertResultsEnabled(true)
                 .setLogger(testLogger)
                 .addEventProperty("myClass", "name", "value")
@@ -52,7 +52,7 @@ is not ok.
 ## Perfana Test Events
 
 During a test run this Perfana Java Client emits events. You can put
-your own implementation of the `PerfanaTestEvent` interface on the classpath
+your own implementation of the `PerfanaEvent` interface on the classpath
 and add your own code to these events.
 
 Events available, with example usage:
@@ -78,7 +78,7 @@ You can provide custom events via a list of <duration,eventName(description),eve
 one on each line.
 
 The eventName can be any unique name among the custom events. You can use this eventName
-in your own implementation of the PerfanaTestEvent interface to select what code to execute.
+in your own implementation of the PerfanaEvent interface to select what code to execute.
 
 The description can be any text to explain what the event at that time is about. It will
 be sent to Perfana and shown in the graphs as an event. If no description is provided, the
@@ -163,14 +163,13 @@ For example:
 To create your own event schedule you can implement your own
 `io.perfana.event.EventScheduleGenerator`.
 
-And add the following to the configuration of the plugin,
-instead of `<eventScheduleScript>`.
+And add the following generator-class and settings to the customPerfanaEvents tag
+of the gatling or jmeter plugin (instead of a verbatim list of events).
 
 ```xml
-<eventScheduleGenerator>
-	<nl.stokpop.perfana.event.StokpopEventScheduleGenerator>
-		<myInputFile>data/events.json</myInputFile>
-	</nl.stokpop.perfana.event.StokpopEventScheduleGenerator>
-</eventScheduleGenerator>
+<customPerfanaEvents>
+    @generator-class=com.stokpop.perfana.event.StokpopEventGenerator
+    events-file=${project.basedir}/src/test/resources/events.json
+</customPerfanaEvents>
 ```
    
