@@ -170,6 +170,14 @@ of the gatling or jmeter plugin (instead of a verbatim list of events).
 <customPerfanaEvents>
     @generator-class=com.stokpop.perfana.event.StokpopEventGenerator
     events-file=${project.basedir}/src/test/resources/events.json
+    foo=bar
 </customPerfanaEvents>
 ```
+
+The generator-class should be available on the classpath.
+The foo=bar is an example of properties for the event generator.
+You can use multiple lines.
+
+Properties that start with @-sign are so-called "meta" properties and
+should generally not be used as properties inside the implementation class.   
    
