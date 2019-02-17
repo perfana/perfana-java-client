@@ -5,7 +5,10 @@ import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.Option;
 import com.jayway.jsonpath.ParseContext;
-import io.perfana.client.api.*;
+import io.perfana.client.api.PerfanaCaller;
+import io.perfana.client.api.PerfanaClientLogger;
+import io.perfana.client.api.PerfanaConnectionSettings;
+import io.perfana.client.api.TestContext;
 import io.perfana.client.exception.PerfanaAssertionsAreFalse;
 import io.perfana.client.exception.PerfanaClientException;
 import io.perfana.event.PerfanaEventBroadcaster;
@@ -159,7 +162,7 @@ public final class PerfanaClient implements PerfanaCaller {
         }
     }
 
-    private String perfanaMessageToJson(TestContext context, boolean completed) {
+    public static String perfanaMessageToJson(TestContext context, boolean completed) {
 
         JSONObject json = new JSONObject();
 
@@ -173,7 +176,7 @@ public final class PerfanaClient implements PerfanaCaller {
 
         /* If annotations are passed add them to the json */
         String annotations = context.getAnnotations();
-        if(annotations != null && annotations.isEmpty()){
+        if(annotations != null && !annotations.isEmpty()){
             json.put("annotations", annotations);
         }
 

@@ -11,7 +11,9 @@ import io.perfana.client.api.TestContextBuilder;
 import org.junit.Test;
 
 import java.util.HashMap;
+import java.util.Map;
 
+import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
@@ -114,5 +116,26 @@ public class PerfanaClientTest
 
         assertNotNull(settings);
 
+    }
+
+    @Test
+    public void createJsonMessage() {
+        Map<String, String> vars = new HashMap<>();
+        vars.put("var1", "value1");
+        vars.put("var2", "value2");
+
+        TestContext context = new TestContextBuilder()
+                .setAnnotations("annotation1,annotation2")
+                .setVariables(vars)
+                .build();
+
+        String json = PerfanaClient.perfanaMessageToJson(context, false);
+
+        assertTrue(json.contains("annotation1"));
+        assertTrue(json.contains("annotation2"));
+        assertTrue(json.contains("var1"));
+        assertTrue(json.contains("var2"));
+        assertTrue(json.contains("value1"));
+        assertTrue(json.contains("value2"));
     }
 }
