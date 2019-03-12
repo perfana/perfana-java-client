@@ -12,6 +12,7 @@ import org.junit.Test;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
@@ -59,6 +60,7 @@ public class PerfanaClientTest
                 .setAssertResultsEnabled(true)
                 .addEventProperty("myClass", "name", "value")
                 .setCustomEvents(eventSchedule)
+                .setLogger(testLogger)
                 .build();
 
         assertNotNull(client);
@@ -86,7 +88,7 @@ public class PerfanaClientTest
                 .setTestEnvironment(null)
                 .setTestRunId(null)
                 .setTestType(null)
-                .setVariables(null)
+                .setVariables((Properties)null)
                 .build();
 
         PerfanaConnectionSettings settings = new PerfanaConnectionSettingsBuilder()
@@ -121,21 +123,56 @@ public class PerfanaClientTest
     @Test
     public void createJsonMessage() {
         Map<String, String> vars = new HashMap<>();
-        vars.put("var1", "value1");
-        vars.put("var2", "value2");
 
+        String var1 = "hostname";
+        String value1 = "foo.com";
+        vars.put(var1, value1);
+
+        String var2 = "env";
+        String value2 = "performance-test-2-env";
+        vars.put(var2, value2);
+
+        String annotations = "Xmx set to 2g";
         TestContext context = new TestContextBuilder()
-                .setAnnotations("annotation1,annotation2")
+                .setAnnotations(annotations)
                 .setVariables(vars)
                 .build();
 
         String json = PerfanaClient.perfanaMessageToJson(context, false);
 
-        assertTrue(json.contains("annotation1"));
-        assertTrue(json.contains("annotation2"));
-        assertTrue(json.contains("var1"));
-        assertTrue(json.contains("var2"));
-        assertTrue(json.contains("value1"));
-        assertTrue(json.contains("value2"));
+        assertTrue(json.contains(annotations));
+        assertTrue(json.contains(var1));
+        assertTrue(json.contains(var2));
+        assertTrue(json.contains(value1));
+        assertTrue(json.contains(value2));
+    }
+
+    @Test
+    public void testVarsMissing() {
+        /*
+         * <variables>
+         *    <property>
+         *        <name>foo</name>
+         *        <value>1</value>
+         *    </property>
+         *    <property>
+         *        <name>bar</name>
+         *        <value>2</value>
+         *    </property>
+         * </variables>
+         */
+        Properties props = new Properties();
+        props.put("foo", "foo-1");
+        props.put("bar", "bar-2");
+        
+        TestContext context = new TestContextBuilder()
+                .setVariables(props)
+                .build();
+
+        String json = PerfanaClient.perfanaMessageToJson(context, false);
+        assertTrue(json.contains("foo"));
+        assertTrue(json.contains("bar"));
+        assertTrue(json.contains("foo-1"));
+        assertTrue(json.contains("bar-2"));
     }
 }

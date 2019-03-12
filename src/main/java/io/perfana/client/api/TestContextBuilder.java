@@ -7,6 +7,8 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Properties;
+import java.util.stream.Collectors;
 
 public class TestContextBuilder {
     private static final int DEFAULT_RAMPUP_TIME_SECONDS = 0;
@@ -106,6 +108,19 @@ public class TestContextBuilder {
 
     public TestContextBuilder setConstantLoadTimeInSeconds(String constantLoadTimeInSeconds) {
         this.rampupTime = Duration.ofSeconds(PerfanaUtils.parseInt("constantLoadTimeInSeconds", constantLoadTimeInSeconds, DEFAULT_CONSTANT_LOAD_TIME_SECONDS));
+        return this;
+    }
+
+    public TestContextBuilder setVariables(Properties props) {
+        if (props != null) {
+            Map<String, String> vars = props.entrySet().stream().collect(
+                    Collectors.toMap(
+                            e -> e.getKey().toString(),
+                            e -> e.getValue().toString()
+                    )
+            );
+            this.setVariables(vars);
+        }
         return this;
     }
 }
