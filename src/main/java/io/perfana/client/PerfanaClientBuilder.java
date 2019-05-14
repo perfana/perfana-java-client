@@ -5,8 +5,11 @@ import io.perfana.client.api.PerfanaClientLoggerStdOut;
 import io.perfana.client.api.PerfanaConnectionSettings;
 import io.perfana.client.api.TestContext;
 import io.perfana.client.exception.PerfanaClientRuntimeException;
-import io.perfana.event.*;
+import io.perfana.event.EventScheduleGenerator;
+import io.perfana.event.PerfanaEventBroadcaster;
 import io.perfana.event.PerfanaEventProperties;
+import io.perfana.event.PerfanaEventProvider;
+import io.perfana.event.ScheduleEvent;
 import io.perfana.event.generator.EventScheduleGeneratorDefault;
 import io.perfana.event.generator.EventScheduleGeneratorProvider;
 import io.perfana.event.generator.GeneratorProperties;
@@ -75,13 +78,29 @@ public class PerfanaClientBuilder {
         eventProperties.put(eventImplementationName, name, value);
         return this;
     }
-    
+
     public PerfanaClient build() {
+        return build(null);
+    }
+
+    /**
+     * Clients can use this build method to define a different classloader.
+     *
+     * By default the classloader from the current thread is used to load event providers and related resources
+     * (see .
+     *
+     * For example in a Gradle plugin the thread classpath is limited to plugin classes,
+     * and does not contain classes from the project context, such as the custom event providers used in the project.
+     *
+     * @param classLoader the class loader, if null the default classloader of Java's ServiceLoader will be used
+     * @return a new PerfanaClient
+     */
+    public PerfanaClient build(ClassLoader classLoader) {
 
         // get default broadcaster if no broadcaster was given
         if (broadcaster == null) {
             logger.info("create default Perfana event broadcaster");
-            broadcaster = PerfanaEventProvider.createInstanceWithEventsFromClasspath(logger);
+            broadcaster = PerfanaEventProvider.createInstanceWithEventsFromClasspath(logger, classLoader);
         }
         
         if (testContext == null) {
@@ -92,13 +111,13 @@ public class PerfanaClientBuilder {
             throw new PerfanaClientRuntimeException("PerfanaConnectionSettings must be set, it is null.");
         }
 
-        List<ScheduleEvent> scheduleEvents = generateEventSchedule(testContext, customEventsText, logger);
+        List<ScheduleEvent> scheduleEvents = generateEventSchedule(testContext, customEventsText, logger, classLoader);
 
         return new PerfanaClient(testContext, perfanaConnectionSettings, assertResultsEnabled,
                 broadcaster, eventProperties, scheduleEvents, logger);
     }
 
-    private static List<ScheduleEvent> generateEventSchedule(TestContext context, String text, PerfanaClientLogger logger) {
+    private List<ScheduleEvent> generateEventSchedule(TestContext context, String text, PerfanaClientLogger logger, ClassLoader classLoader) {
         EventScheduleGenerator eventScheduleGenerator;
         GeneratorProperties generatorProperties;
 
@@ -112,7 +131,7 @@ public class PerfanaClientBuilder {
 
             String generatorClassname = generatorProperties.getMetaProperty(GENERATOR_CLASS_META_TAG);
 
-            eventScheduleGenerator = findAndCreateEventScheduleGenerator(logger, generatorClassname);
+            eventScheduleGenerator = findAndCreateEventScheduleGenerator(logger, generatorClassname, classLoader);
         }
         else {
             // assume the default input of lines of events
@@ -151,9 +170,9 @@ public class PerfanaClientBuilder {
         return this;
     }
 
-    private static EventScheduleGenerator findAndCreateEventScheduleGenerator(PerfanaClientLogger logger, String generatorClassname) {
+    private EventScheduleGenerator findAndCreateEventScheduleGenerator(PerfanaClientLogger logger, String generatorClassname, ClassLoader classLoader) {
         EventScheduleGeneratorProvider provider =
-                EventScheduleGeneratorProvider.createInstanceFromClasspath(logger);
+                EventScheduleGeneratorProvider.createInstanceFromClasspath(logger, classLoader);
 
         EventScheduleGenerator generator = provider.find(generatorClassname);
 
