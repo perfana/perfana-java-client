@@ -251,10 +251,14 @@ public final class PerfanaClient implements PerfanaCaller {
                     assertionsAvailable = true;
                     break;
                 } else {
-                    String message = (responseBody == null) ? response.message() : responseBody.string();
-                    logger.info(
+                    if (response.code() == 400) {
+                        throw new PerfanaClientException(responseBody.string());
+                    } else {
+                        String message = (responseBody == null) ? response.message() : responseBody.string();
+                        logger.info(
                             String.format("failed to retrieve assertions for url [%s] code [%d] retry [%d/%d] %s",
                             url, response.code(), retryCount, settings.getRetryMaxCount(), message));
+                    }    
                 }
             } catch (IOException e) {
                 throw new PerfanaClientException(String.format("unable to retrieve assertions for url [%s]", url), e);
