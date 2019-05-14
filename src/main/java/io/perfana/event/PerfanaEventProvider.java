@@ -20,8 +20,8 @@ public class PerfanaEventProvider implements PerfanaEventBroadcaster {
         this.logger = logger;
     }
 
-    public static PerfanaEventProvider createInstanceWithEventsFromClasspath(PerfanaClientLogger logger) {
-        ServiceLoader<PerfanaEvent> perfanaEventLoader = ServiceLoader.load(PerfanaEvent.class);
+    public static PerfanaEventProvider createInstanceWithEventsFromClasspath(PerfanaClientLogger logger, ClassLoader classLoader) {
+        ServiceLoader<PerfanaEvent> perfanaEventLoader = ServiceLoader.load(PerfanaEvent.class, classLoader);
         // java 9+: List<PerfanaEvent> events = perfanaEventLoader.stream().map(ServiceLoader.Provider::get).collect(Collectors.toList());
         List<PerfanaEvent> events = new ArrayList<>();
         for (PerfanaEvent event : perfanaEventLoader) {

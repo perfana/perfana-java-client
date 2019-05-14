@@ -33,6 +33,8 @@ public class PerfanaClientBuilder {
 
     private PerfanaClientLogger logger = new PerfanaClientLoggerStdOut();
 
+    private ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+
     public PerfanaClientBuilder setTestContext(TestContext context) {
         this.testContext = context;
         return this;
@@ -81,7 +83,7 @@ public class PerfanaClientBuilder {
         // get default broadcaster if no broadcaster was given
         if (broadcaster == null) {
             logger.info("create default Perfana event broadcaster");
-            broadcaster = PerfanaEventProvider.createInstanceWithEventsFromClasspath(logger);
+            broadcaster = PerfanaEventProvider.createInstanceWithEventsFromClasspath(logger, this.classLoader);
         }
         
         if (testContext == null) {
@@ -98,7 +100,7 @@ public class PerfanaClientBuilder {
                 broadcaster, eventProperties, scheduleEvents, logger);
     }
 
-    private static List<ScheduleEvent> generateEventSchedule(TestContext context, String text, PerfanaClientLogger logger) {
+    private List<ScheduleEvent> generateEventSchedule(TestContext context, String text, PerfanaClientLogger logger) {
         EventScheduleGenerator eventScheduleGenerator;
         GeneratorProperties generatorProperties;
 
@@ -112,7 +114,7 @@ public class PerfanaClientBuilder {
 
             String generatorClassname = generatorProperties.getMetaProperty(GENERATOR_CLASS_META_TAG);
 
-            eventScheduleGenerator = findAndCreateEventScheduleGenerator(logger, generatorClassname);
+            eventScheduleGenerator = this.findAndCreateEventScheduleGenerator(logger, generatorClassname);
         }
         else {
             // assume the default input of lines of events
@@ -151,9 +153,26 @@ public class PerfanaClientBuilder {
         return this;
     }
 
-    private static EventScheduleGenerator findAndCreateEventScheduleGenerator(PerfanaClientLogger logger, String generatorClassname) {
+    /**
+     * Clients can use this method to define a different classloader.
+     *
+     * By default the classloader from the current thread is used to load event providers and related resources.
+     * If the default classloader does not have access to the required runtime classes, clients should override the classloader.
+     *
+     * For example when executing the perfana client from a gradle plugin the thread classpath is limited to plugin classes,
+     * and does not contain classes from the project context, such as the custom event providers used in the project.
+     *
+     * @param classLoader the class loader
+     * @return the class loader
+     */
+    public PerfanaClientBuilder setClassLoader(ClassLoader classLoader) {
+        this.classLoader = classLoader;
+        return this;
+    }
+
+    private EventScheduleGenerator findAndCreateEventScheduleGenerator(PerfanaClientLogger logger, String generatorClassname) {
         EventScheduleGeneratorProvider provider =
-                EventScheduleGeneratorProvider.createInstanceFromClasspath(logger);
+                EventScheduleGeneratorProvider.createInstanceFromClasspath(logger, this.classLoader);
 
         EventScheduleGenerator generator = provider.find(generatorClassname);
 
