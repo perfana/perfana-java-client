@@ -29,6 +29,9 @@ import java.net.URLEncoder;
 import java.util.List;
 import java.util.Map;
 
+import static java.net.HttpURLConnection.HTTP_BAD_REQUEST;
+import static java.net.HttpURLConnection.HTTP_OK;
+
 public final class PerfanaClient implements PerfanaCaller {
 
     private static final MediaType JSON
@@ -234,31 +237,34 @@ public final class PerfanaClient implements PerfanaCaller {
                 .get()
                 .build();
 
+        final int maxRetryCount = settings.getRetryMaxCount();
+        final long sleepDurationMillis = settings.getRetryDuration().toMillis();
+
         int retryCount = 0;
         String assertions = null;
-
         boolean assertionsAvailable = false;
-        while (retryCount++ < settings.getRetryMaxCount()) {
+
+        while (!assertionsAvailable && retryCount++ < maxRetryCount) {
             try {
-                Thread.sleep(settings.getRetryDuration().toMillis());
+                Thread.sleep(sleepDurationMillis);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
             try (Response response = client.newCall(request).execute()) {
                 ResponseBody responseBody = response.body();
-                if (response.code() == 200) {
+                String message = (responseBody == null) ? response.message() : responseBody.string();
+
+                final int reponseCode = response.code();
+                if (reponseCode == HTTP_OK) {
                     assertions = (responseBody == null) ? "null" : responseBody.string();
                     assertionsAvailable = true;
-                    break;
+                } else if (reponseCode == HTTP_BAD_REQUEST) {
+                    // probably no KPI's defined in Perfana, no need to do retries
+                    throw new PerfanaClientException(message);
                 } else {
-                    if (response.code() == 400) {
-                        throw new PerfanaClientException(responseBody.string());
-                    } else {
-                        String message = (responseBody == null) ? response.message() : responseBody.string();
-                        logger.info(
-                            String.format("failed to retrieve assertions for url [%s] code [%d] retry [%d/%d] %s",
-                            url, response.code(), retryCount, settings.getRetryMaxCount(), message));
-                    }    
+                    logger.info(
+                        String.format("failed to retrieve assertions for url [%s] code [%d] retry [%d/%d] %s",
+                        url, reponseCode, retryCount, maxRetryCount, message));
                 }
             } catch (IOException e) {
                 throw new PerfanaClientException(String.format("unable to retrieve assertions for url [%s]", url), e);
