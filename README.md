@@ -180,4 +180,6 @@ You can use multiple lines.
 
 Properties that start with @-sign are so-called "meta" properties and
 should generally not be used as properties inside the implementation class.   
-   
+
+Note: if classes are not available on the default classpath of the Thread, you can provide your
+own ClassLoader via `io.perfana.client.PerfanaClientBuilder.build(java.lang.ClassLoader)`.
