@@ -4,6 +4,9 @@ import io.perfana.client.api.PerfanaConnectionSettingsBuilder;
 import io.perfana.client.api.TestContextBuilder;
 import org.junit.Test;
 
+import java.net.URL;
+import java.net.URLClassLoader;
+
 public class PerfanaClientBuilderTest {
 
     @Test
@@ -16,9 +19,8 @@ public class PerfanaClientBuilderTest {
                  .setTestContext(new TestContextBuilder().build())
                  .setPerfanaConnectionSettings(new PerfanaConnectionSettingsBuilder().build());
 
+        PerfanaClient perfanaClient = perfanaClientBuilder.build(new URLClassLoader(new URL[]{}, Thread.currentThread().getContextClassLoader()));
 
-        PerfanaClient perfanaClient = perfanaClientBuilder.build();
-        
         // TODO what to assert?
 
     }
