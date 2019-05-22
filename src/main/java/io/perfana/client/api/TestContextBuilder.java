@@ -107,7 +107,7 @@ public class TestContextBuilder {
     }
 
     public TestContextBuilder setConstantLoadTimeInSeconds(String constantLoadTimeInSeconds) {
-        this.rampupTime = Duration.ofSeconds(PerfanaUtils.parseInt("constantLoadTimeInSeconds", constantLoadTimeInSeconds, DEFAULT_CONSTANT_LOAD_TIME_SECONDS));
+        this.constantLoadTime = Duration.ofSeconds(PerfanaUtils.parseInt("constantLoadTimeInSeconds", constantLoadTimeInSeconds, DEFAULT_CONSTANT_LOAD_TIME_SECONDS));
         return this;
     }
 
