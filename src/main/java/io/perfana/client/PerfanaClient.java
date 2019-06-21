@@ -252,7 +252,6 @@ public final class PerfanaClient implements PerfanaCaller {
             }
             try (Response response = client.newCall(request).execute()) {
                 ResponseBody responseBody = response.body();
-                String message = (responseBody == null) ? response.message() : responseBody.string();
 
                 final int reponseCode = response.code();
                 if (reponseCode == HTTP_OK) {
@@ -260,11 +259,11 @@ public final class PerfanaClient implements PerfanaCaller {
                     assertionsAvailable = true;
                 } else if (reponseCode == HTTP_BAD_REQUEST) {
                     // probably no KPI's defined in Perfana, no need to do retries
-                    throw new PerfanaClientException(message);
+                    throw new PerfanaClientException("No KPI's have been specified for this test run! Set assertResults property to false or create a KPI");
                 } else {
                     logger.info(
                         String.format("failed to retrieve assertions for url [%s] code [%d] retry [%d/%d] %s",
-                        url, reponseCode, retryCount, maxRetryCount, message));
+                        url, reponseCode, retryCount, maxRetryCount, "No benchmarks result found, retrying ..."));
                 }
             } catch (IOException e) {
                 throw new PerfanaClientException(String.format("unable to retrieve assertions for url [%s]", url), e);
