@@ -177,6 +177,14 @@ public final class PerfanaClient implements PerfanaCaller {
             json.put("variables", variablesArray);
         }
 
+        /* If tags parameter exists add them to the json */
+        List tags = context.getTags();
+        if(tags != null) {
+            JSONArray tagsArray = new JSONArray();
+            tags.forEach(tag -> tagsArray.add(tag));
+            json.put("tags", tagsArray);
+        }
+
         /* If annotations are passed add them to the json */
         String annotations = context.getAnnotations();
         if(annotations != null && !annotations.isEmpty()){

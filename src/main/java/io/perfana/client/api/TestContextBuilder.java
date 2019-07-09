@@ -7,6 +7,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.Map;
+import java.util.List;
 import java.util.Properties;
 import java.util.stream.Collectors;
 
@@ -26,6 +27,7 @@ public class TestContextBuilder {
     private Duration rampupTime = Duration.ofSeconds(DEFAULT_RAMPUP_TIME_SECONDS);
     private Duration constantLoadTime = Duration.ofSeconds(DEFAULT_CONSTANT_LOAD_TIME_SECONDS);
     private Map<String, String> variables = Collections.emptyMap();
+    private List tags = Collections.emptyList();
 
     public TestContextBuilder setApplication(String application) {
         if (PerfanaUtils.hasValue(application)) {
@@ -97,8 +99,15 @@ public class TestContextBuilder {
         return this;
     }
 
+    public TestContextBuilder setTags(List tags) {
+        if (tags != null) {
+            this.tags = tags;
+        }
+        return this;
+    }
+
     public TestContext build() {
-        return new TestContext(application, testType, testEnvironment, testRunId, ciBuildResultsUrl, applicationRelease, rampupTime, constantLoadTime, annotations, variables);
+        return new TestContext(application, testType, testEnvironment, testRunId, ciBuildResultsUrl, applicationRelease, rampupTime, constantLoadTime, annotations, variables, tags);
     }
 
     public TestContextBuilder setRampupTimeInSeconds(String rampupTimeSeconds) {
@@ -123,4 +132,6 @@ public class TestContextBuilder {
         }
         return this;
     }
+
+
 }

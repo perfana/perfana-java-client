@@ -12,7 +12,11 @@ import org.junit.Test;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.List;
 import java.util.Properties;
+import java.util.Collections;
+import java.util.Arrays;
+
 
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
@@ -51,7 +55,8 @@ public class PerfanaClientTest
                 .setRampupTimeInSeconds("10")
                 .setConstantLoadTimeInSeconds("300")
                 .setAnnotations("annotation")
-                .setVariables(new HashMap<>())
+                .setVariables(Collections.emptyMap())
+                .setTags(Collections.emptyList())
                 .build();
 
         PerfanaClient client = new PerfanaClientBuilder()
@@ -89,6 +94,7 @@ public class PerfanaClientTest
                 .setTestRunId(null)
                 .setTestType(null)
                 .setVariables((Properties)null)
+                .setTags(null)
                 .build();
 
         PerfanaConnectionSettings settings = new PerfanaConnectionSettingsBuilder()
@@ -130,12 +136,14 @@ public class PerfanaClientTest
 
         String var2 = "env";
         String value2 = "performance-test-2-env";
+        List tags = Arrays.asList(new String[]{"foo", "bar"});
         vars.put(var2, value2);
 
         String annotations = "Xmx set to 2g";
         TestContext context = new TestContextBuilder()
                 .setAnnotations(annotations)
                 .setVariables(vars)
+                .setTags(tags)
                 .build();
 
         String json = PerfanaClient.perfanaMessageToJson(context, false);
@@ -145,6 +153,8 @@ public class PerfanaClientTest
         assertTrue(json.contains(var2));
         assertTrue(json.contains(value1));
         assertTrue(json.contains(value2));
+        assertTrue(json.contains("foo"));
+
     }
 
     @Test

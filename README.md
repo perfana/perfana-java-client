@@ -23,6 +23,7 @@ Create a PerfanaClient using the builders:
                 .setConstantLoadTimeInSeconds("300")
                 .setAnnotations("annotation")
                 .setVariables(new HashMap<>())
+                .setTags(new HashMap<>())
                 .build();
 
         PerfanaClient client = new PerfanaClientBuilder()

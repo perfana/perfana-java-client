@@ -2,6 +2,7 @@ package io.perfana.client.api;
 
 import java.time.Duration;
 import java.util.Map;
+import java.util.List;
 
 public class TestContext {
 
@@ -15,8 +16,9 @@ public class TestContext {
     private final Duration plannedDuration;
     private final String annotations;
     private final Map<String, String> variables;
+    private final List tags;
 
-    TestContext(String application, String testType, String testEnvironment, String testRunId, String CIBuildResultsUrl, String applicationRelease, Duration rampupTime, Duration plannedDuration, String annotations, Map<String, String> variables) {
+    TestContext(String application, String testType, String testEnvironment, String testRunId, String CIBuildResultsUrl, String applicationRelease, Duration rampupTime, Duration plannedDuration, String annotations, Map<String, String> variables, List tags) {
         this.application = application;
         this.testType = testType;
         this.testEnvironment = testEnvironment;
@@ -27,6 +29,7 @@ public class TestContext {
         this.plannedDuration = plannedDuration;
         this.annotations = annotations;
         this.variables = variables;
+        this.tags = tags;
     }
 
     public String getApplication() {
@@ -68,5 +71,7 @@ public class TestContext {
     public Map<String, String> getVariables() {
         return variables;
     }
+
+    public List getTags() { return tags; }
 
 }
