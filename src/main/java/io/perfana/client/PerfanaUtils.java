@@ -1,7 +1,11 @@
 package io.perfana.client;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class PerfanaUtils {
 
@@ -27,5 +31,15 @@ public class PerfanaUtils {
         int count = 0;
         while (matcher.find()) { count = count + 1; }
         return count;
+    }
+
+    public static List<String> splitAndTrim(String text, String separator) {
+        if (text == null || text.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return Arrays.stream(text.split(separator))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.toList());
     }
 }

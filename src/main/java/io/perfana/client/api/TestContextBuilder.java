@@ -5,10 +5,7 @@ import io.perfana.client.PerfanaUtils;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Collections;
-import java.util.Map;
-import java.util.List;
-import java.util.Properties;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class TestContextBuilder {
@@ -103,6 +100,14 @@ public class TestContextBuilder {
         if (tags != null) {
             this.tags = tags;
         }
+        return this;
+    }
+
+    /**
+     * A comma separated list of tags.
+     */
+    public TestContextBuilder setTags(String tagsSeparatedByCommas) {
+        this.tags = PerfanaUtils.splitAndTrim(tagsSeparatedByCommas,",");
         return this;
     }
 

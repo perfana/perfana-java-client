@@ -56,7 +56,7 @@ public class PerfanaClientTest
                 .setConstantLoadTimeInSeconds("300")
                 .setAnnotations("annotation")
                 .setVariables(Collections.emptyMap())
-                .setTags(Collections.emptyList())
+                .setTags("")
                 .build();
 
         PerfanaClient client = new PerfanaClientBuilder()
@@ -94,7 +94,7 @@ public class PerfanaClientTest
                 .setTestRunId(null)
                 .setTestType(null)
                 .setVariables((Properties)null)
-                .setTags(null)
+                .setTags((String)null)
                 .build();
 
         PerfanaConnectionSettings settings = new PerfanaConnectionSettingsBuilder()
@@ -137,9 +137,9 @@ public class PerfanaClientTest
         String var2 = "env";
         String value2 = "performance-test-2-env";
 
-        String tag1 = "tag-1";
-        String tag2 = "tag-2";
-        List<String> tags = Arrays.asList(tag1, tag2);
+        String tag1 = "   tag-1 ";
+        String tag2 = " tag-2  ";
+        String tags = String.join(",", Arrays.asList(tag1, tag2));
         vars.put(var2, value2);
 
         String annotations = "Xmx set to 2g";
@@ -156,8 +156,8 @@ public class PerfanaClientTest
         assertTrue(json.contains(var2));
         assertTrue(json.contains(value1));
         assertTrue(json.contains(value2));
-        assertTrue(json.contains(tag1));
-        assertTrue(json.contains(tag2));
+        assertTrue(json.contains(tag1.trim()));
+        assertTrue(json.contains(tag2.trim()));
 
     }
 
