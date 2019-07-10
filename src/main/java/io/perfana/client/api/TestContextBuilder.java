@@ -27,7 +27,7 @@ public class TestContextBuilder {
     private Duration rampupTime = Duration.ofSeconds(DEFAULT_RAMPUP_TIME_SECONDS);
     private Duration constantLoadTime = Duration.ofSeconds(DEFAULT_CONSTANT_LOAD_TIME_SECONDS);
     private Map<String, String> variables = Collections.emptyMap();
-    private List tags = Collections.emptyList();
+    private List<String> tags = Collections.emptyList();
 
     public TestContextBuilder setApplication(String application) {
         if (PerfanaUtils.hasValue(application)) {
@@ -99,7 +99,7 @@ public class TestContextBuilder {
         return this;
     }
 
-    public TestContextBuilder setTags(List tags) {
+    public TestContextBuilder setTags(List<String> tags) {
         if (tags != null) {
             this.tags = tags;
         }

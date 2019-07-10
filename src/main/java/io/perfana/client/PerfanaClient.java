@@ -178,10 +178,10 @@ public final class PerfanaClient implements PerfanaCaller {
         }
 
         /* If tags parameter exists add them to the json */
-        List tags = context.getTags();
+        List<String> tags = context.getTags();
         if(tags != null) {
             JSONArray tagsArray = new JSONArray();
-            tags.forEach(tag -> tagsArray.add(tag));
+            tagsArray.addAll(tags);
             json.put("tags", tagsArray);
         }
 

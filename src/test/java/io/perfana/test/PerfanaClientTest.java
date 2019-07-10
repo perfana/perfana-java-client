@@ -136,7 +136,10 @@ public class PerfanaClientTest
 
         String var2 = "env";
         String value2 = "performance-test-2-env";
-        List tags = Arrays.asList(new String[]{"foo", "bar"});
+
+        String tag1 = "tag-1";
+        String tag2 = "tag-2";
+        List<String> tags = Arrays.asList(tag1, tag2);
         vars.put(var2, value2);
 
         String annotations = "Xmx set to 2g";
@@ -153,7 +156,8 @@ public class PerfanaClientTest
         assertTrue(json.contains(var2));
         assertTrue(json.contains(value1));
         assertTrue(json.contains(value2));
-        assertTrue(json.contains("foo"));
+        assertTrue(json.contains(tag1));
+        assertTrue(json.contains(tag2));
 
     }
 

@@ -16,9 +16,9 @@ public class TestContext {
     private final Duration plannedDuration;
     private final String annotations;
     private final Map<String, String> variables;
-    private final List tags;
+    private final List<String> tags;
 
-    TestContext(String application, String testType, String testEnvironment, String testRunId, String CIBuildResultsUrl, String applicationRelease, Duration rampupTime, Duration plannedDuration, String annotations, Map<String, String> variables, List tags) {
+    TestContext(String application, String testType, String testEnvironment, String testRunId, String CIBuildResultsUrl, String applicationRelease, Duration rampupTime, Duration plannedDuration, String annotations, Map<String, String> variables, List<String> tags) {
         this.application = application;
         this.testType = testType;
         this.testEnvironment = testEnvironment;
@@ -72,6 +72,6 @@ public class TestContext {
         return variables;
     }
 
-    public List getTags() { return tags; }
+    public List<String> getTags() { return tags; }
 
 }
