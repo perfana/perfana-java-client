@@ -130,9 +130,9 @@ public final class PerfanaClient implements PerfanaCaller {
         logger.debug(String.format("call to endpoint: %s with json: %s", testUrl, json));
         try {
             String result = post(testUrl, json);
-            logger.debug("result: " + result);
+            logger.debug("test endpoint result: " + result);
         } catch (IOException e) {
-            logger.error("failed to call perfana: " + e.getMessage());
+            logger.error("failed to call Perfana: " + e.getMessage());
         }
     }
 
@@ -151,7 +151,7 @@ public final class PerfanaClient implements PerfanaCaller {
     }
 
     private String post(String url, String json) throws IOException {
-        RequestBody body = RequestBody.create(JSON, json);
+        RequestBody body = RequestBody.create(json, JSON);
         Request request = new Request.Builder()
                 .url(url)
                 .post(body)
@@ -288,7 +288,7 @@ public final class PerfanaClient implements PerfanaCaller {
         return URLEncoder.encode(testRunId, "UTF-8").replaceAll("\\+", "%20");
     }
 
-    private String assertResults() throws PerfanaClientException, PerfanaAssertionsAreFalse {
+    public String assertResults() throws PerfanaClientException, PerfanaAssertionsAreFalse {
 
         if (!assertResultsEnabled) {
             String message = "Perfana assert results is not enabled and will not be checked.";
