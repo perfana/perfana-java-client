@@ -9,9 +9,14 @@ import io.perfana.client.exception.PerfanaAssertionsAreFalse;
 import io.perfana.client.exception.PerfanaClientException;
 import nl.stokpop.eventscheduler.api.*;
 
+import java.util.Collection;
+import java.util.Set;
+
 public class PerfanaEvent2 extends EventAdapter {
 
     private final String CLASSNAME = PerfanaEvent2.class.getName();
+
+    private static final Set<String> ALLOWED_PROPERTIES = setOf("perfanaUrl");
 
     private PerfanaClient perfanaClient;
     private io.perfana.client.api.TestContext perfanaTestContext;
@@ -23,6 +28,11 @@ public class PerfanaEvent2 extends EventAdapter {
         super(name, context, properties, logger);
         this.eventCheck = new EventCheck(eventName, CLASSNAME, EventStatus.UNKNOWN, "No known result yet. Try again some time later.");
         this.perfanaTestContext = createPerfanaTestContext(context);
+    }
+
+    @Override
+    public Collection<String> allowedProperties() {
+        return ALLOWED_PROPERTIES;
     }
 
     @Override
