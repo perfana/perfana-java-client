@@ -1,5 +1,6 @@
 package io.perfana.test;
 
+import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import io.perfana.client.PerfanaClient;
 import io.perfana.client.PerfanaClientBuilder;
 import io.perfana.client.api.PerfanaClientLogger;
@@ -8,16 +9,19 @@ import io.perfana.client.api.PerfanaConnectionSettings;
 import io.perfana.client.api.PerfanaConnectionSettingsBuilder;
 import io.perfana.client.api.TestContext;
 import io.perfana.client.api.TestContextBuilder;
+import nl.stokpop.eventscheduler.exception.KillSwitchException;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.List;
 import java.util.Properties;
 import java.util.Collections;
 import java.util.Arrays;
 
 
+import static com.github.tomakehurst.wiremock.client.WireMock.*;
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -27,9 +31,21 @@ import static org.junit.Assert.assertNotNull;
  */
 public class PerfanaClientTest
 {
+    @Rule
+    public WireMockRule wireMockRule = new WireMockRule(options().dynamicPort());
+
     @Test
     public void create() {
 
+        PerfanaClient client = createPerfanaClient();
+
+        assertNotNull(client);
+
+//        client.startSession();
+//        client.stopSession();
+    }
+
+    private PerfanaClient createPerfanaClient() {
         PerfanaClientLogger testLogger = new PerfanaClientLoggerStdOut();
 
         String eventSchedule =
@@ -41,7 +57,7 @@ public class PerfanaClientTest
                 "  \n";
 
         PerfanaConnectionSettings settings = new PerfanaConnectionSettingsBuilder()
-                .setPerfanaUrl("http://perfUrl")
+                .setPerfanaUrl("http://localhost:" + wireMockRule.port())
                 .setRetryMaxCount("5")
                 .setRetryTimeInSeconds("3")
                 .build();
@@ -59,7 +75,7 @@ public class PerfanaClientTest
                 .setTags("")
                 .build();
 
-        PerfanaClient client = new PerfanaClientBuilder()
+        return new PerfanaClientBuilder()
                 .setPerfanaConnectionSettings(settings)
                 .setTestContext(context)
                 .setAssertResultsEnabled(true)
@@ -67,12 +83,6 @@ public class PerfanaClientTest
                 .setCustomEvents(eventSchedule)
                 .setLogger(testLogger)
                 .build();
-
-        assertNotNull(client);
-        assertEquals("http://perfUrl", settings.getPerfanaUrl());
-
-//        client.startSession();
-//        client.stopSession();
     }
 
     /**
@@ -188,5 +198,16 @@ public class PerfanaClientTest
         assertTrue(json.contains("bar"));
         assertTrue(json.contains("foo-1"));
         assertTrue(json.contains("bar-2"));
+    }
+
+    @Test(expected = KillSwitchException.class)
+    public void testPerfanaTestCallWithResult() {
+        wireMockRule.stubFor(post(urlEqualTo("/test"))
+                .willReturn(aResponse()
+                        .withBody("{ abort: true, test-results: [ ] }")));
+
+        PerfanaClient perfanaClient = createPerfanaClient();
+        TestContext testContext = new TestContextBuilder().build();
+        perfanaClient.callPerfanaTestEndpoint(testContext, false);
     }
 }
