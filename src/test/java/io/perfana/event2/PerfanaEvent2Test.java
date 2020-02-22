@@ -7,14 +7,17 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.time.Duration;
+import java.util.HashMap;
+import java.util.Map;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
+import static nl.stokpop.eventscheduler.api.EventProperties.PROP_FACTORY_CLASSNAME;
 
 public class PerfanaEvent2Test {
 
     @Rule
-    public WireMockRule wireMockRule = new WireMockRule(options().port(8888));
+    public WireMockRule wireMockRule = new WireMockRule(options().dynamicPort());
 
     @Test
     public void testLiveCycle() {
@@ -33,7 +36,12 @@ public class PerfanaEvent2Test {
                                         "         'result': true } }")));
 
         TestContext testContext = new TestContextBuilder().build();
-        EventProperties eventProperties = new EventProperties();
+
+        Map<String, String> props = new HashMap<>();
+        props.put("perfanaUrl", "http://localhost:" + wireMockRule.port());
+        props.put(PROP_FACTORY_CLASSNAME, "should be set, to what?");
+
+        EventProperties eventProperties = new EventProperties(props);
         EventLogger eventLogger = EventLoggerStdOut.INSTANCE;
 
         PerfanaEvent2 event = new PerfanaEvent2("text", testContext, eventProperties, eventLogger);

@@ -1,10 +1,6 @@
 package io.perfana.client;
 
-import com.jayway.jsonpath.Configuration;
-import com.jayway.jsonpath.DocumentContext;
-import com.jayway.jsonpath.JsonPath;
-import com.jayway.jsonpath.Option;
-import com.jayway.jsonpath.ParseContext;
+import com.jayway.jsonpath.*;
 import io.perfana.client.api.PerfanaCaller;
 import io.perfana.client.api.PerfanaClientLogger;
 import io.perfana.client.api.PerfanaConnectionSettings;
@@ -16,12 +12,14 @@ import io.perfana.event.PerfanaEventProperties;
 import io.perfana.event.ScheduleEvent;
 import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
+import nl.stokpop.eventscheduler.exception.KillSwitchException;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -124,16 +122,50 @@ public final class PerfanaClient implements PerfanaCaller {
     }
 
     @Override
-    public void callPerfanaTestEndpoint(TestContext context, boolean completed) {
+    public void callPerfanaTestEndpoint(TestContext context, boolean completed) throws KillSwitchException {
         String json = perfanaMessageToJson(context, completed);
         String testUrl = settings.getPerfanaUrl() + "/test";
         logger.debug(String.format("call to endpoint: %s with json: %s", testUrl, json));
         try {
             String result = post(testUrl, json);
             logger.debug("test endpoint result: " + result);
+
+            Boolean abort = parseResultForAbort(result);
+
+            if (abort != null && abort) {
+                String message = parseResultForAbortMessage(result);
+                logger.warn(String.format("abort requested by Perfana! Reason: '%s'", message));
+                throw new KillSwitchException(message);
+            }
+
         } catch (IOException e) {
             logger.error("failed to call Perfana: " + e.getMessage());
         }
+    }
+
+    private String parseResultForAbortMessage(String result) {
+        DocumentContext documentContext = JsonPath.parse(result);
+        String abortMessage;
+        try {
+            abortMessage = documentContext.read("abortMessage");
+        } catch (PathNotFoundException e) {
+            logger.warn(String.format("No 'abortMessage' field found in json [%s]", result));
+            abortMessage = "Unknown: no 'abortMessage' found.";
+        }
+        return abortMessage;
+    }
+
+    @Nullable
+    private Boolean parseResultForAbort(String result) {
+        DocumentContext documentContext = JsonPath.parse(result);
+        Boolean abort;
+        try {
+            abort = documentContext.read("abort");
+        } catch (PathNotFoundException e) {
+            logger.warn(String.format("No 'abort' field found in json [%s]", result));
+            abort = null;
+        }
+        return abort;
     }
 
     @Override
