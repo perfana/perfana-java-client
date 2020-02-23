@@ -8,6 +8,7 @@ import io.perfana.client.api.TestContextBuilder;
 import io.perfana.client.exception.PerfanaAssertionsAreFalse;
 import io.perfana.client.exception.PerfanaClientException;
 import nl.stokpop.eventscheduler.api.*;
+import nl.stokpop.eventscheduler.exception.KillSwitchException;
 
 import java.util.Collection;
 import java.util.Set;
@@ -20,6 +21,8 @@ public class PerfanaEvent2 extends EventAdapter {
 
     private PerfanaClient perfanaClient;
     private io.perfana.client.api.TestContext perfanaTestContext;
+
+    private String abortDetailMessage = null;
 
     // save some state to do the status check
     private EventCheck eventCheck;
@@ -72,8 +75,9 @@ public class PerfanaEvent2 extends EventAdapter {
 
     @Override
     public void abortTest() {
-        perfanaClient.callPerfanaEvent(perfanaTestContext, "Test aborted");
-        this.eventCheck = new EventCheck(eventName, CLASSNAME, EventStatus.ABORTED, "Test run is aborted.");
+        String eventDescription = "Test aborted" + (abortDetailMessage == null ? "" : ": " + abortDetailMessage);
+        perfanaClient.callPerfanaEvent(perfanaTestContext, eventDescription);
+        this.eventCheck = new EventCheck(eventName, CLASSNAME, EventStatus.ABORTED, eventDescription);
     }
 
     @Override
@@ -84,7 +88,12 @@ public class PerfanaEvent2 extends EventAdapter {
     @Override
     public void keepAlive() {
         logger.debug("Keep alive called");
-        perfanaClient.callPerfanaTestEndpoint(perfanaTestContext, false);
+        try {
+            perfanaClient.callPerfanaTestEndpoint(perfanaTestContext, false);
+        } catch (KillSwitchException killSwitchException) {
+            abortDetailMessage = killSwitchException.getMessage();
+            throw killSwitchException;
+        }
     }
 
     @Override
