@@ -1,10 +1,23 @@
+/**
+ * Perfana Java Client - Java library that talks to the Perfana server
+ * Copyright (C) 2020  Peter Paul Bakker @ Stokpop, Daniel Moll @ Perfana.io
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
 package io.perfana.client;
 
-import com.jayway.jsonpath.Configuration;
-import com.jayway.jsonpath.DocumentContext;
-import com.jayway.jsonpath.JsonPath;
-import com.jayway.jsonpath.Option;
-import com.jayway.jsonpath.ParseContext;
+import com.jayway.jsonpath.*;
 import io.perfana.client.api.PerfanaCaller;
 import io.perfana.client.api.PerfanaClientLogger;
 import io.perfana.client.api.PerfanaConnectionSettings;
@@ -16,12 +29,14 @@ import io.perfana.event.PerfanaEventProperties;
 import io.perfana.event.ScheduleEvent;
 import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
+import nl.stokpop.eventscheduler.exception.KillSwitchException;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -124,16 +139,50 @@ public final class PerfanaClient implements PerfanaCaller {
     }
 
     @Override
-    public void callPerfanaTestEndpoint(TestContext context, boolean completed) {
+    public void callPerfanaTestEndpoint(TestContext context, boolean completed) throws KillSwitchException {
         String json = perfanaMessageToJson(context, completed);
         String testUrl = settings.getPerfanaUrl() + "/test";
         logger.debug(String.format("call to endpoint: %s with json: %s", testUrl, json));
         try {
             String result = post(testUrl, json);
-            logger.debug("result: " + result);
+            logger.debug("test endpoint result: " + result);
+
+            Boolean abort = parseResultForAbort(result);
+
+            if (abort != null && abort) {
+                String message = parseResultForAbortMessage(result);
+                logger.warn(String.format("abort requested by Perfana! Reason: '%s'", message));
+                throw new KillSwitchException(message);
+            }
+
         } catch (IOException e) {
-            logger.error("failed to call perfana: " + e.getMessage());
+            logger.error("failed to call Perfana: " + e.getMessage());
         }
+    }
+
+    private String parseResultForAbortMessage(String result) {
+        DocumentContext documentContext = JsonPath.parse(result);
+        String abortMessage;
+        try {
+            abortMessage = documentContext.read("abortMessage");
+        } catch (PathNotFoundException e) {
+            logger.warn(String.format("No 'abortMessage' field found in json [%s]", result));
+            abortMessage = "Unknown: no 'abortMessage' found.";
+        }
+        return abortMessage;
+    }
+
+    @Nullable
+    private Boolean parseResultForAbort(String result) {
+        DocumentContext documentContext = JsonPath.parse(result);
+        Boolean abort;
+        try {
+            abort = documentContext.read("abort");
+        } catch (PathNotFoundException e) {
+            logger.warn(String.format("No 'abort' field found in json [%s]", result));
+            abort = null;
+        }
+        return abort;
     }
 
     @Override
@@ -151,7 +200,7 @@ public final class PerfanaClient implements PerfanaCaller {
     }
 
     private String post(String url, String json) throws IOException {
-        RequestBody body = RequestBody.create(JSON, json);
+        RequestBody body = RequestBody.create(json, JSON);
         Request request = new Request.Builder()
                 .url(url)
                 .post(body)
@@ -288,7 +337,7 @@ public final class PerfanaClient implements PerfanaCaller {
         return URLEncoder.encode(testRunId, "UTF-8").replaceAll("\\+", "%20");
     }
 
-    private String assertResults() throws PerfanaClientException, PerfanaAssertionsAreFalse {
+    public String assertResults() throws PerfanaClientException, PerfanaAssertionsAreFalse {
 
         if (!assertResultsEnabled) {
             String message = "Perfana assert results is not enabled and will not be checked.";
