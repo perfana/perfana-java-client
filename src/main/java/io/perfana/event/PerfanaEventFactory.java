@@ -1,4 +1,4 @@
-/**
+/*
  * Perfana Java Client - Java library that talks to the Perfana server
  * Copyright (C) 2020  Peter Paul Bakker @ Stokpop, Daniel Moll @ Perfana.io
  *
@@ -17,15 +17,12 @@
  */
 package io.perfana.event;
 
-import io.perfana.client.api.TestContext;
+import nl.stokpop.eventscheduler.api.*;
 
-public interface PerfanaEventBroadcaster {
+public class PerfanaEventFactory implements EventFactory {
 
-    void broadcastBeforeTest(TestContext context, PerfanaEventProperties eventProperties);
-
-    void broadcastAfterTest(TestContext context, PerfanaEventProperties eventProperties);
-
-    void broadCastKeepAlive(TestContext context, PerfanaEventProperties eventProperties);
-
-    void broadcastCustomEvent(TestContext context, PerfanaEventProperties eventProperties, ScheduleEvent event);
+    @Override
+    public Event create(String eventName, TestContext testContext, EventProperties eventProperties, EventLogger logger) {
+        return new PerfanaEvent(eventName, testContext, eventProperties, logger);
+    }
 }

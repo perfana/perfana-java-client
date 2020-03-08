@@ -1,4 +1,4 @@
-/**
+/*
  * Perfana Java Client - Java library that talks to the Perfana server
  * Copyright (C) 2020  Peter Paul Bakker @ Stokpop, Daniel Moll @ Perfana.io
  *
@@ -24,18 +24,10 @@ import io.perfana.client.api.PerfanaConnectionSettings;
 import io.perfana.client.api.TestContext;
 import io.perfana.client.exception.PerfanaAssertionsAreFalse;
 import io.perfana.client.exception.PerfanaClientException;
-import io.perfana.event.PerfanaEventBroadcaster;
-import io.perfana.event.PerfanaEventProperties;
-import io.perfana.event.ScheduleEvent;
 import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
 import nl.stokpop.eventscheduler.exception.KillSwitchException;
-import okhttp3.MediaType;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.RequestBody;
-import okhttp3.Response;
-import okhttp3.ResponseBody;
+import okhttp3.*;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
@@ -61,81 +53,12 @@ public final class PerfanaClient implements PerfanaCaller {
     
     private final boolean assertResultsEnabled;
 
-    private final PerfanaEventBroadcaster broadcaster;
-    private final PerfanaEventProperties eventProperties;
-    private final List<ScheduleEvent> scheduleEvents;
-
-    private PerfanaExecutorEngine executorEngine;
-
-    private boolean isSessionStopped = false;
-
     PerfanaClient(TestContext context, PerfanaConnectionSettings settings,
-                  boolean assertResultsEnabled, PerfanaEventBroadcaster broadcaster,
-                  PerfanaEventProperties eventProperties,
-                  List<ScheduleEvent> scheduleEvents, PerfanaClientLogger logger) {
+                  boolean assertResultsEnabled, PerfanaClientLogger logger) {
         this.context = context;
         this.settings = settings;
         this.assertResultsEnabled = assertResultsEnabled;
-        this.eventProperties = eventProperties;
-        this.broadcaster = broadcaster;
-        this.scheduleEvents = scheduleEvents;
         this.logger = logger;
-    }
-
-    /**
-     * Start a Perfana test session.
-     */
-    public void startSession() {
-        logger.info("Perfana start session");
-        isSessionStopped = false;
-
-        executorEngine = new PerfanaExecutorEngine(logger);
-
-        broadcaster.broadcastBeforeTest(context, eventProperties);
-
-        executorEngine.startKeepAliveThread(this, context, settings, broadcaster, eventProperties);
-        executorEngine.startCustomEventScheduler(this, context, scheduleEvents, broadcaster, eventProperties);
-
-        callPerfanaEvent(context, "Test start");
-    }
-
-    /**
-     * Stop a Perfana test session.
-     * @throws PerfanaClientException when something fails, e.g. Perfana can not be reached
-     * @throws PerfanaAssertionsAreFalse when the Perfana assertion check returned false
-     */
-    public void stopSession() throws PerfanaClientException, PerfanaAssertionsAreFalse {
-        logger.info("Perfana end session.");
-        isSessionStopped = true;
-        
-        executorEngine.shutdownThreadsNow();
-
-        callPerfanaEvent(context, "Test finish");
-        broadcaster.broadcastAfterTest(context, eventProperties);
-
-        callPerfanaTestEndpoint(context, true);
-
-        String text = assertResults();
-        logger.info(String.format("the assertion text: %s", text));
-    }
-
-    public boolean isSessionStopped() {
-        return isSessionStopped;
-    }
-
-    /**
-     * Call to abort this test run.
-     * A Perfana abort event is created.
-     * No Perfana assertions are checked.
-     */
-    public void abortSession() {
-        logger.warn("Perfana session abort called.");
-        isSessionStopped = true;
-        
-        executorEngine.shutdownThreadsNow();
-
-        callPerfanaEvent(context, "Test aborted");
-        broadcaster.broadcastAfterTest(context, eventProperties);
     }
 
     @Override
@@ -302,11 +225,6 @@ public final class PerfanaClient implements PerfanaCaller {
         boolean assertionsAvailable = false;
 
         while (!assertionsAvailable && retryCount++ < maxRetryCount) {
-            try {
-                Thread.sleep(sleepDurationMillis);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
             try (Response response = client.newCall(request).execute()) {
                 ResponseBody responseBody = response.body();
 
@@ -325,12 +243,23 @@ public final class PerfanaClient implements PerfanaCaller {
             } catch (IOException e) {
                 throw new PerfanaClientException(String.format("unable to retrieve assertions for url [%s]", url), e);
             }
+            if (!assertionsAvailable) {
+                sleep(sleepDurationMillis);
+            }
         }
         if (!assertionsAvailable) {
             logger.warn(String.format("failed to retrieve assertions for url [%s], no more retries left!", url));
             throw new PerfanaClientException(String.format("unable to retrieve assertions for url [%s]", url));
         }
         return assertions;
+    }
+
+    private void sleep(long sleepDurationMillis) {
+        try {
+            Thread.sleep(sleepDurationMillis);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
     }
 
     private String encodeForURL(String testRunId) throws UnsupportedEncodingException {

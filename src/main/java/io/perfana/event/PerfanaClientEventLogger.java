@@ -1,4 +1,4 @@
-/**
+/*
  * Perfana Java Client - Java library that talks to the Perfana server
  * Copyright (C) 2020  Peter Paul Bakker @ Stokpop, Daniel Moll @ Perfana.io
  *
@@ -15,21 +15,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package io.perfana.event2;
+package io.perfana.event;
 
 import io.perfana.client.api.PerfanaClientLogger;
 import nl.stokpop.eventscheduler.api.EventLogger;
 import nl.stokpop.eventscheduler.log.EventLoggerStdOut;
 
-public class EventPerfanaClientLogger implements PerfanaClientLogger {
+public class PerfanaClientEventLogger implements PerfanaClientLogger {
 
     private EventLogger eventLogger;
 
-    public EventPerfanaClientLogger() {
+    public PerfanaClientEventLogger() {
         this(null);
     }
 
-    public EventPerfanaClientLogger(EventLogger logger) {
+    public PerfanaClientEventLogger(EventLogger logger) {
         this.eventLogger = logger == null ? EventLoggerStdOut.INSTANCE : logger;
     }
 

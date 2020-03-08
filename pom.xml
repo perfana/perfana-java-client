@@ -168,13 +168,18 @@
                 <artifactId>maven-license-plugin</artifactId>
                 <configuration>
                     <header>${header.basedir}/src/etc/header.txt</header>
-                    <strictCheck>false</strictCheck>
+                    <strictCheck>true</strictCheck>
+                    <mapping>
+                        <java>SLASHSTAR_STYLE</java>
+                    </mapping>
                     <excludes>
                         <exclude>src/main/resources/*</exclude>
                         <exclude>**/LICENSE</exclude>
                         <exclude>**/*.md</exclude>
                         <exclude>.gitignore</exclude>
                         <exclude>make_credentials.py</exclude>
+                        <exclude>.idea</exclude>
+                        <exclude>target</exclude>
                     </excludes>
                 </configuration>
                 <executions>
