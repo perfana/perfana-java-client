@@ -78,15 +78,17 @@ public class PerfanaEvent extends EventAdapter {
         perfanaClient.callPerfanaEvent(perfanaTestContext, "Test finish");
         perfanaClient.callPerfanaTestEndpoint(perfanaTestContext, true);
 
+        // assume all is ok, will be overridden in case of assertResult exceptions
+        eventCheck = new EventCheck(eventName, CLASSNAME, EventStatus.SUCCESS, "All ok!");
         try {
             String text = perfanaClient.assertResults();
-            logger.info(String.format("the assertion text: %s", text));
+            logger.info("Received Perfana assertion text: " + text);
         } catch (PerfanaClientException e) {
-            logger.error("Stop Perfana session call failed.", e);
+            logger.error("Assert Perfana session call failed.", e);
+            eventCheck = new EventCheck(eventName, CLASSNAME, EventStatus.FAILURE, "Failed to check assert results: " + e.getMessage());
         } catch (PerfanaAssertionsAreFalse perfanaAssertionsAreFalse) {
             eventCheck = new EventCheck(eventName, CLASSNAME, EventStatus.FAILURE, perfanaAssertionsAreFalse.getMessage());
         }
-        eventCheck = new EventCheck(eventName, CLASSNAME, EventStatus.SUCCESS, "All ok!");
     }
 
     @Override

@@ -65,7 +65,7 @@ public final class PerfanaClient implements PerfanaCaller {
     public void callPerfanaTestEndpoint(TestContext context, boolean completed) throws KillSwitchException {
         String json = perfanaMessageToJson(context, completed);
         String testUrl = settings.getPerfanaUrl() + "/test";
-        logger.debug(String.format("call to endpoint: %s with json: %s", testUrl, json));
+        logger.debug("call to endpoint: " + testUrl + " with json: " + json);
         try {
             String result = post(testUrl, json);
             logger.debug("test endpoint result: " + result);
@@ -74,7 +74,7 @@ public final class PerfanaClient implements PerfanaCaller {
 
             if (abort != null && abort) {
                 String message = parseResultForAbortMessage(result);
-                logger.warn(String.format("abort requested by Perfana! Reason: '%s'", message));
+                logger.info("abort requested by Perfana! Reason: '" + message + "'");
                 throw new KillSwitchException(message);
             }
 
@@ -89,7 +89,7 @@ public final class PerfanaClient implements PerfanaCaller {
         try {
             abortMessage = documentContext.read("abortMessage");
         } catch (PathNotFoundException e) {
-            logger.warn(String.format("No 'abortMessage' field found in json [%s]", result));
+            logger.warn("No 'abortMessage' field found in json [" + result + "]");
             abortMessage = "Unknown: no 'abortMessage' found.";
         }
         return abortMessage;
@@ -102,7 +102,7 @@ public final class PerfanaClient implements PerfanaCaller {
         try {
             abort = documentContext.read("abort");
         } catch (PathNotFoundException e) {
-            logger.warn(String.format("No 'abort' field found in json [%s]", result));
+            logger.warn("No 'abort' field found in json [" + result + "]");
             abort = null;
         }
         return abort;
@@ -113,7 +113,7 @@ public final class PerfanaClient implements PerfanaCaller {
         logger.info("add Perfana event: " + eventDescription);
         String json = perfanaEventToJson(context, eventDescription);
         String eventsUrl = settings.getPerfanaUrl() + "/events";
-        logger.debug(String.format("add perfana event to endpoint: %s with json: %s", eventsUrl, json));
+        logger.debug("add perfana event to endpoint: " + eventsUrl + " with json: " + json);
         try {
             String result = post(eventsUrl, json);
             logger.debug("result: " + result);
@@ -131,7 +131,7 @@ public final class PerfanaClient implements PerfanaCaller {
         try (Response response = client.newCall(request).execute()) {
             ResponseBody responseBody = response.body();
             if (!response.isSuccessful()) {
-                logger.warn(String.format("POST was not successful: %s for request: %s and body: %s", response, request, json));
+                logger.warn("POST was not successful: " + response + " for request: " + request + " and body: " + json);
             }
             return responseBody == null ? "null" : responseBody.string();
         }
@@ -241,15 +241,15 @@ public final class PerfanaClient implements PerfanaCaller {
                         url, reponseCode, retryCount, maxRetryCount, "No benchmarks result found, retrying ..."));
                 }
             } catch (IOException e) {
-                throw new PerfanaClientException(String.format("unable to retrieve assertions for url [%s]", url), e);
+                throw new PerfanaClientException("unable to retrieve assertions for url [" + url + "]", e);
             }
             if (!assertionsAvailable) {
                 sleep(sleepDurationMillis);
             }
         }
         if (!assertionsAvailable) {
-            logger.warn(String.format("failed to retrieve assertions for url [%s], no more retries left!", url));
-            throw new PerfanaClientException(String.format("unable to retrieve assertions for url [%s]", url));
+            logger.warn("failed to retrieve assertions for url [" + url + "], no more retries left!");
+            throw new PerfanaClientException("unable to retrieve assertions for url [" + url + "]");
         }
         return assertions;
     }
@@ -292,25 +292,25 @@ public final class PerfanaClient implements PerfanaCaller {
         Boolean requirementsResult = doc.read("$.requirements.result");
         String requirementsDeeplink = doc.read("$.requirements.deeplink");
 
-        logger.info(String.format("benchmarkBaselineTestRunResult: %s", benchmarkBaselineTestRunResult));
-        logger.info(String.format("benchmarkPreviousTestRunResult: %s", benchmarkPreviousTestRunResult));
-        logger.info(String.format("requirementsResult: %s", requirementsResult));
+        logger.info("benchmarkBaselineTestRunResult: " + benchmarkBaselineTestRunResult);
+        logger.info("benchmarkPreviousTestRunResult: " + benchmarkPreviousTestRunResult);
+        logger.info("requirementsResult: " + requirementsResult);
 
         StringBuilder text = new StringBuilder();
         if (assertions.contains("false")) {
 
             text.append("One or more Perfana assertions are failing: \n");
             if (hasFailed(requirementsResult)) {
-                text.append(String.format("Requirements failed: %s\n", requirementsDeeplink)) ;
+                text.append("Requirements failed: ").append(requirementsDeeplink).append("\n");
             }
             if (hasFailed(benchmarkPreviousTestRunResult)) {
-                text.append(String.format("Benchmark to previous test run failed: %s\n", benchmarkPreviousTestRunDeeplink));
+                text.append("Benchmark to previous test run failed: ").append(benchmarkPreviousTestRunDeeplink).append("\n");
             }
             if (hasFailed(benchmarkBaselineTestRunResult)) {
-                text.append(String.format("Benchmark to baseline test run failed: %s", benchmarkBaselineTestRunDeeplink));
+                text.append("Benchmark to baseline test run failed: ").append(benchmarkBaselineTestRunDeeplink);
             }
 
-            logger.info(String.format("assertionText: %s", text));
+            logger.info("Found Perfana assertions that are false: " + text);
 
             throw new PerfanaAssertionsAreFalse(text.toString());
         }
@@ -341,7 +341,9 @@ public final class PerfanaClient implements PerfanaCaller {
 
     @Override
     public String toString() {
-        return String.format("PerfanaClient [testRunId:%s testType:%s testEnv:%s perfanaUrl:%s]",
-                context.getTestRunId(), context.getTestType(), context.getTestEnvironment(), settings.getPerfanaUrl());
+        return "PerfanaClient [testRunId:" + context.getTestRunId() +
+            " testType:" + context.getTestType() +
+            " testEnv:" + context.getTestEnvironment() +
+            " perfanaUrl:" + settings.getPerfanaUrl() + "]";
     }
 }
