@@ -128,14 +128,14 @@ public class PerfanaEvent extends EventAdapter {
                 .setVariables(testContext.getVariables())
                 .setTags(testContext.getTags())
                 .setAnnotations(testContext.getAnnotations())
-                .setApplication(testContext.getApplication())
-                .setApplicationRelease(testContext.getApplicationRelease())
+                .setSystemUnderTest(testContext.getSystemUnderTest())
+                .setVersion(testContext.getVersion())
                 .setCIBuildResultsUrl(testContext.getCIBuildResultsUrl())
                 .setConstantLoadTime(testContext.getPlannedDuration())
                 .setRampupTime(testContext.getRampupTime())
-                .setTestEnvironment(testContext.getTestEnvironment())
+                .setEnvironment(testContext.getEnvironment())
                 .setTestRunId(testContext.getTestRunId())
-                .setTestType(testContext.getTestType()).build();
+                .setWorkload(testContext.getWorkload()).build();
     }
 
 }

@@ -164,10 +164,10 @@ public final class PerfanaClient implements PerfanaCaller {
         }
 
         json.put("testRunId", context.getTestRunId());
-        json.put("testType", context.getTestType());
-        json.put("testEnvironment", context.getTestEnvironment());
-        json.put("application", context.getApplication());
-        json.put("applicationRelease", context.getApplicationRelease());
+        json.put("workload", context.getWorkload());
+        json.put("environment", context.getEnvironment());
+        json.put("systemUnderTest", context.getSystemUnderTest());
+        json.put("version", context.getVersion());
         json.put("CIBuildResultsUrl", context.getCIBuildResultsUrl());
         json.put("rampUp", String.valueOf(context.getRampupTime().getSeconds()));
         json.put("duration", String.valueOf(context.getPlannedDuration().getSeconds()));
@@ -186,13 +186,13 @@ public final class PerfanaClient implements PerfanaCaller {
     private String perfanaEventToJson(TestContext context, String eventDescription) {
         JSONObject json = new JSONObject();
 
-        json.put("application", context.getApplication());
-        json.put("testEnvironment", context.getTestEnvironment());
+        json.put("systemUnderTest", context.getSystemUnderTest());
+        json.put("environment", context.getEnvironment());
         json.put("title", context.getTestRunId());
         json.put("description", eventDescription);
 
         JSONArray tags = new JSONArray();
-        tags.add(context.getTestType());
+        tags.add(context.getWorkload());
         json.put("tags", tags);
         
         return json.toJSONString();
@@ -207,7 +207,7 @@ public final class PerfanaClient implements PerfanaCaller {
         // example: https://perfana-url/benchmarks/DASHBOARD/NIGHTLY/TEST-RUN-831
         String url;
         try {
-            url = String.join("/", settings.getPerfanaUrl(), "get-benchmark-results", encodeForURL(context.getApplication()), encodeForURL(context.getTestRunId()));
+            url = String.join("/", settings.getPerfanaUrl(), "get-benchmark-results", encodeForURL(context.getSystemUnderTest()), encodeForURL(context.getTestRunId()));
         } catch (UnsupportedEncodingException e) {
             throw new PerfanaClientException("cannot encode perfana url.", e);
         }
@@ -342,8 +342,8 @@ public final class PerfanaClient implements PerfanaCaller {
     @Override
     public String toString() {
         return "PerfanaClient [testRunId:" + context.getTestRunId() +
-            " testType:" + context.getTestType() +
-            " testEnv:" + context.getTestEnvironment() +
+            " testType:" + context.getWorkload() +
+            " testEnv:" + context.getEnvironment() +
             " perfanaUrl:" + settings.getPerfanaUrl() + "]";
     }
 }
