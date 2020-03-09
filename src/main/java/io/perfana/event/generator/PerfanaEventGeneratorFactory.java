@@ -15,26 +15,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package io.perfana.client;
+package io.perfana.event.generator;
 
-import io.perfana.client.api.PerfanaConnectionSettingsBuilder;
-import io.perfana.client.api.TestContextBuilder;
-import org.junit.Test;
+import nl.stokpop.eventscheduler.api.*;
 
-import static org.junit.Assert.assertNotNull;
+public class PerfanaEventGeneratorFactory implements EventGeneratorFactory {
 
-public class PerfanaClientBuilderTest {
-
-    @Test
-    public void createWithAlternativeClass() {
-         PerfanaClientBuilder perfanaClientBuilder = new PerfanaClientBuilder()
-                 .setTestContext(new TestContextBuilder().build())
-                 .setPerfanaConnectionSettings(new PerfanaConnectionSettingsBuilder().build());
-
-        PerfanaClient perfanaClient = perfanaClientBuilder.build();
-
-        assertNotNull(perfanaClient);
-
+    @Override
+    public EventGenerator create(TestContext context, EventGeneratorProperties properties, EventLogger logger) {
+        throw new UnsupportedOperationException("Sorry, but the PerfanaEventGeneratorFactory has no implementation as of yet...");
     }
-
 }

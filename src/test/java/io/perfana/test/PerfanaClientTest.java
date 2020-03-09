@@ -1,29 +1,35 @@
+/*
+ * Perfana Java Client - Java library that talks to the Perfana server
+ * Copyright (C) 2020  Peter Paul Bakker @ Stokpop, Daniel Moll @ Perfana.io
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
 package io.perfana.test;
 
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import io.perfana.client.PerfanaClient;
 import io.perfana.client.PerfanaClientBuilder;
-import io.perfana.client.api.PerfanaClientLogger;
-import io.perfana.client.api.PerfanaClientLoggerStdOut;
-import io.perfana.client.api.PerfanaConnectionSettings;
-import io.perfana.client.api.PerfanaConnectionSettingsBuilder;
-import io.perfana.client.api.TestContext;
-import io.perfana.client.api.TestContextBuilder;
+import io.perfana.client.api.*;
 import nl.stokpop.eventscheduler.exception.KillSwitchException;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Collections;
-import java.util.Arrays;
-
+import java.util.*;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
 import static junit.framework.TestCase.assertTrue;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 /**
@@ -36,25 +42,12 @@ public class PerfanaClientTest
 
     @Test
     public void create() {
-
         PerfanaClient client = createPerfanaClient();
-
         assertNotNull(client);
-
-//        client.startSession();
-//        client.stopSession();
     }
 
     private PerfanaClient createPerfanaClient() {
         PerfanaClientLogger testLogger = new PerfanaClientLoggerStdOut();
-
-        String eventSchedule =
-                "   \n" +
-                "    PT1S  |restart   (   restart to reset replicas  )   |{ 'server':'myserver' 'replicas':2, 'tags': [ 'first', 'second' ] }    \n" +
-                "PT600S   |scale-down |   { 'replicas':1 }   \n" +
-                "PT660S|    heapdump|server=    myserver.example.com;   port=1567  \n" +
-                "   PT900S|scale-up|{ 'replicas':2 }\n" +
-                "  \n";
 
         PerfanaConnectionSettings settings = new PerfanaConnectionSettingsBuilder()
                 .setPerfanaUrl("http://localhost:" + wireMockRule.port())
@@ -63,11 +56,11 @@ public class PerfanaClientTest
                 .build();
 
         TestContext context = new TestContextBuilder()
-                .setTestType("testType")
-                .setTestEnvironment("testEnv")
+                .setWorkload("testType")
+                .setEnvironment("testEnv")
                 .setTestRunId("testRunId")
                 .setCIBuildResultsUrl("http://url")
-                .setApplicationRelease("release")
+                .setVersion("release")
                 .setRampupTimeInSeconds("10")
                 .setConstantLoadTimeInSeconds("300")
                 .setAnnotations("annotation")
@@ -79,8 +72,6 @@ public class PerfanaClientTest
                 .setPerfanaConnectionSettings(settings)
                 .setTestContext(context)
                 .setAssertResultsEnabled(true)
-                .addEventProperty("myClass", "name", "value")
-                .setCustomEvents(eventSchedule)
                 .setLogger(testLogger)
                 .build();
     }
@@ -93,16 +84,16 @@ public class PerfanaClientTest
 
         TestContext context = new TestContextBuilder()
                 .setAnnotations(null)
-                .setApplicationRelease(null)
-                .setApplication(null)
+                .setVersion(null)
+                .setSystemUnderTest(null)
                 .setCIBuildResultsUrl(null)
                 .setConstantLoadTimeInSeconds(null)
                 .setConstantLoadTime(null)
                 .setRampupTimeInSeconds(null)
                 .setRampupTime(null)
-                .setTestEnvironment(null)
+                .setEnvironment(null)
                 .setTestRunId(null)
-                .setTestType(null)
+                .setWorkload(null)
                 .setVariables((Properties)null)
                 .setTags((String)null)
                 .build();
@@ -111,15 +102,11 @@ public class PerfanaClientTest
                 .setPerfanaUrl(null)
                 .setRetryMaxCount(null)
                 .setRetryTimeInSeconds(null)
-                .setKeepAliveInterval(null)
-                .setKeepAliveTimeInSeconds(null)
                 .setRetryDuration(null).build();
 
         new PerfanaClientBuilder()
                 .setTestContext(context)
                 .setPerfanaConnectionSettings(settings)
-                .setCustomEvents(null)
-                .setBroadcaster(null)
                 .build();
 
     }
