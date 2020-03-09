@@ -70,7 +70,7 @@ public class PerfanaEvent extends EventAdapter {
 
         perfanaClient = builder.build();
 
-        perfanaClient.callPerfanaEvent(perfanaTestContext, "Test start", "Test start");
+        perfanaClient.callPerfanaEvent(perfanaTestContext, "Test start", "Test run started");
     }
 
     @Override
@@ -94,7 +94,7 @@ public class PerfanaEvent extends EventAdapter {
     @Override
     public void abortTest() {
         String eventTitle = "Test aborted";
-        String eventDescription = "Test aborted" + (abortDetailMessage == null ? "" : ": " + abortDetailMessage);
+        String eventDescription = "(abortDetailMessage == null ? "" : ": " + abortDetailMessage);
         perfanaClient.callPerfanaEvent(perfanaTestContext, eventTitle, eventDescription);
         this.eventCheck = new EventCheck(eventName, CLASSNAME, EventStatus.ABORTED, eventDescription);
     }
