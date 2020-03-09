@@ -65,7 +65,7 @@ public final class PerfanaClient implements PerfanaCaller {
     }
 
     @Override
-    public void callPerfanaTestEndpoint(TestContext context, boolean completed) throws KillSwitchException, PerfanaClientException  {
+    public void callPerfanaTestEndpoint(TestContext context, boolean completed) throws PerfanaClientException, KillSwitchException  {
         String json = perfanaMessageToJson(context, completed);
         RequestBody body = RequestBody.create(json, JSON);
 

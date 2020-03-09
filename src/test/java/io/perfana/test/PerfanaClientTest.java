@@ -195,6 +195,11 @@ public class PerfanaClientTest
 
         PerfanaClient perfanaClient = createPerfanaClient();
         TestContext testContext = new TestContextBuilder().build();
-        perfanaClient.callPerfanaTestEndpoint(testContext, false);
+        try {
+            perfanaClient.callPerfanaTestEndpoint(testContext, false);
+        } catch (PerfanaClientException e) {
+            logger.error("End test call faield: ", e);
+            eventCheck = new EventCheck(eventName, CLASSNAME, EventStatus.FAILURE, "Failed to send end test call: " + e.getMessage());
+        }
     }
 }
