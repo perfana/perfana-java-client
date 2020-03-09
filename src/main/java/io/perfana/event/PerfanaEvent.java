@@ -70,22 +70,22 @@ public class PerfanaEvent extends EventAdapter {
 
         perfanaClient = builder.build();
 
-        perfanaClient.callPerfanaEvent(perfanaTestContext, "Test start");
+        perfanaClient.callPerfanaEvent(perfanaTestContext, "Test start", "Test start");
     }
 
     @Override
     public void afterTest() {
-        perfanaClient.callPerfanaEvent(perfanaTestContext, "Test finish");
+        perfanaClient.callPerfanaEvent(perfanaTestContext, "Test end", "Test run completed");
         perfanaClient.callPerfanaTestEndpoint(perfanaTestContext, true);
 
         // assume all is ok, will be overridden in case of assertResult exceptions
         eventCheck = new EventCheck(eventName, CLASSNAME, EventStatus.SUCCESS, "All ok!");
         try {
             String text = perfanaClient.assertResults();
-            logger.info("Received Perfana assertion text: " + text);
+            logger.info("Received Perfana check results: " + text);
         } catch (PerfanaClientException e) {
-            logger.error("Assert Perfana session call failed.", e);
-            eventCheck = new EventCheck(eventName, CLASSNAME, EventStatus.FAILURE, "Failed to check assert results: " + e.getMessage());
+            logger.error("Perfana checks failed.", e);
+            eventCheck = new EventCheck(eventName, CLASSNAME, EventStatus.FAILURE, "Failed to get check results: " + e.getMessage());
         } catch (PerfanaAssertionsAreFalse perfanaAssertionsAreFalse) {
             eventCheck = new EventCheck(eventName, CLASSNAME, EventStatus.FAILURE, perfanaAssertionsAreFalse.getMessage());
         }
@@ -93,8 +93,9 @@ public class PerfanaEvent extends EventAdapter {
 
     @Override
     public void abortTest() {
+        String eventTitle = "Test aborted";
         String eventDescription = "Test aborted" + (abortDetailMessage == null ? "" : ": " + abortDetailMessage);
-        perfanaClient.callPerfanaEvent(perfanaTestContext, eventDescription);
+        perfanaClient.callPerfanaEvent(perfanaTestContext, eventTitle, eventDescription);
         this.eventCheck = new EventCheck(eventName, CLASSNAME, EventStatus.ABORTED, eventDescription);
     }
 
@@ -117,7 +118,7 @@ public class PerfanaEvent extends EventAdapter {
     @Override
     public void customEvent(CustomEvent customEvent) {
         try {
-            perfanaClient.callPerfanaEvent(perfanaTestContext, customEvent.getDescription());
+            perfanaClient.callPerfanaEvent(perfanaTestContext, customEvent.getName(), customEvent.getDescription());
         } catch (Exception e) {
             logger.error("Perfana call event failed", e);
         }
