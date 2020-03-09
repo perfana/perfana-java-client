@@ -17,9 +17,7 @@
  */
 package io.perfana.client.api;
 
-import io.perfana.client.exception.PerfanaClientException;
-
 public interface PerfanaCaller {
-    void callPerfanaEvent(TestContext context, String eventTitle, String eventDescription) throws PerfanaClientException ;
-    void callPerfanaTestEndpoint(TestContext context, boolean complete) throws PerfanaClientException;
+    void callPerfanaEvent(TestContext context, String eventTitle, String eventDescription);
+    void callPerfanaTestEndpoint(TestContext context, boolean complete);
 }

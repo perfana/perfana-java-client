@@ -76,12 +76,8 @@ public class PerfanaEvent extends EventAdapter {
     @Override
     public void afterTest() {
         perfanaClient.callPerfanaEvent(perfanaTestContext, "Test end", "Test run completed");
-        try {
-            perfanaClient.callPerfanaTestEndpoint(perfanaTestContext, true);
-        } catch (PerfanaClientException e) {
-            logger.error("End test call faield: ", e);
-            eventCheck = new EventCheck(eventName, CLASSNAME, EventStatus.FAILURE, "Failed to send end test call: " + e.getMessage());
-        }
+
+        perfanaClient.callPerfanaTestEndpoint(perfanaTestContext, true);
 
         // assume all is ok, will be overridden in case of assertResult exceptions
         eventCheck = new EventCheck(eventName, CLASSNAME, EventStatus.SUCCESS, "All ok!");
@@ -99,7 +95,7 @@ public class PerfanaEvent extends EventAdapter {
     @Override
     public void abortTest() {
         String eventTitle = "Test aborted";
-        String eventDescription = (abortDetailMessage == null ? "" : ": " + abortDetailMessage);
+        String eventDescription = abortDetailMessage == null ? "" : abortDetailMessage;
         perfanaClient.callPerfanaEvent(perfanaTestContext, eventTitle, eventDescription);
         this.eventCheck = new EventCheck(eventName, CLASSNAME, EventStatus.ABORTED, eventDescription);
     }
@@ -117,9 +113,6 @@ public class PerfanaEvent extends EventAdapter {
         } catch (KillSwitchException killSwitchException) {
             abortDetailMessage = killSwitchException.getMessage();
             throw killSwitchException;
-        } catch (PerfanaClientException e) {
-            logger.error("Perfana keepalive call failed: ", e);
-            eventCheck = new EventCheck(eventName, CLASSNAME, EventStatus.FAILURE, "Perfana keepalive call failed: " + e.getMessage());
         }
     }
 
