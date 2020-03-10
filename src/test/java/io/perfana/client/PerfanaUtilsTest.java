@@ -1,4 +1,4 @@
-/**
+/*
  * Perfana Java Client - Java library that talks to the Perfana server
  * Copyright (C) 2020  Peter Paul Bakker @ Stokpop, Daniel Moll @ Perfana.io
  *
@@ -22,7 +22,7 @@ import org.junit.Test;
 import java.util.Arrays;
 import java.util.Collections;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 public class PerfanaUtilsTest {
 

@@ -1,4 +1,4 @@
-/**
+/*
  * Perfana Java Client - Java library that talks to the Perfana server
  * Copyright (C) 2020  Peter Paul Bakker @ Stokpop, Daniel Moll @ Perfana.io
  *
@@ -15,30 +15,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package io.perfana.event.generator;
+package io.perfana.event;
 
-import org.junit.Test;
+import nl.stokpop.eventscheduler.api.*;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+public class PerfanaEventFactory implements EventFactory {
 
-public class GeneratorPropertiesTest {
-
-    @Test
-    public void retrieveProperties() {
-        String text = "    @my-meta-prop    =     bar  \n" +
-                "   my-prop    = foo   \n";
-
-        GeneratorProperties props = new GeneratorProperties(text);
-
-        // expect the properties to be visible in toString()
-        assertTrue(props.toString().contains("bar"));
-        assertTrue(props.toString().contains("foo"));
-        
-        assertEquals("bar", props.getMetaProperty("@my-meta-prop"));
-        assertEquals("foo", props.getProperty("my-prop"));
-        
-
+    @Override
+    public Event create(String eventName, TestContext testContext, EventProperties eventProperties, EventLogger logger) {
+        return new PerfanaEvent(eventName, testContext, eventProperties, logger);
     }
-
 }

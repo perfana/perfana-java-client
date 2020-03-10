@@ -1,4 +1,4 @@
-/**
+/*
  * Perfana Java Client - Java library that talks to the Perfana server
  * Copyright (C) 2020  Peter Paul Bakker @ Stokpop, Daniel Moll @ Perfana.io
  *
@@ -15,17 +15,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package io.perfana.event;
+package io.perfana.event.generator;
 
-import io.perfana.client.api.TestContext;
+import nl.stokpop.eventscheduler.api.*;
 
-public interface PerfanaEventBroadcaster {
+public class PerfanaEventGeneratorFactory implements EventGeneratorFactory {
 
-    void broadcastBeforeTest(TestContext context, PerfanaEventProperties eventProperties);
-
-    void broadcastAfterTest(TestContext context, PerfanaEventProperties eventProperties);
-
-    void broadCastKeepAlive(TestContext context, PerfanaEventProperties eventProperties);
-
-    void broadcastCustomEvent(TestContext context, PerfanaEventProperties eventProperties, ScheduleEvent event);
+    @Override
+    public EventGenerator create(TestContext context, EventGeneratorProperties properties, EventLogger logger) {
+        throw new UnsupportedOperationException("Sorry, but the PerfanaEventGeneratorFactory has no implementation as of yet...");
+    }
 }

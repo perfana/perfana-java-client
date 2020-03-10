@@ -1,4 +1,4 @@
-/**
+/*
  * Perfana Java Client - Java library that talks to the Perfana server
  * Copyright (C) 2020  Peter Paul Bakker @ Stokpop, Daniel Moll @ Perfana.io
  *
@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package io.perfana.event2;
+package io.perfana.event;
 
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import nl.stokpop.eventscheduler.api.*;
@@ -31,7 +31,22 @@ import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
 import static nl.stokpop.eventscheduler.api.EventProperties.PROP_FACTORY_CLASSNAME;
 
-public class PerfanaEvent2Test {
+public class PerfanaEventTest {
+
+    private static final String REPLY_BODY_BENCHMARK_RESULTS = "{\n" +
+        "    \"requirements\": {\n" +
+        "        \"result\": true,\n" +
+        "        \"deeplink\": \"http://localhost:4000/test-run/perfana-gatling-afterburner-6?application=Afterburner&testType=loadTest&testEnvironment=acc\"\n" +
+        "    },\n" +
+        "    \"benchmarkPreviousTestRun\": {\n" +
+        "        \"result\": true,\n" +
+        "        \"deeplink\": \"http://localhost:4000/test-run/perfana-gatling-afterburner-6?application=Afterburner&testType=loadTest&testEnvironment=acc\"\n" +
+        "    },\n" +
+        "    \"benchmarkBaselineTestRun\": {\n" +
+        "        \"result\": true,\n" +
+        "        \"deeplink\": \"http://localhost:4000/test-run/perfana-gatling-afterburner-6?application=Afterburner&testType=loadTest&testEnvironment=acc\"\n" +
+        "    }\n" +
+        "}";
 
     @Rule
     public WireMockRule wireMockRule = new WireMockRule(options().dynamicPort());
@@ -49,8 +64,7 @@ public class PerfanaEvent2Test {
 
         wireMockRule.stubFor(get(urlPathMatching("/get-benchmark-results/.*"))
                         .willReturn(aResponse()
-                                .withBody("{ 'requirements': {" +
-                                        "         'result': true } }")));
+                                .withBody(REPLY_BODY_BENCHMARK_RESULTS)));
 
         TestContext testContext = new TestContextBuilder().build();
 
@@ -61,7 +75,7 @@ public class PerfanaEvent2Test {
         EventProperties eventProperties = new EventProperties(props);
         EventLogger eventLogger = EventLoggerStdOut.INSTANCE;
 
-        PerfanaEvent2 event = new PerfanaEvent2("text", testContext, eventProperties, eventLogger);
+        PerfanaEvent event = new PerfanaEvent("text", testContext, eventProperties, eventLogger);
 
         event.beforeTest();
 

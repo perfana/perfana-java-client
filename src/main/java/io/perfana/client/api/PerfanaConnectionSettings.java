@@ -1,4 +1,4 @@
-/**
+/*
  * Perfana Java Client - Java library that talks to the Perfana server
  * Copyright (C) 2020  Peter Paul Bakker @ Stokpop, Daniel Moll @ Perfana.io
  *
@@ -23,13 +23,11 @@ public class PerfanaConnectionSettings {
 
     private final int retryMaxCount;
     private final Duration retryDuration;
-    private final Duration keepAliveDuration;
     private final String perfanaUrl;
 
-    PerfanaConnectionSettings(int retryMaxCount, Duration retryDuration, Duration keepAliveDuration, String perfanaUrl) {
+    PerfanaConnectionSettings(int retryMaxCount, Duration retryDuration, String perfanaUrl) {
         this.retryMaxCount = retryMaxCount;
         this.retryDuration = retryDuration;
-        this.keepAliveDuration = keepAliveDuration;
         this.perfanaUrl = perfanaUrl;
     }
 
@@ -39,10 +37,6 @@ public class PerfanaConnectionSettings {
 
     public Duration getRetryDuration() {
         return retryDuration;
-    }
-
-    public Duration getKeepAliveDuration() {
-        return keepAliveDuration;
     }
 
     public String getPerfanaUrl() {

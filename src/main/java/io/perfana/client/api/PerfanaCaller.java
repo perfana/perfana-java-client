@@ -1,4 +1,4 @@
-/**
+/*
  * Perfana Java Client - Java library that talks to the Perfana server
  * Copyright (C) 2020  Peter Paul Bakker @ Stokpop, Daniel Moll @ Perfana.io
  *
@@ -18,6 +18,6 @@
 package io.perfana.client.api;
 
 public interface PerfanaCaller {
-    void callPerfanaEvent(TestContext context, String eventDescription);
+    void callPerfanaEvent(TestContext context, String eventTitle, String eventDescription);
     void callPerfanaTestEndpoint(TestContext context, boolean complete);
 }

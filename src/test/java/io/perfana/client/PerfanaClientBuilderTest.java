@@ -1,4 +1,4 @@
-/**
+/*
  * Perfana Java Client - Java library that talks to the Perfana server
  * Copyright (C) 2020  Peter Paul Bakker @ Stokpop, Daniel Moll @ Perfana.io
  *
@@ -21,24 +21,19 @@ import io.perfana.client.api.PerfanaConnectionSettingsBuilder;
 import io.perfana.client.api.TestContextBuilder;
 import org.junit.Test;
 
-import java.net.URL;
-import java.net.URLClassLoader;
+import static org.junit.Assert.assertNotNull;
 
 public class PerfanaClientBuilderTest {
 
     @Test
     public void createWithAlternativeClass() {
-         String alternativeClassCustomEvents = "  @generator-class=io.perfana.event.generator.EventScheduleGeneratorDefault \n" +
-                 "  eventSchedule=PT1M|do-something \n";
-
          PerfanaClientBuilder perfanaClientBuilder = new PerfanaClientBuilder()
-                 .setCustomEvents(alternativeClassCustomEvents)
                  .setTestContext(new TestContextBuilder().build())
                  .setPerfanaConnectionSettings(new PerfanaConnectionSettingsBuilder().build());
 
-        PerfanaClient perfanaClient = perfanaClientBuilder.build(new URLClassLoader(new URL[]{}, Thread.currentThread().getContextClassLoader()));
+        PerfanaClient perfanaClient = perfanaClientBuilder.build();
 
-        // TODO what to assert?
+        assertNotNull(perfanaClient);
 
     }
 
