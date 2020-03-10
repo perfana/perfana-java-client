@@ -25,7 +25,7 @@ import io.perfana.client.api.TestContextBuilder;
 import io.perfana.client.exception.PerfanaAssertionsAreFalse;
 import io.perfana.client.exception.PerfanaClientException;
 import nl.stokpop.eventscheduler.api.*;
-import nl.stokpop.eventscheduler.exception.KillSwitchException;
+import nl.stokpop.eventscheduler.exception.handler.KillSwitchException;
 
 import java.util.Collection;
 import java.util.Set;

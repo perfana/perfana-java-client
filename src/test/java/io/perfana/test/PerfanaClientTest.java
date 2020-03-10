@@ -21,7 +21,7 @@ import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import io.perfana.client.PerfanaClient;
 import io.perfana.client.PerfanaClientBuilder;
 import io.perfana.client.api.*;
-import nl.stokpop.eventscheduler.exception.KillSwitchException;
+import nl.stokpop.eventscheduler.exception.handler.KillSwitchException;
 import org.junit.Rule;
 import org.junit.Test;
 

@@ -24,10 +24,10 @@ import io.perfana.client.api.PerfanaConnectionSettings;
 import io.perfana.client.api.TestContext;
 import io.perfana.client.exception.PerfanaAssertionsAreFalse;
 import io.perfana.client.exception.PerfanaClientException;
-import io.perfana.client.exception.PerfanaClientRuntimeException;
 import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
-import nl.stokpop.eventscheduler.exception.KillSwitchException;
+import nl.stokpop.eventscheduler.exception.handler.AbortSchedulerException;
+import nl.stokpop.eventscheduler.exception.handler.KillSwitchException;
 import okhttp3.*;
 import org.jetbrains.annotations.Nullable;
 
@@ -62,7 +62,7 @@ public final class PerfanaClient implements PerfanaCaller {
     }
 
     @Override
-    public void callPerfanaTestEndpoint(TestContext context, boolean completed) throws KillSwitchException  {
+    public void callPerfanaTestEndpoint(TestContext context, boolean completed) throws KillSwitchException {
         String json = perfanaMessageToJson(context, completed);
         RequestBody body = RequestBody.create(json, JSON);
 
@@ -85,14 +85,14 @@ public final class PerfanaClient implements PerfanaCaller {
             final int reponseCode = result.code();
             final ResponseBody responseBody = result.body();
             if (reponseCode == HTTP_BAD_REQUEST) {
-
-                DocumentContext doc = parseContext.parse(responseBody);
-                String message = doc.read("$.message");
-
-                throw new PerfanaClientRuntimeException(message);
-
+                if (responseBody != null) {
+                    DocumentContext doc = parseContext.parse(responseBody.string());
+                    String message = doc.read("$.message");
+                    throw new AbortSchedulerException(message);
+                } else {
+                    logger.error("No response body in test endpoint result: " + result);
+                }
             } else {
-
                 if (responseBody != null) {
                     String bodyAsString = responseBody.string();
                     Boolean abort = parseResultForAbort(bodyAsString);
@@ -101,8 +101,7 @@ public final class PerfanaClient implements PerfanaCaller {
                         logger.info("abort requested by Perfana! Reason: '" + message + "'");
                         throw new KillSwitchException(message);
                     }
-                }
-                else {
+                } else {
                     logger.error("No response body in test endpoint result: " + result);
                 }
             }
@@ -278,26 +277,19 @@ public final class PerfanaClient implements PerfanaCaller {
                     String.format("Trying to get test run check results at %s, attempt [%d/%d]. Returncode [%d]: Test run evaluation in progress ...",
                     url, retryCount, maxRetryCount, reponseCode));
                 }
-
             } catch (IOException e) {
                 throw new PerfanaClientException("Exception while trying to get test run check results at [" + url + "]", e);
             }
+
             if (!assertionsAvailable) {
                 sleep(sleepDurationMillis);
             }
         }
         if (!assertionsAvailable) {
-
-            if(!checksSpecified) {
-                return null;
-            }
-            else {
-                logger.warn("Failed to get test run check results at [" + url + "], maximum attempts reached!");
-                throw new PerfanaClientException("Failed to get test run check results at [" + url + "], maximum attempts reached!");
-            }
-
+            logger.warn("Failed to get test run check results at [" + url + "], maximum attempts reached!");
+            throw new PerfanaClientException("Failed to get test run check results at [" + url + "], maximum attempts reached!");
         }
-        return assertions;
+        return checksSpecified ? assertions : null;
     }
 
     private void sleep(long sleepDurationMillis) {
