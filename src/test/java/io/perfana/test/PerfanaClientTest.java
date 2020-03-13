@@ -191,7 +191,7 @@ public class PerfanaClientTest
     public void testPerfanaTestCallWithResult() {
         wireMockRule.stubFor(post(urlEqualTo("/test"))
                 .willReturn(aResponse()
-                        .withBody("{ abort: true, test-results: [ ] }")));
+                        .withBody("{ \"abort\": true, \"abortMessage\": \"What is wrong?\" }")));
 
         PerfanaClient perfanaClient = createPerfanaClient();
         TestContext testContext = new TestContextBuilder().build();
