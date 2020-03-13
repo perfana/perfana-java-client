@@ -17,6 +17,7 @@
  */
 package io.perfana.client.domain;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 
 import java.util.List;
@@ -40,4 +41,11 @@ public class PerfanaMessage {
     private final List<String> tags;
     @Singular
     private final List<Variable> variables;
+
+    // dirty trick to keep camel casing and have one field in json
+    // https://stackoverflow.com/questions/54680261/jackson-jsonproperty-create-duplicate-name
+    @JsonProperty("CIBuildResultsUrl")
+    public String getcibuildResultsUrl() {
+        return CIBuildResultsUrl;
+    }
 }
