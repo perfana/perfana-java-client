@@ -75,14 +75,19 @@ public class PerfanaEvent extends EventAdapter {
 
     @Override
     public void afterTest() {
-        perfanaClient.callPerfanaEvent(perfanaTestContext, "Test end", "Test run completed");
+
+        if (abortDetailMessage != null) {
+            perfanaClient.callPerfanaEvent(perfanaTestContext, "Test abort", abortDetailMessage);
+        }
+        else {
+            perfanaClient.callPerfanaEvent(perfanaTestContext, "Test end", "Test run completed");
+        }
 
         perfanaClient.callPerfanaTestEndpoint(perfanaTestContext, true);
 
         // assume all is ok, will be overridden in case of assertResult exceptions
         eventCheck = new EventCheck(eventName, CLASSNAME, EventStatus.SUCCESS, "All ok!");
         try {
-            logger.info("before assert result call");
             String text = perfanaClient.assertResults();
             logger.info("Received Perfana check results: " + text);
         } catch (PerfanaClientException e) {

@@ -37,6 +37,7 @@ import okhttp3.*;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.util.Optional;
 
 import static java.net.HttpURLConnection.*;
 
@@ -225,9 +226,7 @@ public final class PerfanaClient implements PerfanaCaller {
         boolean assertionsAvailable = false;
         boolean checksSpecified = false;
 
-        logger.debug(">>> Start retry loop for results...");
         while (!assertionsAvailable && retryCount++ < maxRetryCount) {
-            logger.debug(">>> Start new call for results... " + retryCount);
             try (Response response = client.newCall(request).execute()) {
                 ResponseBody responseBody = response.body();
 
@@ -298,39 +297,27 @@ public final class PerfanaClient implements PerfanaCaller {
         } catch (IOException e) {
             throw new PerfanaClientRuntimeException("Unable to parse benchmark message: " + assertions, e);
         }
-        Result baseline = benchmark.getBenchmarkBaselineTestRun();
-        Result previous = benchmark.getBenchmarkPreviousTestRun();
-        Result requirements = benchmark.getRequirements();
+        Optional<Result> baseline = Optional.ofNullable(benchmark.getBenchmarkBaselineTestRun());
+        Optional<Result> previous = Optional.ofNullable(benchmark.getBenchmarkPreviousTestRun());
+        Optional<Result> requirements = Optional.ofNullable(benchmark.getRequirements());
 
-        logger.info("Compared to baseline test run: " + baseline.isResult());
-        logger.info("Compared to previous test run: " + previous.isResult());
-        logger.info("Requirements: " + requirements.isResult());
+        requirements.ifPresent(r -> logger.info("Requirements: " + r.isResult()));
+        baseline.ifPresent(r -> logger.info("Compared to baseline test run: " + r.isResult()));
+        previous.ifPresent(r -> logger.info("Compared to previous test run: " + r.isResult()));
 
         StringBuilder text = new StringBuilder();
         if (assertions.contains("false")) {
             text.append("One or more Perfana assertions are failing: \n");
-            if (!requirements.isResult()) {
-                text.append("Requirements check failed: ").append(requirements.getDeeplink()).append("\n");
-            }
-            if (!previous.isResult()) {
-                text.append("Comparison check to previous test run failed: ").append(previous.getDeeplink()).append("\n");
-            }
-            if (!baseline.isResult()) {
-                text.append("Comparison check to baseline test run failed: ").append(baseline.getDeeplink());
-            }
+            requirements.filter(r -> !r.isResult()).ifPresent(r -> text.append("Requirements check failed: ").append(r.getDeeplink()).append("\n"));
+            baseline.filter(r -> !r.isResult()).ifPresent(r -> text.append("Comparison check to baseline test run failed: ").append(r.getDeeplink()).append("\n"));
+            previous.filter(r -> !r.isResult()).ifPresent(r -> text.append("Comparison check to previous test run failed: ").append(r.getDeeplink()).append("\n"));
             logger.info("Test run has failed checks: " + text);
             throw new PerfanaAssertionsAreFalse(text.toString());
         } else {
             text.append("All configured checks are OK: \n");
-            if (requirements.isResult()) {
-                text.append(requirements.getDeeplink()).append("\n");
-            }
-            if (previous.isResult()) {
-                text.append(previous.getDeeplink()).append("\n");
-            }
-            if (baseline.isResult()) {
-                text.append(baseline.getDeeplink());
-            }
+            requirements.ifPresent(r -> text.append(r.getDeeplink()).append("\n"));
+            baseline.ifPresent(r -> text.append(r.getDeeplink()).append("\n"));
+            previous.ifPresent(r -> text.append(r.getDeeplink()));
         }
         return text.toString();
     }
