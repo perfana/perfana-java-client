@@ -197,4 +197,17 @@ public class PerfanaClientTest
         TestContext testContext = new TestContextBuilder().build();
         perfanaClient.callPerfanaTestEndpoint(testContext, false);
     }
+
+    @Test
+    public void testPerfanaTestCallWithResultCompletedTrue() {
+        wireMockRule.stubFor(post(urlEqualTo("/test"))
+            .willReturn(aResponse()
+                .withBody("{ \"abort\": true, \"abortMessage\": \"What is wrong?\" }")));
+
+        PerfanaClient perfanaClient = createPerfanaClient();
+        TestContext testContext = new TestContextBuilder().build();
+        // should not throw KillSwitchException when completed is true (not a keep alive call)
+        perfanaClient.callPerfanaTestEndpoint(testContext, true);
+    }
+
 }

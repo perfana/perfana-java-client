@@ -34,7 +34,8 @@ public class PerfanaTest {
     private final String version;
     private final String environment;
     private final String workload;
-    private final String CIBuildResultsUrl;
+    @JsonProperty("CIBuildResultsUrl")
+    private final String cibuildResultsUrl;
 
     private final int duration;
     private final int plannedDuration;
@@ -49,16 +50,9 @@ public class PerfanaTest {
     private final String abortMessage;
 
     @Singular
-    private final List<String> alerts;
+    private final List<Alert> alerts;
     @Singular
     private final List<String> tags;
     @Singular
-    private final List<String> variables;
-
-    // dirty trick to keep camel casing and have one field in json
-    // https://stackoverflow.com/questions/54680261/jackson-jsonproperty-create-duplicate-name
-    @JsonProperty("CIBuildResultsUrl")
-    public String getcibuildResultsUrl() {
-        return CIBuildResultsUrl;
-    }
+    private final List<Variable> variables;
 }

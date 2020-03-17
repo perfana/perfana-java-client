@@ -1,0 +1,55 @@
+{
+  "_id": "9gj8ywAWfuCp2PJcd",
+  "testRunId": "Afterburner-1.0-stressTest-acc-stress-test-1",
+  "CIBuildResultsUrl": "unknown",
+  "abort": true,
+  "alerts": [
+    {
+      "timestamp": "2020-03-17T09:12:22.012Z",
+      "message": "80% of Maximum heap used",
+      "tags": [
+        {
+          "key": "source",
+          "value": "Alertmanager"
+        },
+        {
+          "key": "alertname",
+          "value": "HighHeapUsage"
+        },
+        {
+          "key": "severity",
+          "value": "warning"
+        },
+        {
+          "key": "system_under_test",
+          "value": "Afterburner"
+        },
+        {
+          "key": "test_environment",
+          "value": "acc"
+        }
+      ]
+    }
+  ],
+  "application": "Afterburner",
+  "applicationRelease": "1.0",
+  "completed": true,
+  "duration": 360,
+  "end": "2020-03-17T09:12:28.561Z",
+  "expires": "2050-03-10T09:12:28.561Z",
+  "plannedDuration": 1801,
+  "rampUp": 1800,
+  "start": "2020-03-17T09:06:28.000Z",
+  "tags": [
+    "stress-test"
+  ],
+  "testEnvironment": "acc",
+  "testType": "stressTest",
+  "variables": [
+    {
+      "placeholder": "$service",
+      "value": "afterburner"
+    }
+  ],
+  "abortMessage": "Test run aborted due to alert with message 80% of Maximum heap used , with tag: alertname=HighHeapUsage"
+}

@@ -60,7 +60,7 @@ public class PerfanaEventTest {
 
         wireMockRule.stubFor(post(urlEqualTo("/test"))
                         .willReturn(aResponse()
-                                .withBody("{ \"abort\":false, hello: world }")));
+                                .withBody("{ \"abort\":false }")));
 
         wireMockRule.stubFor(get(urlPathMatching("/get-benchmark-results/.*"))
                         .willReturn(aResponse()

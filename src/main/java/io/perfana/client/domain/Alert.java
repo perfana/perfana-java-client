@@ -17,7 +17,6 @@
  */
 package io.perfana.client.domain;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 
 import java.util.List;
@@ -26,20 +25,9 @@ import java.util.List;
 @Builder
 @NoArgsConstructor(force = true, access = AccessLevel.PRIVATE)
 @AllArgsConstructor
-public class PerfanaMessage {
-    private final String testRunId;
-    private final String workload;
-    private final String environment;
-    private final String systemUnderTest;
-    private final String version;
-    @JsonProperty("CIBuildResultsUrl")
-    private final String cibuildResultsUrl;
-    private final String rampUp;
-    private final String duration;
-    private final boolean completed;
-    private final String annotations;
+public class Alert {
+    private final String message;
+    private final String timestamp;
     @Singular
-    private final List<String> tags;
-    @Singular
-    private final List<Variable> variables;
+    private final List<Tag> tags;
 }
