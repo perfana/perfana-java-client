@@ -29,7 +29,7 @@ import java.util.List;
 public class PerfanaMessage {
     private final String testRunId;
     private final String workload;
-    private final String environment;
+    private final String testEnvironment;
     private final String systemUnderTest;
     private final String version;
     @JsonProperty("CIBuildResultsUrl")

@@ -27,7 +27,7 @@ import java.util.List;
 @AllArgsConstructor
 public class PerfanaEvent {
     private final String systemUnderTest;
-    private final String environment;
+    private final String testEnvironment;
     private final String title;
     private final String description;
     @Singular

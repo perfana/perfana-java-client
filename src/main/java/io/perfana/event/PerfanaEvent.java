@@ -141,7 +141,7 @@ public class PerfanaEvent extends EventAdapter {
                 .setCIBuildResultsUrl(testContext.getCIBuildResultsUrl())
                 .setConstantLoadTime(testContext.getPlannedDuration())
                 .setRampupTime(testContext.getRampupTime())
-                .setEnvironment(testContext.getEnvironment())
+                .setTestEnvironment(testContext.getTestEnvironment())
                 .setTestRunId(testContext.getTestRunId())
                 .setWorkload(testContext.getWorkload()).build();
     }

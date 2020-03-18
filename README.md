@@ -16,7 +16,7 @@ Create a PerfanaClient using the builders:
         TestContext context = new TestContextBuilder()
                 .setSystemUnderTest("sut")
                 .setWorkload("workload")
-                .setEnvironment("env")
+                .setTestEnvironment("env")
                 .setTestRunId("testRunId")
                 .setCIBuildResultsUrl("http://url")
                 .setVersion("version")

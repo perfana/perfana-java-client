@@ -37,7 +37,7 @@ public class TestContextBuilder {
     private String annotations = "";
     private String systemUnderTest = "unknown";
     private String workload = "unknown";
-    private String environment = "unknown";
+    private String testEnvironment = "unknown";
     private String testRunId = "unknown_" + dateTimeFormatter.format(LocalDateTime.now());
     private String ciBuildResultsUrl = "unknown";
     private String version = "unknown";
@@ -60,9 +60,9 @@ public class TestContextBuilder {
         return this;
     }
 
-    public TestContextBuilder setEnvironment(String environment) {
-        if (PerfanaUtils.hasValue(environment)) {
-            this.environment = environment;
+    public TestContextBuilder setTestEnvironment(String testEnvironment) {
+        if (PerfanaUtils.hasValue(testEnvironment)) {
+            this.testEnvironment = testEnvironment;
         }
         return this;
     }
@@ -132,7 +132,7 @@ public class TestContextBuilder {
     }
 
     public TestContext build() {
-        return new TestContext(systemUnderTest, workload, environment, testRunId, ciBuildResultsUrl, version, rampupTime, constantLoadTime, annotations, variables, tags);
+        return new TestContext(systemUnderTest, workload, testEnvironment, testRunId, ciBuildResultsUrl, version, rampupTime, constantLoadTime, annotations, variables, tags);
     }
 
     public TestContextBuilder setRampupTimeInSeconds(String rampupTimeSeconds) {

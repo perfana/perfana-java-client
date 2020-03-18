@@ -160,7 +160,7 @@ public final class PerfanaClient implements PerfanaCaller {
         PerfanaMessage.PerfanaMessageBuilder perfanaMessageBuilder = PerfanaMessage.builder()
             .testRunId(context.getTestRunId())
             .workload(context.getWorkload())
-            .environment(context.getEnvironment())
+            .testEnvironment(context.getTestEnvironment())
             .systemUnderTest(context.getSystemUnderTest())
             .version(context.getVersion())
             .cibuildResultsUrl(context.getCIBuildResultsUrl())
@@ -186,7 +186,7 @@ public final class PerfanaClient implements PerfanaCaller {
 
         PerfanaEvent event = PerfanaEvent.builder()
             .systemUnderTest(context.getSystemUnderTest())
-            .environment(context.getEnvironment())
+            .testEnvironment(context.getTestEnvironment())
             .title(eventTitle)
             .description(eventDescription)
             .tag(context.getWorkload())
@@ -326,7 +326,7 @@ public final class PerfanaClient implements PerfanaCaller {
     public String toString() {
         return "PerfanaClient [testRunId:" + context.getTestRunId() +
             " workload: " + context.getWorkload() +
-            " environment: " + context.getEnvironment() +
+            " testEnvironment: " + context.getTestEnvironment() +
             " Perfana url: " + settings.getPerfanaUrl() + "]";
     }
 }

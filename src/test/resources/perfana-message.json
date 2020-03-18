@@ -1,7 +1,7 @@
 {
   "testRunId": "Afterburner-1.0-loadTest-dev-2020-03-14T12:41:24Z",
   "workload": "loadTest",
-  "environment": "dev",
+  "testEnvironment": "dev",
   "systemUnderTest": "Afterburner",
   "version": "1.0",
   "rampUp": "60",

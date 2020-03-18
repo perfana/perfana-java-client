@@ -32,7 +32,7 @@ public class PerfanaTest {
     private final String systemUnderTest;
     private final String testRunId;
     private final String version;
-    private final String environment;
+    private final String testEnvironment;
     private final String workload;
     @JsonProperty("CIBuildResultsUrl")
     private final String cibuildResultsUrl;
