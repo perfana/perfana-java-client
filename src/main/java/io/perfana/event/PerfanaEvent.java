@@ -75,7 +75,13 @@ public class PerfanaEvent extends EventAdapter {
 
     @Override
     public void afterTest() {
-        perfanaClient.callPerfanaEvent(perfanaTestContext, "Test end", "Test run completed");
+
+        if (abortDetailMessage != null) {
+            perfanaClient.callPerfanaEvent(perfanaTestContext, "Test abort", abortDetailMessage);
+        }
+        else {
+            perfanaClient.callPerfanaEvent(perfanaTestContext, "Test end", "Test run completed");
+        }
 
         perfanaClient.callPerfanaTestEndpoint(perfanaTestContext, true);
 
@@ -135,7 +141,7 @@ public class PerfanaEvent extends EventAdapter {
                 .setCIBuildResultsUrl(testContext.getCIBuildResultsUrl())
                 .setConstantLoadTime(testContext.getPlannedDuration())
                 .setRampupTime(testContext.getRampupTime())
-                .setEnvironment(testContext.getEnvironment())
+                .setTestEnvironment(testContext.getTestEnvironment())
                 .setTestRunId(testContext.getTestRunId())
                 .setWorkload(testContext.getWorkload()).build();
     }

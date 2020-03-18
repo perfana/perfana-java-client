@@ -17,25 +17,27 @@
  */
 package io.perfana.client;
 
-import com.jayway.jsonpath.*;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import io.perfana.client.api.PerfanaCaller;
 import io.perfana.client.api.PerfanaClientLogger;
 import io.perfana.client.api.PerfanaConnectionSettings;
 import io.perfana.client.api.TestContext;
+import io.perfana.client.domain.*;
 import io.perfana.client.exception.PerfanaAssertionsAreFalse;
 import io.perfana.client.exception.PerfanaClientException;
-import net.minidev.json.JSONArray;
-import net.minidev.json.JSONObject;
+import io.perfana.client.exception.PerfanaClientRuntimeException;
 import nl.stokpop.eventscheduler.exception.handler.AbortSchedulerException;
 import nl.stokpop.eventscheduler.exception.handler.KillSwitchException;
 import okhttp3.*;
-import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
-import java.util.List;
-import java.util.Map;
+import java.util.Optional;
 
 import static java.net.HttpURLConnection.*;
 
@@ -53,6 +55,22 @@ public final class PerfanaClient implements PerfanaCaller {
     
     private final boolean assertResultsEnabled;
 
+    private static final ObjectReader perfanaBenchmarkReader;
+    private static final ObjectReader messageReader;
+    private static final ObjectReader perfanaTestReader;
+    private static final ObjectWriter perfanaMessageWriter;
+    private static final ObjectWriter perfanaEventWriter;
+
+    static {
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        perfanaBenchmarkReader = objectMapper.reader().forType(Benchmark.class);
+        messageReader = objectMapper.reader().forType(Message.class);
+        perfanaTestReader = objectMapper.reader().forType(PerfanaTest.class);
+        perfanaMessageWriter = objectMapper.writer().forType(PerfanaMessage.class);
+        perfanaEventWriter = objectMapper.writer().forType(PerfanaEvent.class);
+    }
+
     PerfanaClient(TestContext context, PerfanaConnectionSettings settings,
                   boolean assertResultsEnabled, PerfanaClientLogger logger) {
         this.context = context;
@@ -68,10 +86,6 @@ public final class PerfanaClient implements PerfanaCaller {
 
         String testUrl = settings.getPerfanaUrl() + "/test";
         logger.debug("call to endpoint: " + testUrl + " with json: " + json);
-        Configuration config = Configuration.defaultConfiguration()
-                .addOptions(Option.SUPPRESS_EXCEPTIONS);
-
-        ParseContext parseContext = JsonPath.using(config);
 
         Request request = new Request.Builder()
                 .url(testUrl)
@@ -84,55 +98,32 @@ public final class PerfanaClient implements PerfanaCaller {
 
             final int reponseCode = result.code();
             final ResponseBody responseBody = result.body();
+
             if (reponseCode == HTTP_BAD_REQUEST) {
                 if (responseBody != null) {
-                    DocumentContext doc = parseContext.parse(responseBody.string());
-                    String message = doc.read("$.message");
-                    throw new AbortSchedulerException(message);
+                    Message message = messageReader.readValue(responseBody.string());
+                    throw new AbortSchedulerException(message.getMessage());
                 } else {
                     logger.error("No response body in test endpoint result: " + result);
                 }
             } else {
                 if (responseBody != null) {
-                    String bodyAsString = responseBody.string();
-                    Boolean abort = parseResultForAbort(bodyAsString);
-                    if (abort != null && abort) {
-                        String message = parseResultForAbortMessage(bodyAsString);
-                        logger.info("abort requested by Perfana! Reason: '" + message + "'");
-                        throw new KillSwitchException(message);
+                    // only do the abort check for the keep alive calls, completed is final call
+                    if (!completed) {
+                        PerfanaTest test = perfanaTestReader.readValue(responseBody.string());
+                        if (test.isAbort()) {
+                            String message = test.getAbortMessage();
+                            logger.info("abort requested by Perfana! Reason: '" + message + "'");
+                            throw new KillSwitchException(message);
+                        }
                     }
                 } else {
                     logger.error("No response body in test endpoint result: " + result);
                 }
             }
         } catch (IOException e) {
-            logger.error("failed to call Perfana: " + e.getMessage());
+            logger.error("failed to call Perfana test endpoint: " + e.getMessage());
         }
-    }
-
-    private String parseResultForAbortMessage(String result) {
-        DocumentContext documentContext = JsonPath.parse(result);
-        String abortMessage;
-        try {
-            abortMessage = documentContext.read("abortMessage");
-        } catch (PathNotFoundException e) {
-            logger.warn("No 'abortMessage' field found in json [" + result + "]");
-            abortMessage = "Unknown: no 'abortMessage' found.";
-        }
-        return abortMessage;
-    }
-
-    @Nullable
-    private Boolean parseResultForAbort(String result) {
-        DocumentContext documentContext = JsonPath.parse(result);
-        Boolean abort;
-        try {
-            abort = documentContext.read("abort");
-        } catch (PathNotFoundException e) {
-            logger.warn("No 'abort' field found in json [" + result + "]");
-            abort = null;
-        }
-        return abort;
     }
 
     @Override
@@ -145,7 +136,7 @@ public final class PerfanaClient implements PerfanaCaller {
             String result = post(eventsUrl, json);
             logger.debug("result: " + result);
         } catch (IOException e) {
-            logger.error("failed to call perfana: " + e.getMessage());
+            logger.error("failed to call Perfana event endpoint: " + e.getMessage());
         }
     }
 
@@ -166,63 +157,46 @@ public final class PerfanaClient implements PerfanaCaller {
 
     public static String perfanaMessageToJson(TestContext context, boolean completed) {
 
-        JSONObject json = new JSONObject();
+        PerfanaMessage.PerfanaMessageBuilder perfanaMessageBuilder = PerfanaMessage.builder()
+            .testRunId(context.getTestRunId())
+            .workload(context.getWorkload())
+            .testEnvironment(context.getTestEnvironment())
+            .systemUnderTest(context.getSystemUnderTest())
+            .version(context.getVersion())
+            .cibuildResultsUrl(context.getCIBuildResultsUrl())
+            .rampUp(String.valueOf(context.getRampupTime().getSeconds()))
+            .duration(String.valueOf(context.getPlannedDuration().getSeconds()))
+            .completed(completed)
+            .annotations(context.getAnnotations())
+            .tags(context.getTags());
 
-        /* If variables parameter exists add them to the json */
-        Map<String, String> variables = context.getVariables();
-        if(variables != null && !variables.isEmpty()) {
-            JSONArray variablesArray = new JSONArray();
-            variables.forEach((key, value) -> variablesArray.add(createVariables(key, value)));
-            json.put("variables", variablesArray);
+        context.getVariables().forEach((k,v) -> perfanaMessageBuilder
+            .variable(Variable.builder().placeholder(k).value(v).build()));
+
+        PerfanaMessage perfanaMessage = perfanaMessageBuilder.build();
+
+        try {
+            return perfanaMessageWriter.writeValueAsString(perfanaMessage);
+        } catch (JsonProcessingException e) {
+            throw new PerfanaClientRuntimeException("Failed to write PerfanaMessage to json: " + perfanaMessage, e);
         }
-
-        /* If tags parameter exists add them to the json */
-        List<String> tags = context.getTags();
-        if(tags != null) {
-            JSONArray tagsArray = new JSONArray();
-            tagsArray.addAll(tags);
-            json.put("tags", tagsArray);
-        }
-
-        /* If annotations are passed add them to the json */
-        String annotations = context.getAnnotations();
-        if(annotations != null && !annotations.isEmpty()){
-            json.put("annotations", annotations);
-        }
-
-        json.put("testRunId", context.getTestRunId());
-        json.put("workload", context.getWorkload());
-        json.put("environment", context.getEnvironment());
-        json.put("systemUnderTest", context.getSystemUnderTest());
-        json.put("version", context.getVersion());
-        json.put("CIBuildResultsUrl", context.getCIBuildResultsUrl());
-        json.put("rampUp", String.valueOf(context.getRampupTime().getSeconds()));
-        json.put("duration", String.valueOf(context.getPlannedDuration().getSeconds()));
-        json.put("completed", completed);
-
-        return json.toString();
-    }
-
-    private static JSONObject createVariables(String name, String value) {
-        JSONObject variables = new JSONObject();
-        variables.put("placeholder", name);
-        variables.put("value", value);
-        return variables;
     }
 
     private String perfanaEventToJson(TestContext context, String eventTitle, String eventDescription) {
-        JSONObject json = new JSONObject();
 
-        json.put("systemUnderTest", context.getSystemUnderTest());
-        json.put("environment", context.getEnvironment());
-        json.put("title", eventTitle);
-        json.put("description", eventDescription);
+        PerfanaEvent event = PerfanaEvent.builder()
+            .systemUnderTest(context.getSystemUnderTest())
+            .testEnvironment(context.getTestEnvironment())
+            .title(eventTitle)
+            .description(eventDescription)
+            .tag(context.getWorkload())
+            .build();
 
-        JSONArray tags = new JSONArray();
-        tags.add(context.getWorkload());
-        json.put("tags", tags);
-        
-        return json.toJSONString();
+        try {
+            return perfanaEventWriter.writeValueAsString(event);
+        } catch (JsonProcessingException e) {
+            throw new PerfanaClientRuntimeException("Unable to transform PerfanaEvent to json", e);
+        }
     }
 
     /**
@@ -236,7 +210,7 @@ public final class PerfanaClient implements PerfanaCaller {
         try {
             url = String.join("/", settings.getPerfanaUrl(), "get-benchmark-results", encodeForURL(context.getSystemUnderTest()), encodeForURL(context.getTestRunId()));
         } catch (UnsupportedEncodingException e) {
-            throw new PerfanaClientException("cannot encode perfana url.", e);
+            throw new PerfanaClientException("cannot encode Perfana url.", e);
         }
         
         Request request = new Request.Builder()
@@ -262,20 +236,19 @@ public final class PerfanaClient implements PerfanaCaller {
                     assertionsAvailable = true;
                     checksSpecified = true;
                 } else if (reponseCode == HTTP_NO_CONTENT) {
-                    // No check specified
+                    // no check specified
                     assertionsAvailable = true;
                     checksSpecified = false;
                 } else if (reponseCode == HTTP_BAD_REQUEST) {
                     // something went wrong
-                    throw new PerfanaClientException("Something went wrong while evaluating the test run");
+                    throw new PerfanaClientException("Something went wrong while evaluating the test run [" + context.getTestRunId() + "]");
                 } else if (reponseCode == HTTP_NOT_FOUND) {
                     // test run not found
-                    throw new PerfanaClientException("Test run not found");
+                    throw new PerfanaClientException("Test run not found [" + context.getTestRunId() + "]");
                 }  else if (reponseCode == HTTP_ACCEPTED) {
                     //  evaluation in progress
-                    logger.info(
-                    String.format("Trying to get test run check results at %s, attempt [%d/%d]. Returncode [%d]: Test run evaluation in progress ...",
-                    url, retryCount, maxRetryCount, reponseCode));
+                    logger.info(String.format("Trying to get test run check results at %s, attempt [%d/%d]. Returncode [%d]: Test run evaluation in progress ...",
+                        url, retryCount, maxRetryCount, reponseCode));
                 }
             } catch (IOException e) {
                 throw new PerfanaClientException("Exception while trying to get test run check results at [" + url + "]", e);
@@ -318,71 +291,42 @@ public final class PerfanaClient implements PerfanaCaller {
             return "No checks have been specified for this test run! Set assertResults property to false or create checks for key metrics";
         }
 
-        Configuration config = Configuration.defaultConfiguration()
-                .addOptions(Option.SUPPRESS_EXCEPTIONS);
+        Benchmark benchmark;
+        try {
+            benchmark = perfanaBenchmarkReader.readValue(assertions);
+        } catch (IOException e) {
+            throw new PerfanaClientRuntimeException("Unable to parse benchmark message: " + assertions, e);
+        }
+        Optional<Result> baseline = Optional.ofNullable(benchmark.getBenchmarkBaselineTestRun());
+        Optional<Result> previous = Optional.ofNullable(benchmark.getBenchmarkPreviousTestRun());
+        Optional<Result> requirements = Optional.ofNullable(benchmark.getRequirements());
 
-        ParseContext parseContext = JsonPath.using(config);
-        DocumentContext doc = parseContext.parse(assertions);
-
-        Boolean benchmarkBaselineTestRunResult = doc.read("$.benchmarkBaselineTestRun.result");
-        String benchmarkBaselineTestRunDeeplink = doc.read("$.benchmarkBaselineTestRun.deeplink");
-        Boolean benchmarkPreviousTestRunResult = doc.read("$.benchmarkPreviousTestRun.result");
-        String benchmarkPreviousTestRunDeeplink = doc.read("$.benchmarkPreviousTestRun.deeplink");
-        Boolean requirementsResult = doc.read("$.requirements.result");
-        String requirementsDeeplink = doc.read("$.requirements.deeplink");
-
-        logger.info("Compared to baseline test run: " + benchmarkBaselineTestRunResult);
-        logger.info("Compared to previous test run: " + benchmarkPreviousTestRunResult);
-        logger.info("Requirements: " + requirementsResult);
+        requirements.ifPresent(r -> logger.info("Requirements: " + r.isResult()));
+        baseline.ifPresent(r -> logger.info("Compared to baseline test run: " + r.isResult()));
+        previous.ifPresent(r -> logger.info("Compared to previous test run: " + r.isResult()));
 
         StringBuilder text = new StringBuilder();
         if (assertions.contains("false")) {
-
             text.append("One or more Perfana assertions are failing: \n");
-            if (hasFailed(requirementsResult)) {
-                text.append("Requirements check failed: ").append(requirementsDeeplink).append("\n");
-            }
-            if (hasFailed(benchmarkPreviousTestRunResult)) {
-                text.append("Comparison check to previous test run failed: ").append(benchmarkPreviousTestRunDeeplink).append("\n");
-            }
-            if (hasFailed(benchmarkBaselineTestRunResult)) {
-                text.append("Comparison check to baseline test run failed: ").append(benchmarkBaselineTestRunDeeplink);
-            }
-
+            requirements.filter(r -> !r.isResult()).ifPresent(r -> text.append("Requirements check failed: ").append(r.getDeeplink()).append("\n"));
+            baseline.filter(r -> !r.isResult()).ifPresent(r -> text.append("Comparison check to baseline test run failed: ").append(r.getDeeplink()).append("\n"));
+            previous.filter(r -> !r.isResult()).ifPresent(r -> text.append("Comparison check to previous test run failed: ").append(r.getDeeplink()).append("\n"));
             logger.info("Test run has failed checks: " + text);
-
             throw new PerfanaAssertionsAreFalse(text.toString());
-        }
-        else {
-
+        } else {
             text.append("All configured checks are OK: \n");
-            if (requirementsResult) {
-                text.append(requirementsDeeplink).append("\n");
-            }
-            if (hasSucceeded(benchmarkPreviousTestRunResult)) {
-                text.append(benchmarkPreviousTestRunDeeplink).append("\n");
-            }
-            if (hasSucceeded(benchmarkBaselineTestRunResult)) {
-                text.append(benchmarkBaselineTestRunDeeplink);
-            }
-
+            requirements.ifPresent(r -> text.append(r.getDeeplink()).append("\n"));
+            baseline.ifPresent(r -> text.append(r.getDeeplink()).append("\n"));
+            previous.ifPresent(r -> text.append(r.getDeeplink()));
         }
         return text.toString();
-    }
-
-    private static boolean hasSucceeded(Boolean testResult) {
-        return testResult != null && testResult;
-    }
-
-    private static boolean hasFailed(Boolean testResult) {
-        return testResult != null && !testResult;
     }
 
     @Override
     public String toString() {
         return "PerfanaClient [testRunId:" + context.getTestRunId() +
             " workload: " + context.getWorkload() +
-            " environment: " + context.getEnvironment() +
+            " testEnvironment: " + context.getTestEnvironment() +
             " Perfana url: " + settings.getPerfanaUrl() + "]";
     }
 }

@@ -1,0 +1,25 @@
+{
+  "testRunId": "Afterburner-1.0-loadTest-dev-2020-03-14T12:41:24Z",
+  "workload": "loadTest",
+  "testEnvironment": "dev",
+  "systemUnderTest": "Afterburner",
+  "version": "1.0",
+  "rampUp": "60",
+  "duration": "300",
+  "completed": false,
+  "annotations": "",
+  "tags": [
+    "release-load-test",
+    "micro-service",
+    "tag42",
+    "always-tag"
+  ],
+  "variables": [
+    {
+      "placeholder": "$service",
+      "value": "afterburner"
+    }
+  ],
+  "CIBuildResultsUrl": "unknown",
+  "NEW": "ignore?"
+}
