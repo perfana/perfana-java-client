@@ -101,7 +101,7 @@ public class PerfanaEvent extends EventAdapter {
     @Override
     public void abortTest() {
         String eventTitle = "Test aborted";
-        String eventDescription = abortDetailMessage == null ? "" : abortDetailMessage;
+        String eventDescription = abortDetailMessage == null ? "manually aborted" : abortDetailMessage;
         perfanaClient.callPerfanaEvent(perfanaTestContext, eventTitle, eventDescription);
         this.eventCheck = new EventCheck(eventName, CLASSNAME, EventStatus.ABORTED, eventDescription);
     }
