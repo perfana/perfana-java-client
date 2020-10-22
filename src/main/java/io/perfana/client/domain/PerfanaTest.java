@@ -28,31 +28,31 @@ import java.util.List;
 @AllArgsConstructor
 public class PerfanaTest {
     @JsonProperty("_id")
-    private final String id;
-    private final String systemUnderTest;
-    private final String testRunId;
-    private final String version;
-    private final String testEnvironment;
-    private final String workload;
+    String id;
+    String systemUnderTest;
+    String testRunId;
+    String version;
+    String testEnvironment;
+    String workload;
     @JsonProperty("CIBuildResultsUrl")
-    private final String cibuildResultsUrl;
+    String cibuildResultsUrl;
 
-    private final int duration;
-    private final int plannedDuration;
-    private final int rampUp;
+    int duration;
+    int plannedDuration;
+    int rampUp;
 
-    private final String start; // 2020-02-21T20:59:31.206Z
-    private final String end; // 2020-02-21T20:59:31.206Z
-    private final String expires; // 2050-02-13T20:59:31.206Z
+    String start; // 2020-02-21T20:59:31.206Z
+    String end; // 2020-02-21T20:59:31.206Z
+    String expires; // 2050-02-13T20:59:31.206Z
 
-    private final boolean completed;
-    private final boolean abort;
-    private final String abortMessage;
+    boolean completed;
+    boolean abort;
+    String abortMessage;
 
     @Singular
-    private final List<Alert> alerts;
+    List<Alert> alerts;
     @Singular
-    private final List<String> tags;
+    List<String> tags;
     @Singular
-    private final List<Variable> variables;
+    List<Variable> variables;
 }

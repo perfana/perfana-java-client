@@ -17,78 +17,25 @@
  */
 package io.perfana.client.api;
 
+import lombok.Value;
+
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
+@Value
 public class TestContext {
 
-    private final String systemUnderTest;
-    private final String workload;
-    private final String testEnvironment;
-    private final String testRunId;
-    private final String version;
-    private final String CIBuildResultsUrl;
-    private final Duration rampupTime;
-    private final Duration plannedDuration;
-    private final String annotations;
-    private final Map<String, String> variables;
-    private final List<String> tags;
-
-    TestContext(String systemUnderTest, String workload, String testEnvironment, String testRunId, String CIBuildResultsUrl, String version, Duration rampupTime, Duration plannedDuration, String annotations, Map<String, String> variables, List<String> tags) {
-        this.systemUnderTest = systemUnderTest;
-        this.workload = workload;
-        this.testEnvironment = testEnvironment;
-        this.testRunId = testRunId;
-        this.CIBuildResultsUrl = CIBuildResultsUrl;
-        this.version = version;
-        this.rampupTime = rampupTime;
-        this.plannedDuration = plannedDuration;
-        this.annotations = annotations;
-        this.variables = variables;
-        this.tags = tags;
-    }
-
-    public String getSystemUnderTest() {
-        return systemUnderTest;
-    }
-
-    public String getWorkload() {
-        return workload;
-    }
-
-    public String getTestEnvironment() {
-        return testEnvironment;
-    }
-
-    public String getTestRunId() {
-        return testRunId;
-    }
-
-    public String getCIBuildResultsUrl() {
-        return CIBuildResultsUrl;
-    }
-
-    public String getVersion() {
-        return version;
-    }
+    String systemUnderTest;
+    String workload;
+    String testEnvironment;
+    String testRunId;
+    String version;
+    String CIBuildResultsUrl;
+    Duration rampupTime;
+    Duration plannedDuration;
+    String annotations;
+    Map<String, String> variables;
+    List<String> tags;
     
-    public Duration getRampupTime() {
-        return rampupTime;
-    }
-
-    public Duration getPlannedDuration() {
-        return plannedDuration;
-    }
-
-    public String getAnnotations() {
-        return annotations;
-    }
-
-    public Map<String, String> getVariables() {
-        return variables;
-    }
-
-    public List<String> getTags() { return tags; }
-
 }

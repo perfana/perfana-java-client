@@ -33,7 +33,7 @@ public class PerfanaUtils {
         try {
             time = Integer.parseInt(numberString);
         } catch (NumberFormatException e) {
-            System.err.println(String.format("unable to parse value of [%s=%s]: using default value [%d]. Error message: %s.", variableName, numberString, defaultValue, e.getMessage()));
+            System.err.printf("unable to parse value of [%s=%s]: using default value [%d]. Error message: %s.%n", variableName, numberString, defaultValue, e.getMessage());
             time = defaultValue;
         }
         return time;

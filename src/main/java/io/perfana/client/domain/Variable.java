@@ -24,6 +24,6 @@ import lombok.*;
 @NoArgsConstructor(force = true, access = AccessLevel.PRIVATE)
 @AllArgsConstructor
 public class Variable {
-    private final String placeholder;
-    private final String value;
+    String placeholder;
+    String value;
 }

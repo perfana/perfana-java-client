@@ -24,5 +24,5 @@ import lombok.*;
 @NoArgsConstructor(force = true, access = AccessLevel.PRIVATE)
 @AllArgsConstructor
 public class Message {
-    private final String message;
+    String message;
 }

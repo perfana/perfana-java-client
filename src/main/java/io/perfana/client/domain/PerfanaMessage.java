@@ -27,19 +27,19 @@ import java.util.List;
 @NoArgsConstructor(force = true, access = AccessLevel.PRIVATE)
 @AllArgsConstructor
 public class PerfanaMessage {
-    private final String testRunId;
-    private final String workload;
-    private final String testEnvironment;
-    private final String systemUnderTest;
-    private final String version;
+    String testRunId;
+    String workload;
+    String testEnvironment;
+    String systemUnderTest;
+    String version;
     @JsonProperty("CIBuildResultsUrl")
-    private final String cibuildResultsUrl;
-    private final String rampUp;
-    private final String duration;
-    private final boolean completed;
-    private final String annotations;
+    String cibuildResultsUrl;
+    String rampUp;
+    String duration;
+    boolean completed;
+    String annotations;
     @Singular
-    private final List<String> tags;
+    List<String> tags;
     @Singular
-    private final List<Variable> variables;
+    List<Variable> variables;
 }

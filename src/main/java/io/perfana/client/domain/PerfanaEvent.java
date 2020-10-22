@@ -26,10 +26,10 @@ import java.util.List;
 @NoArgsConstructor(force = true, access = AccessLevel.PRIVATE)
 @AllArgsConstructor
 public class PerfanaEvent {
-    private final String systemUnderTest;
-    private final String testEnvironment;
-    private final String title;
-    private final String description;
+    String systemUnderTest;
+    String testEnvironment;
+    String title;
+    String description;
     @Singular
-    private final List<String> tags;
+    List<String> tags;
 }

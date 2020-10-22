@@ -24,7 +24,7 @@ import lombok.*;
 @NoArgsConstructor(force = true, access = AccessLevel.PRIVATE)
 @AllArgsConstructor
 public class Benchmark {
-    private final Result requirements;
-    private final Result benchmarkPreviousTestRun;
-    private final Result benchmarkBaselineTestRun;
+    Result requirements;
+    Result benchmarkPreviousTestRun;
+    Result benchmarkBaselineTestRun;
 }

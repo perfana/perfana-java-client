@@ -24,6 +24,6 @@ import lombok.*;
 @NoArgsConstructor(force = true, access = AccessLevel.PRIVATE)
 @AllArgsConstructor
 public class Tag {
-   private final String key;
-   private final String value;
+   String key;
+   String value;
 }

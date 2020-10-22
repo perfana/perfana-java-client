@@ -24,6 +24,6 @@ import lombok.*;
 @NoArgsConstructor(force = true, access = AccessLevel.PRIVATE)
 @AllArgsConstructor
 public class Result {
-    private final boolean result;
-    private final String deeplink;
+    boolean result;
+    String deeplink;
 }

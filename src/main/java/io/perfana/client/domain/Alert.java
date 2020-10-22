@@ -26,8 +26,8 @@ import java.util.List;
 @NoArgsConstructor(force = true, access = AccessLevel.PRIVATE)
 @AllArgsConstructor
 public class Alert {
-    private final String message;
-    private final String timestamp;
+    String message;
+    String timestamp;
     @Singular
-    private final List<Tag> tags;
+    List<Tag> tags;
 }

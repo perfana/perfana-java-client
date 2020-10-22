@@ -17,30 +17,15 @@
  */
 package io.perfana.client.api;
 
+import lombok.Value;
+
 import java.time.Duration;
 
+@Value
 public class PerfanaConnectionSettings {
 
-    private final int retryMaxCount;
-    private final Duration retryDuration;
-    private final String perfanaUrl;
-
-    PerfanaConnectionSettings(int retryMaxCount, Duration retryDuration, String perfanaUrl) {
-        this.retryMaxCount = retryMaxCount;
-        this.retryDuration = retryDuration;
-        this.perfanaUrl = perfanaUrl;
-    }
-
-    public int getRetryMaxCount() {
-        return retryMaxCount;
-    }
-
-    public Duration getRetryDuration() {
-        return retryDuration;
-    }
-
-    public String getPerfanaUrl() {
-        return perfanaUrl;
-    }
+    int retryMaxCount;
+    Duration retryDuration;
+    String perfanaUrl;
 
 }
