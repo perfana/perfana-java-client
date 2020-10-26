@@ -32,7 +32,7 @@ public class TestContextBuilder {
     private static final int DEFAULT_RAMPUP_TIME_SECONDS = 0;
     private static final int DEFAULT_CONSTANT_LOAD_TIME_SECONDS = 600;
 
-    private static DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("YYYY-MM-dd'T'HH-mm-ss");
+    private static DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH-mm-ss");
 
     private String annotations = "";
     private String systemUnderTest = "unknown";
@@ -132,7 +132,7 @@ public class TestContextBuilder {
     }
 
     public TestContext build() {
-        return new TestContext(systemUnderTest, workload, testEnvironment, testRunId, ciBuildResultsUrl, version, rampupTime, constantLoadTime, annotations, variables, tags);
+        return new TestContext(systemUnderTest, workload, testEnvironment, testRunId, version, ciBuildResultsUrl, rampupTime, constantLoadTime, annotations, variables, tags);
     }
 
     public TestContextBuilder setRampupTimeInSeconds(String rampupTimeSeconds) {

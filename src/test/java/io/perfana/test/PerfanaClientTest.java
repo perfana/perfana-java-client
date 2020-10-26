@@ -209,5 +209,4 @@ public class PerfanaClientTest
         // should not throw KillSwitchException when completed is true (not a keep alive call)
         perfanaClient.callPerfanaTestEndpoint(testContext, true);
     }
-
 }
