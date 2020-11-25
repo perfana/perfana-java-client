@@ -52,7 +52,7 @@ public class PerfanaEventTest {
     public WireMockRule wireMockRule = new WireMockRule(options().dynamicPort());
 
     @Test
-    public void testLiveCycle() {
+    public void testLifeCycle() {
 
         wireMockRule.stubFor(post(urlEqualTo("/events"))
                         .willReturn(aResponse()
@@ -85,7 +85,8 @@ public class PerfanaEventTest {
 
         event.abortTest();
 
-        event.afterTest();
+        // this will not happen, either abortTest or afterTest is called by event-scheduler, not both
+        // event.afterTest();
 
     }
 }

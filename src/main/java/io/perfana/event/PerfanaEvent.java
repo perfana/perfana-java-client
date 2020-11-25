@@ -83,6 +83,13 @@ public class PerfanaEvent extends EventAdapter {
             perfanaClient.callPerfanaEvent(perfanaTestContext, "Test end", "Test run completed");
         }
 
+        finalizePerfanaTestRun();
+    }
+
+    /**
+     * Calls out to Perfana with completed = true. Also checks the assertions of the test run.
+     */
+    private void finalizePerfanaTestRun() {
         perfanaClient.callPerfanaTestEndpoint(perfanaTestContext, true);
 
         // assume all is ok, will be overridden in case of assertResult exceptions
@@ -103,7 +110,11 @@ public class PerfanaEvent extends EventAdapter {
         String eventTitle = "Test aborted";
         String eventDescription = abortDetailMessage == null ? "manually aborted" : abortDetailMessage;
         perfanaClient.callPerfanaEvent(perfanaTestContext, eventTitle, eventDescription);
+
         this.eventCheck = new EventCheck(eventName, CLASSNAME, EventStatus.ABORTED, eventDescription);
+
+        // maybe only when not manually aborted? e.g. abortDetailMessage is set?
+        finalizePerfanaTestRun();
     }
 
     @Override
