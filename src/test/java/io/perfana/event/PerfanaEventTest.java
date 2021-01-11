@@ -18,18 +18,17 @@
 package io.perfana.event;
 
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
-import nl.stokpop.eventscheduler.api.*;
+import nl.stokpop.eventscheduler.api.CustomEvent;
+import nl.stokpop.eventscheduler.api.EventLogger;
+import nl.stokpop.eventscheduler.api.config.TestConfig;
 import nl.stokpop.eventscheduler.log.EventLoggerStdOut;
 import org.junit.Rule;
 import org.junit.Test;
 
 import java.time.Duration;
-import java.util.HashMap;
-import java.util.Map;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
-import static nl.stokpop.eventscheduler.api.EventProperties.PROP_FACTORY_CLASSNAME;
 
 public class PerfanaEventTest {
 
@@ -66,16 +65,14 @@ public class PerfanaEventTest {
                         .willReturn(aResponse()
                                 .withBody(REPLY_BODY_BENCHMARK_RESULTS)));
 
-        TestContext testContext = new TestContextBuilder().build();
+        PerfanaEventConfig eventConfig = new PerfanaEventConfig();
+        eventConfig.setPerfanaUrl("http://localhost:" + wireMockRule.port());
+        eventConfig.setName("test-name");
+        eventConfig.setTestConfig(TestConfig.builder().build());
 
-        Map<String, String> props = new HashMap<>();
-        props.put("perfanaUrl", "http://localhost:" + wireMockRule.port());
-        props.put(PROP_FACTORY_CLASSNAME, "should be set, to what?");
-
-        EventProperties eventProperties = new EventProperties(props);
         EventLogger eventLogger = EventLoggerStdOut.INSTANCE;
 
-        PerfanaEvent event = new PerfanaEvent("text", testContext, eventProperties, eventLogger);
+        PerfanaEvent event = new PerfanaEvent(eventConfig, eventLogger);
 
         event.beforeTest();
 

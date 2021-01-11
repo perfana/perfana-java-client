@@ -17,12 +17,15 @@
  */
 package io.perfana.event.generator;
 
-import nl.stokpop.eventscheduler.api.*;
+import nl.stokpop.eventscheduler.api.EventGenerator;
+import nl.stokpop.eventscheduler.api.EventGeneratorFactory;
+import nl.stokpop.eventscheduler.api.EventGeneratorProperties;
+import nl.stokpop.eventscheduler.api.EventLogger;
 
 public class PerfanaEventGeneratorFactory implements EventGeneratorFactory {
 
     @Override
-    public EventGenerator create(TestContext context, EventGeneratorProperties properties, EventLogger logger) {
+    public EventGenerator create(EventGeneratorProperties properties, EventLogger logger) {
         throw new UnsupportedOperationException("Sorry, but the PerfanaEventGeneratorFactory has no implementation as of yet...");
     }
 }

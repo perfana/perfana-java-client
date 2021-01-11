@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    Perfana Java Client - Java library that talks to the Perfana server
+    Copyright (C) 2020  Peter Paul Bakker @ Stokpop, Daniel Moll @ Perfana.io
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>nl.stokpop</groupId>
+    <artifactId>events-test</artifactId>
+    <version>1.0-SNAPSHOT</version>
+
+    <properties>
+
+        <encoding>UTF-8</encoding>
+
+        <event-scheduler-maven-plugin.version>1.1.0-SNAPSHOT</event-scheduler-maven-plugin.version>
+        <perfana-java-client.version>1.5.0-SNAPSHOT</perfana-java-client.version>
+
+        <buildResultsUrl>${BUILD_URL}</buildResultsUrl>
+
+        <!-- Default load settings -->
+        <rampupTimeInSeconds>60</rampupTimeInSeconds>
+        <constantLoadTimeInSeconds>900</constantLoadTimeInSeconds>
+
+        <systemUnderTest>Afterburner</systemUnderTest>
+        <version>1.0</version>
+        <testEnvironment>cloud</testEnvironment>
+
+    </properties>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>nl.stokpop</groupId>
+                    <artifactId>event-scheduler-maven-plugin</artifactId>
+                    <version>${event-scheduler-maven-plugin.version}</version>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+
+        <plugins>
+            <plugin>
+                <groupId>nl.stokpop</groupId>
+                <artifactId>event-scheduler-maven-plugin</artifactId>
+                <configuration>
+                    <eventSchedulerConfig>
+                        <debugEnabled>true</debugEnabled>
+                        <schedulerEnabled>true</schedulerEnabled>
+                        <failOnError>true</failOnError>
+                        <continueOnEventCheckFailure>true</continueOnEventCheckFailure>
+                        <scheduleScript>
+                            ${eventScheduleScript}
+                        </scheduleScript>
+                        <eventConfigs>
+                            <eventConfig implementation="io.perfana.event.PerfanaEventConfig">
+                                <name>PerfanaEvent1</name>
+                                <perfanaUrl>http://localhost:8888</perfanaUrl>
+                                <assertResultsEnabled>false</assertResultsEnabled>
+                                <variables>
+                                    <variable>
+                                        <name>_var1</name>
+                                        <value>my_value</value>
+                                    </variable>
+                                </variables>
+                                <testConfig>
+                                    <systemUnderTest>${systemUnderTest}</systemUnderTest>
+                                    <version>${version}</version>
+                                    <workload>${workload}</workload>
+                                    <testEnvironment>${testEnvironment}</testEnvironment>
+                                    <testRunId>${testRunId}</testRunId>
+                                    <buildResultsUrl>${buildResultsUrl}</buildResultsUrl>
+                                    <rampupTimeInSeconds>${rampupTimeInSeconds}</rampupTimeInSeconds>
+                                    <constantLoadTimeInSeconds>${constantLoadTimeInSeconds}</constantLoadTimeInSeconds>
+                                    <annotations>${annotations}</annotations>
+                                    <tags>${tags}</tags>
+                                </testConfig>
+                            </eventConfig>
+                        </eventConfigs>
+                    </eventSchedulerConfig>
+                </configuration>
+                <dependencies>
+                    <dependency>
+                        <groupId>io.perfana</groupId>
+                        <artifactId>perfana-java-client</artifactId>
+                        <version>${perfana-java-client.version}</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
+        </plugins>
+    </build>
+
+    <profiles>
+        <profile>
+            <id>short-test</id>
+            <activation> <activeByDefault>true</activeByDefault> </activation>
+            <properties>
+                <workload>shortTest</workload>
+                <rampupTimeInSeconds>20</rampupTimeInSeconds>
+                <constantLoadTimeInSeconds>20</constantLoadTimeInSeconds>
+                <testRunId>${systemUnderTest}-${version}-${workload}-${testEnvironment}</testRunId>
+                <tags>short-test,important</tags>
+                <eventScheduleScript>
+                    PT10S|hello-perfana|name=pp
+                    PT20S|hello-perfana2|duration=2s
+                </eventScheduleScript>
+            </properties>
+        </profile>
+    </profiles>
+</project>

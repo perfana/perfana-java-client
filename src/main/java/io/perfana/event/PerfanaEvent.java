@@ -21,52 +21,49 @@ import io.perfana.client.PerfanaClient;
 import io.perfana.client.PerfanaClientBuilder;
 import io.perfana.client.api.PerfanaConnectionSettings;
 import io.perfana.client.api.PerfanaConnectionSettingsBuilder;
+import io.perfana.client.api.TestContext;
 import io.perfana.client.api.TestContextBuilder;
 import io.perfana.client.exception.PerfanaAssertionsAreFalse;
 import io.perfana.client.exception.PerfanaClientException;
+import io.perfana.client.exception.PerfanaClientRuntimeException;
 import nl.stokpop.eventscheduler.api.*;
+import nl.stokpop.eventscheduler.api.config.TestConfig;
 import nl.stokpop.eventscheduler.exception.handler.KillSwitchException;
 
-import java.util.Collection;
-import java.util.Set;
+import java.time.Duration;
 
-public class PerfanaEvent extends EventAdapter {
+import static java.time.temporal.ChronoUnit.SECONDS;
+
+public class PerfanaEvent extends EventAdapter<PerfanaEventConfig> {
 
     private final String CLASSNAME = PerfanaEvent.class.getName();
-
-    private static final Set<String> ALLOWED_PROPERTIES = setOf("perfanaUrl");
+    private final TestContext perfanaTestContext;
+    private final String eventName;
 
     private PerfanaClient perfanaClient;
-    private io.perfana.client.api.TestContext perfanaTestContext;
-
     private String abortDetailMessage = null;
-
     // save some state to do the status check
     private EventCheck eventCheck;
 
-    PerfanaEvent(String name, TestContext context, EventProperties properties, EventLogger logger) {
-        super(name, context, properties, logger);
-        this.eventCheck = new EventCheck(eventName, CLASSNAME, EventStatus.UNKNOWN, "No known result yet. Try again some time later.");
-        this.perfanaTestContext = createPerfanaTestContext(context);
-    }
-
-    @Override
-    public Collection<String> allowedProperties() {
-        return ALLOWED_PROPERTIES;
+    PerfanaEvent(PerfanaEventConfig eventConfig, EventLogger logger) {
+        super(eventConfig, logger);
+        this.eventCheck = new EventCheck(eventConfig.getName(), CLASSNAME, EventStatus.UNKNOWN, "No known result yet. Try again some time later.");
+        this.eventName = eventConfig.getName();
+        this.perfanaTestContext = createPerfanaTestContext(eventConfig);
     }
 
     @Override
     public void beforeTest() {
 
         PerfanaConnectionSettings settings = new PerfanaConnectionSettingsBuilder()
-                .setPerfanaUrl(eventProperties.getPropertyOrDefault("perfanaUrl", "http://localhost:8888"))
+                .setPerfanaUrl(eventConfig.getPerfanaUrl())
                 .build();
 
         PerfanaClientBuilder builder = new PerfanaClientBuilder()
                 .setLogger(new PerfanaClientEventLogger(logger))
-                .setTestContext(perfanaTestContext)
+                .setTestContext(createPerfanaTestContext(eventConfig))
                 .setPerfanaConnectionSettings(settings)
-                .setAssertResultsEnabled(Boolean.parseBoolean(eventProperties.getPropertyOrDefault("assertResultsEnabled", "true")));
+                .setAssertResultsEnabled(eventConfig.isAssertResultsEnabled());
 
         perfanaClient = builder.build();
 
@@ -142,19 +139,27 @@ public class PerfanaEvent extends EventAdapter {
         }
     }
 
-    private static io.perfana.client.api.TestContext createPerfanaTestContext(TestContext testContext) {
+    private static TestContext createPerfanaTestContext(PerfanaEventConfig eventConfig) {
+
+        TestConfig testConfig = eventConfig.getTestConfig();
+
+        if (testConfig == null) {
+            throw new PerfanaClientRuntimeException("testConfig in eventConfig is null: " + eventConfig);
+        }
+
         return new TestContextBuilder()
-                .setVariables(testContext.getVariables())
-                .setTags(testContext.getTags())
-                .setAnnotations(testContext.getAnnotations())
-                .setSystemUnderTest(testContext.getSystemUnderTest())
-                .setVersion(testContext.getVersion())
-                .setCIBuildResultsUrl(testContext.getCIBuildResultsUrl())
-                .setConstantLoadTime(testContext.getPlannedDuration())
-                .setRampupTime(testContext.getRampupTime())
-                .setTestEnvironment(testContext.getTestEnvironment())
-                .setTestRunId(testContext.getTestRunId())
-                .setWorkload(testContext.getWorkload()).build();
+            .setVariables(eventConfig.getVariables())
+            .setTags(testConfig.getTags())
+            .setAnnotations(testConfig.getAnnotations())
+            .setSystemUnderTest(testConfig.getSystemUnderTest())
+            .setVersion(testConfig.getVersion())
+            .setCIBuildResultsUrl(testConfig.getBuildResultsUrl())
+            .setConstantLoadTime(Duration.of(testConfig.getConstantLoadTimeInSeconds(), SECONDS))
+            .setRampupTime(Duration.of(testConfig.getRampupTimeInSeconds(), SECONDS))
+            .setTestEnvironment(testConfig.getTestEnvironment())
+            .setTestRunId(testConfig.getTestRunId())
+            .setWorkload(testConfig.getWorkload())
+            .build();
     }
 
 }

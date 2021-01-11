@@ -17,12 +17,14 @@
  */
 package io.perfana.event;
 
-import nl.stokpop.eventscheduler.api.*;
+import nl.stokpop.eventscheduler.api.Event;
+import nl.stokpop.eventscheduler.api.EventFactory;
+import nl.stokpop.eventscheduler.api.EventLogger;
 
-public class PerfanaEventFactory implements EventFactory {
+public class PerfanaEventFactory implements EventFactory<PerfanaEventConfig> {
 
     @Override
-    public Event create(String eventName, TestContext testContext, EventProperties eventProperties, EventLogger logger) {
-        return new PerfanaEvent(eventName, testContext, eventProperties, logger);
+    public Event create(PerfanaEventConfig perfanaEventConfig, EventLogger logger) {
+        return new PerfanaEvent(perfanaEventConfig, logger);
     }
 }
