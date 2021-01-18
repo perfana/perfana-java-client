@@ -104,7 +104,7 @@ public class PerfanaEvent extends EventAdapter<PerfanaEventContext> {
      * Calls out to Perfana with completed = true. Also checks the assertions of the test run.
      */
     private void finalizePerfanaTestRun() {
-        perfanaClient.callPerfanaTestEndpoint(perfanaTestContext, true);
+        perfanaClient.callPerfanaTestEndpoint(perfanaTestContext, true, receivedVariables);
 
         // assume all is ok, will be overridden in case of assertResult exceptions
         eventCheck = new EventCheck(eventName, CLASSNAME, EventStatus.SUCCESS, "All ok!");
