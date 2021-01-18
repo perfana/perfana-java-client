@@ -20,11 +20,12 @@ package io.perfana.event;
 import nl.stokpop.eventscheduler.api.Event;
 import nl.stokpop.eventscheduler.api.EventFactory;
 import nl.stokpop.eventscheduler.api.EventLogger;
+import nl.stokpop.eventscheduler.api.message.EventMessageBus;
 
-public class PerfanaEventFactory implements EventFactory<PerfanaEventConfig> {
+public class PerfanaEventFactory implements EventFactory<PerfanaEventContext> {
 
     @Override
-    public Event create(PerfanaEventConfig perfanaEventConfig, EventLogger logger) {
-        return new PerfanaEvent(perfanaEventConfig, logger);
+    public Event create(PerfanaEventContext context, EventMessageBus messageBus, EventLogger logger) {
+        return new PerfanaEvent(context, messageBus, logger);
     }
 }

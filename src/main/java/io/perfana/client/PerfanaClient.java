@@ -37,6 +37,8 @@ import okhttp3.*;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.util.Collections;
+import java.util.Map;
 import java.util.Optional;
 
 import static java.net.HttpURLConnection.*;
@@ -79,9 +81,13 @@ public final class PerfanaClient implements PerfanaCaller {
         this.logger = logger;
     }
 
-    @Override
     public void callPerfanaTestEndpoint(TestContext context, boolean completed) throws KillSwitchException {
-        String json = perfanaMessageToJson(context, completed);
+        callPerfanaTestEndpoint(context, completed, Collections.emptyMap());
+    }
+
+    @Override
+    public void callPerfanaTestEndpoint(TestContext context, boolean completed, Map<String, String> extraVariables) throws KillSwitchException {
+        String json = perfanaMessageToJson(context, completed, extraVariables);
         RequestBody body = RequestBody.create(json, JSON);
 
         String testUrl = settings.getPerfanaUrl() + "/test";
@@ -155,7 +161,7 @@ public final class PerfanaClient implements PerfanaCaller {
         }
     }
 
-    public static String perfanaMessageToJson(TestContext context, boolean completed) {
+    public static String perfanaMessageToJson(TestContext context, boolean completed, Map<String, String> extraVariables) {
 
         PerfanaMessage.PerfanaMessageBuilder perfanaMessageBuilder = PerfanaMessage.builder()
             .testRunId(context.getTestRunId())
@@ -171,6 +177,9 @@ public final class PerfanaClient implements PerfanaCaller {
             .tags(context.getTags());
 
         context.getVariables().forEach((k,v) -> perfanaMessageBuilder
+            .variable(Variable.builder().placeholder(k).value(v).build()));
+
+        extraVariables.forEach((k, v) -> perfanaMessageBuilder
             .variable(Variable.builder().placeholder(k).value(v).build()));
 
         PerfanaMessage perfanaMessage = perfanaMessageBuilder.build();
@@ -329,4 +338,5 @@ public final class PerfanaClient implements PerfanaCaller {
             " testEnvironment: " + context.getTestEnvironment() +
             " Perfana url: " + settings.getPerfanaUrl() + "]";
     }
+
 }

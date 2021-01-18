@@ -18,9 +18,11 @@
 package io.perfana.event;
 
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
+import nl.stokpop.eventscheduler.EventMessageBusSimple;
 import nl.stokpop.eventscheduler.api.CustomEvent;
 import nl.stokpop.eventscheduler.api.EventLogger;
 import nl.stokpop.eventscheduler.api.config.TestConfig;
+import nl.stokpop.eventscheduler.api.message.EventMessageBus;
 import nl.stokpop.eventscheduler.log.EventLoggerStdOut;
 import org.junit.Rule;
 import org.junit.Test;
@@ -72,7 +74,9 @@ public class PerfanaEventTest {
 
         EventLogger eventLogger = EventLoggerStdOut.INSTANCE;
 
-        PerfanaEvent event = new PerfanaEvent(eventConfig, eventLogger);
+        EventMessageBus messageBus = new EventMessageBusSimple();
+
+        PerfanaEvent event = new PerfanaEvent(eventConfig.toContext(), messageBus, eventLogger);
 
         event.beforeTest();
 

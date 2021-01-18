@@ -146,7 +146,10 @@ public class PerfanaClientTest
                 .setTags(tags)
                 .build();
 
-        String json = PerfanaClient.perfanaMessageToJson(context, false);
+        Map<String, String> extraVariables = new HashMap<>();
+        extraVariables.put("extraVar1", "extraValue1");
+        extraVariables.put("extraVar2", "extraValue2");
+        String json = PerfanaClient.perfanaMessageToJson(context, false, extraVariables);
 
         assertTrue(json.contains(annotations));
         assertTrue(json.contains(var1));
@@ -155,6 +158,8 @@ public class PerfanaClientTest
         assertTrue(json.contains(value2));
         assertTrue(json.contains(tag1.trim()));
         assertTrue(json.contains(tag2.trim()));
+        assertTrue(json.contains("extraVar1"));
+        assertTrue(json.contains("extraVar2"));
 
     }
 
@@ -180,7 +185,7 @@ public class PerfanaClientTest
                 .setVariables(props)
                 .build();
 
-        String json = PerfanaClient.perfanaMessageToJson(context, false);
+        String json = PerfanaClient.perfanaMessageToJson(context, false, Collections.emptyMap());
         assertTrue(json.contains("foo"));
         assertTrue(json.contains("bar"));
         assertTrue(json.contains("foo-1"));

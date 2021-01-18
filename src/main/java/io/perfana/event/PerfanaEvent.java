@@ -27,46 +27,63 @@ import io.perfana.client.exception.PerfanaAssertionsAreFalse;
 import io.perfana.client.exception.PerfanaClientException;
 import io.perfana.client.exception.PerfanaClientRuntimeException;
 import nl.stokpop.eventscheduler.api.*;
-import nl.stokpop.eventscheduler.api.config.TestConfig;
+import nl.stokpop.eventscheduler.api.message.EventMessageBus;
+import nl.stokpop.eventscheduler.api.message.EventMessageReceiver;
 import nl.stokpop.eventscheduler.exception.handler.KillSwitchException;
 
-import java.time.Duration;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
-import static java.time.temporal.ChronoUnit.SECONDS;
-
-public class PerfanaEvent extends EventAdapter<PerfanaEventConfig> {
+public class PerfanaEvent extends EventAdapter<PerfanaEventContext> {
 
     private final String CLASSNAME = PerfanaEvent.class.getName();
-    private final TestContext perfanaTestContext;
     private final String eventName;
+
+    private final TestContext perfanaTestContext;
+
+    private final EventMessageBus messageBus;
+
+    private final Map<String,String> receivedVariables = new ConcurrentHashMap<>();
 
     private PerfanaClient perfanaClient;
     private String abortDetailMessage = null;
     // save some state to do the status check
     private EventCheck eventCheck;
 
-    PerfanaEvent(PerfanaEventConfig eventConfig, EventLogger logger) {
-        super(eventConfig, logger);
-        this.eventCheck = new EventCheck(eventConfig.getName(), CLASSNAME, EventStatus.UNKNOWN, "No known result yet. Try again some time later.");
-        this.eventName = eventConfig.getName();
-        this.perfanaTestContext = createPerfanaTestContext(eventConfig);
+    PerfanaEvent(PerfanaEventContext context, EventMessageBus messageBus, EventLogger logger) {
+        super(context, messageBus, logger);
+        this.eventCheck = new EventCheck(context.getName(), CLASSNAME, EventStatus.UNKNOWN, "No known result yet. Try again some time later.");
+        this.eventName = context.getName();
+        this.perfanaTestContext = createPerfanaTestContext(context);
+        this.messageBus = messageBus;
+
+        EventMessageReceiver eventMessageReceiver = m -> {
+            if (!m.getVariables().isEmpty()) {
+                logger.info("received variables from " + m.getPluginName() + ": " + m.getVariables());
+                receivedVariables.putAll(m.getVariables());
+            }
+        };
+        this.messageBus.addReceiver(eventMessageReceiver);
     }
 
     @Override
     public void beforeTest() {
 
         PerfanaConnectionSettings settings = new PerfanaConnectionSettingsBuilder()
-                .setPerfanaUrl(eventConfig.getPerfanaUrl())
+                .setPerfanaUrl(eventContext.getPerfanaUrl())
                 .build();
 
         PerfanaClientBuilder builder = new PerfanaClientBuilder()
                 .setLogger(new PerfanaClientEventLogger(logger))
-                .setTestContext(createPerfanaTestContext(eventConfig))
+                .setTestContext(perfanaTestContext)
                 .setPerfanaConnectionSettings(settings)
-                .setAssertResultsEnabled(eventConfig.isAssertResultsEnabled());
+                .setAssertResultsEnabled(eventContext.isAssertResultsEnabled());
 
         perfanaClient = builder.build();
+    }
 
+    @Override
+    public void startTest() {
         perfanaClient.callPerfanaEvent(perfanaTestContext, "Test start", "Test run started");
     }
 
@@ -123,7 +140,7 @@ public class PerfanaEvent extends EventAdapter<PerfanaEventConfig> {
     public void keepAlive() {
         logger.debug("Keep alive called");
         try {
-            perfanaClient.callPerfanaTestEndpoint(perfanaTestContext, false);
+            perfanaClient.callPerfanaTestEndpoint(perfanaTestContext, false, receivedVariables);
         } catch (KillSwitchException killSwitchException) {
             abortDetailMessage = killSwitchException.getMessage();
             throw killSwitchException;
@@ -139,26 +156,26 @@ public class PerfanaEvent extends EventAdapter<PerfanaEventConfig> {
         }
     }
 
-    private static TestContext createPerfanaTestContext(PerfanaEventConfig eventConfig) {
+    private static TestContext createPerfanaTestContext(PerfanaEventContext context) {
 
-        TestConfig testConfig = eventConfig.getTestConfig();
+        nl.stokpop.eventscheduler.api.config.TestContext testContext = context.getTestContext();
 
-        if (testConfig == null) {
-            throw new PerfanaClientRuntimeException("testConfig in eventConfig is null: " + eventConfig);
+        if (testContext == null) {
+            throw new PerfanaClientRuntimeException("testConfig in eventConfig is null: " + context);
         }
 
         return new TestContextBuilder()
-            .setVariables(eventConfig.getVariables())
-            .setTags(testConfig.getTags())
-            .setAnnotations(testConfig.getAnnotations())
-            .setSystemUnderTest(testConfig.getSystemUnderTest())
-            .setVersion(testConfig.getVersion())
-            .setCIBuildResultsUrl(testConfig.getBuildResultsUrl())
-            .setConstantLoadTime(Duration.of(testConfig.getConstantLoadTimeInSeconds(), SECONDS))
-            .setRampupTime(Duration.of(testConfig.getRampupTimeInSeconds(), SECONDS))
-            .setTestEnvironment(testConfig.getTestEnvironment())
-            .setTestRunId(testConfig.getTestRunId())
-            .setWorkload(testConfig.getWorkload())
+            .setVariables(context.getVariables())
+            .setTags(testContext.getTags())
+            .setAnnotations(testContext.getAnnotations())
+            .setSystemUnderTest(testContext.getSystemUnderTest())
+            .setVersion(testContext.getVersion())
+            .setCIBuildResultsUrl(testContext.getBuildResultsUrl())
+            .setConstantLoadTime(testContext.getConstantLoadTime())
+            .setRampupTime(testContext.getRampupTime())
+            .setTestEnvironment(testContext.getTestEnvironment())
+            .setTestRunId(testContext.getTestRunId())
+            .setWorkload(testContext.getWorkload())
             .build();
     }
 

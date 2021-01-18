@@ -17,45 +17,35 @@
  */
 package io.perfana.event;
 
-import nl.stokpop.eventscheduler.api.config.EventConfig;
 import nl.stokpop.eventscheduler.api.config.EventContext;
-import nl.stokpop.eventscheduler.api.config.TestContext;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 
-public class PerfanaEventConfig extends EventConfig {
+public class PerfanaEventContext extends EventContext {
 
-    private String perfanaUrl = "http://localhost:8888";
-    private boolean assertResultsEnabled = false;
-    private Map<String,String> variables = Collections.emptyMap();
+    private final String perfanaUrl;
+    private final boolean assertResultsEnabled;
+    private final Map<String,String> variables;
 
-    public void setPerfanaUrl(String perfanaUrl) {
+    protected PerfanaEventContext(EventContext context, String perfanaUrl, boolean assertResultsEnabled, Map<String, String> variables) {
+        super(context, PerfanaEventFactory.class.getName(), false);
         this.perfanaUrl = perfanaUrl;
-    }
-
-    public void setAssertResultsEnabled(boolean assertResultsEnabled) {
         this.assertResultsEnabled = assertResultsEnabled;
+        this.variables = Collections.unmodifiableMap(new HashMap<>(variables));
     }
 
-    public void setVariables(Map<String, String> variables) {
-        this.variables = variables;
+    public String getPerfanaUrl() {
+        return perfanaUrl;
     }
 
-    @NotNull
-    private PerfanaEventContext createPerfanaEventContext(EventContext context) {
-        return new PerfanaEventContext(context, perfanaUrl, assertResultsEnabled, variables);
+    public boolean isAssertResultsEnabled() {
+        return assertResultsEnabled;
     }
 
-    @Override
-    public PerfanaEventContext toContext() {
-        return createPerfanaEventContext(super.toContext());
-    }
-
-    @Override
-    public EventContext toContext(TestContext overrideTestContext) {
-        return createPerfanaEventContext(super.toContext(overrideTestContext));
+    public Map<String, String> getVariables() {
+        return variables;
     }
 
     @Override

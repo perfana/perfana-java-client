@@ -15,12 +15,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package io.perfana.client.api;
+package io.perfana.client.domain;
 
-import java.util.Map;
+import lombok.*;
 
-public interface PerfanaCaller {
-    void callPerfanaEvent(TestContext context, String eventTitle, String eventDescription);
-    void callPerfanaTestEndpoint(TestContext context, boolean complete);
-    void callPerfanaTestEndpoint(TestContext context, boolean complete, Map<String,String> extraVariables);
+@Value
+@Builder
+@NoArgsConstructor(force = true, access = AccessLevel.PRIVATE)
+@AllArgsConstructor
+public class DeepLink {
+    String url;
+    String name;
+    String type;
+    String pluginName;
 }

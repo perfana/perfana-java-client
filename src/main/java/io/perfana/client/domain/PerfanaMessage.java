@@ -42,4 +42,6 @@ public class PerfanaMessage {
     List<String> tags;
     @Singular
     List<Variable> variables;
+    @Singular
+    List<DeepLink> deepLinks;
 }

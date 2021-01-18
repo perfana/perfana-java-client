@@ -60,9 +60,26 @@ public class PerfanaMessageTest {
 
     @Test
     public void testWriteJson() throws IOException {
+        DeepLink deepLink1 = DeepLink.builder()
+            .url("https://loadrunner-cloud.saas.microfocus.com/run-overview/2/dashboard/?TENANTID=411235333&projectId=1")
+            .name("loadrunner-cloud-dashboard")
+            .type("dashboard")
+            .pluginName("test-events-loadrunner-cloud")
+            .build();
+
+        DeepLink deepLink2 = DeepLink.builder()
+            .url("https://my-wiremock.example.com:9999/__admin/recorder/")
+            .name("my-wiremock recorder")
+            .type("wiremock")
+            .pluginName("test-events-wiremock")
+            .build();
+
         PerfanaMessage perfanaMessage = PerfanaMessage.builder()
             .cibuildResultsUrl("http://test-url")
+            .deepLink(deepLink1)
+            .deepLink(deepLink2)
             .build();
+
         String jsonTest = perfanaMessageWriter.writeValueAsString(perfanaMessage);
         //System.out.println(jsonTest);
         assertEquals(1, findMatches(jsonTest.toLowerCase()));

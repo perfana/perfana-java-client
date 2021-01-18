@@ -77,10 +77,8 @@ For example (from [example-pom.xml](src/test/resources/example-pom.xml)):
                     <perfanaUrl>http://localhost:8888</perfanaUrl>
                     <assertResultsEnabled>false</assertResultsEnabled>
                     <variables>
-                        <variable>
-                            <name>_var1</name>
-                            <value>my_value</value>
-                        </variable>
+                        <var1>my_value</var1>
+                        <__var2>my_value_2</__var2>
                     </variables>
                     <testConfig>
                         <systemUnderTest>${systemUnderTest}</systemUnderTest>
