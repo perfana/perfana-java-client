@@ -33,6 +33,7 @@ import io.perfana.client.exception.PerfanaClientRuntimeException;
 import nl.stokpop.eventscheduler.exception.handler.AbortSchedulerException;
 import nl.stokpop.eventscheduler.exception.handler.KillSwitchException;
 import okhttp3.*;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -88,24 +89,17 @@ public final class PerfanaClient implements PerfanaCaller {
     @Override
     public void callPerfanaTestEndpoint(TestContext context, boolean completed, Map<String, String> extraVariables) throws KillSwitchException {
         String json = perfanaMessageToJson(context, completed, extraVariables);
-        RequestBody body = RequestBody.create(json, JSON);
 
-        String testUrl = settings.getPerfanaUrl() + "/test";
-        logger.debug("call to endpoint: " + testUrl + " with json: " + json);
-
-        Request request = new Request.Builder()
-                .url(testUrl)
-                .post(body)
-                .build();
+        Request request = createRequest("/api/test", json);
 
         try (Response result = client.newCall(request).execute()) {
 
             logger.debug("test endpoint result: " + result);
 
-            final int reponseCode = result.code();
+            final int responseCode = result.code();
             final ResponseBody responseBody = result.body();
 
-            if (reponseCode == HTTP_BAD_REQUEST) {
+            if (responseCode == HTTP_BAD_REQUEST) {
                 if (responseBody != null) {
                     Message message = messageReader.readValue(responseBody.string());
                     throw new AbortSchedulerException(message.getMessage());
@@ -132,26 +126,49 @@ public final class PerfanaClient implements PerfanaCaller {
         }
     }
 
+
+    @NotNull
+    private Request createRequest(String endPoint) {
+        return createRequest(endPoint, null);
+    }
+
+    private Request createRequest(@NotNull String endpoint, String json) {
+        logger.debug("call to endpoint: " + endpoint + " with json: " + json);
+
+        String url = settings.getPerfanaUrl() + endpoint;
+
+        Request.Builder requestBuilder = new Request.Builder()
+            .url(url);
+
+        if (json == null) {
+            requestBuilder.get();
+        }
+        else {
+            RequestBody body = RequestBody.create(json, JSON);
+            requestBuilder.post(body);
+        }
+
+        if (settings.getApiKey() != null) {
+            requestBuilder.addHeader("Authorization", "Bearer " + settings.getApiKey());
+        }
+
+        return requestBuilder.build();
+    }
+
     @Override
     public void callPerfanaEvent(TestContext context, String eventTitle, String eventDescription) {
         logger.info("add Perfana event: " + eventDescription);
         String json = perfanaEventToJson(context, eventTitle, eventDescription);
-        String eventsUrl = settings.getPerfanaUrl() + "/events";
-        logger.debug("add perfana event to endpoint: " + eventsUrl + " with json: " + json);
         try {
-            String result = post(eventsUrl, json);
+            String result = post("/api/events", json);
             logger.debug("result: " + result);
         } catch (IOException e) {
             logger.error("failed to call Perfana event endpoint: " + e.getMessage());
         }
     }
 
-    private String post(String url, String json) throws IOException {
-        RequestBody body = RequestBody.create(json, JSON);
-        Request request = new Request.Builder()
-                .url(url)
-                .post(body)
-                .build();
+    private String post(String endpoint, String json) throws IOException {
+        Request request = createRequest(endpoint, json);
         try (Response response = client.newCall(request).execute()) {
             ResponseBody responseBody = response.body();
             if (!response.isSuccessful()) {
@@ -214,18 +231,15 @@ public final class PerfanaClient implements PerfanaCaller {
      * @throws PerfanaClientException when call fails
      */
     private String callCheckAsserts() throws PerfanaClientException {
-        // example: https://perfana-url/benchmarks/DASHBOARD/NIGHTLY/TEST-RUN-831
-        String url;
+        // example: https://perfana-url/api/benchmark-results/DASHBOARD/NIGHTLY/TEST-RUN-831
+        String endPoint;
         try {
-            url = String.join("/", settings.getPerfanaUrl(), "get-benchmark-results", encodeForURL(context.getSystemUnderTest()), encodeForURL(context.getTestRunId()));
+            endPoint = String.join("/",  "api", "benchmark-results", encodeForURL(context.getSystemUnderTest()), encodeForURL(context.getTestRunId()));
         } catch (UnsupportedEncodingException e) {
             throw new PerfanaClientException("cannot encode Perfana url.", e);
         }
         
-        Request request = new Request.Builder()
-                .url(url)
-                .get()
-                .build();
+        Request request = createRequest(endPoint);
 
         final int maxRetryCount = settings.getRetryMaxCount();
         final long sleepDurationMillis = settings.getRetryDuration().toMillis();
@@ -257,10 +271,10 @@ public final class PerfanaClient implements PerfanaCaller {
                 }  else if (reponseCode == HTTP_ACCEPTED) {
                     //  evaluation in progress
                     logger.info(String.format("Trying to get test run check results at %s, attempt [%d/%d]. Returncode [%d]: Test run evaluation in progress ...",
-                        url, retryCount, maxRetryCount, reponseCode));
+                        endPoint, retryCount, maxRetryCount, reponseCode));
                 }
             } catch (IOException e) {
-                throw new PerfanaClientException("Exception while trying to get test run check results at [" + url + "]", e);
+                throw new PerfanaClientException("Exception while trying to get test run check results at [" + endPoint + "]", e);
             }
 
             if (!assertionsAvailable) {
@@ -268,8 +282,8 @@ public final class PerfanaClient implements PerfanaCaller {
             }
         }
         if (!assertionsAvailable) {
-            logger.warn("Failed to get test run check results at [" + url + "], maximum attempts reached!");
-            throw new PerfanaClientException("Failed to get test run check results at [" + url + "], maximum attempts reached!");
+            logger.warn("Failed to get test run check results at [" + endPoint + "], maximum attempts reached!");
+            throw new PerfanaClientException("Failed to get test run check results at [" + endPoint + "], maximum attempts reached!");
         }
         return checksSpecified ? assertions : null;
     }

@@ -55,15 +55,15 @@ public class PerfanaEventTest {
     @Test
     public void testLifeCycle() {
 
-        wireMockRule.stubFor(post(urlEqualTo("/events"))
+        wireMockRule.stubFor(post(urlEqualTo("/api/events"))
                         .willReturn(aResponse()
                                 .withBody("{ hello: world }")));
 
-        wireMockRule.stubFor(post(urlEqualTo("/test"))
+        wireMockRule.stubFor(post(urlEqualTo("/api/test"))
                         .willReturn(aResponse()
                                 .withBody("{ \"abort\":false }")));
 
-        wireMockRule.stubFor(get(urlPathMatching("/get-benchmark-results/.*"))
+        wireMockRule.stubFor(get(urlPathMatching("/api/benchmark-results/.*"))
                         .willReturn(aResponse()
                                 .withBody(REPLY_BODY_BENCHMARK_RESULTS)));
 

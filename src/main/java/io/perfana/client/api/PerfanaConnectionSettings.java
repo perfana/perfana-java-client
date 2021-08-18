@@ -27,5 +27,6 @@ public class PerfanaConnectionSettings {
     int retryMaxCount;
     Duration retryDuration;
     String perfanaUrl;
+    String apiKey;
 
 }

@@ -194,7 +194,7 @@ public class PerfanaClientTest
 
     @Test(expected = KillSwitchException.class)
     public void testPerfanaTestCallWithResult() {
-        wireMockRule.stubFor(post(urlEqualTo("/test"))
+        wireMockRule.stubFor(post(urlEqualTo("/api/test"))
                 .willReturn(aResponse()
                         .withBody("{ \"abort\": true, \"abortMessage\": \"What is wrong?\" }")));
 
@@ -205,7 +205,7 @@ public class PerfanaClientTest
 
     @Test
     public void testPerfanaTestCallWithResultCompletedTrue() {
-        wireMockRule.stubFor(post(urlEqualTo("/test"))
+        wireMockRule.stubFor(post(urlEqualTo("/api/test"))
             .willReturn(aResponse()
                 .withBody("{ \"abort\": true, \"abortMessage\": \"What is wrong?\" }")));
 

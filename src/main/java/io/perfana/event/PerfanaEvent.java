@@ -71,6 +71,7 @@ public class PerfanaEvent extends EventAdapter<PerfanaEventContext> {
 
         PerfanaConnectionSettings settings = new PerfanaConnectionSettingsBuilder()
                 .setPerfanaUrl(eventContext.getPerfanaUrl())
+                .setApiKey("perfana-api-key-abc")
                 .build();
 
         PerfanaClientBuilder builder = new PerfanaClientBuilder()

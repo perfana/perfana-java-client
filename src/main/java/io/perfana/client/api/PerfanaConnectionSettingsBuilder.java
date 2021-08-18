@@ -28,6 +28,7 @@ public class PerfanaConnectionSettingsBuilder {
     private String perfanaUrl = "unknown";
     private int retryMaxCount = DEFAULT_RETRY_MAX_COUNT;
     private Duration retryDuration = Duration.ofSeconds(DEFAULT_RETRY_TIME_SECONDS);
+    private String apiKey = null;
 
     public PerfanaConnectionSettingsBuilder setRetryMaxCount(String retryMaxCount) {
         this.retryMaxCount = PerfanaUtils.parseInt("retryMaxCount", retryMaxCount, DEFAULT_RETRY_MAX_COUNT);
@@ -58,8 +59,15 @@ public class PerfanaConnectionSettingsBuilder {
         return this;
     }
 
+    public PerfanaConnectionSettingsBuilder setApiKey(String apiKey) {
+        if (PerfanaUtils.hasValue(apiKey)) {
+            this.apiKey = apiKey;
+        }
+        return this;
+    }
+
     public PerfanaConnectionSettings build() {
-        return new PerfanaConnectionSettings(retryMaxCount, retryDuration, perfanaUrl);
+        return new PerfanaConnectionSettings(retryMaxCount, retryDuration, perfanaUrl, apiKey);
     }
 
 }
