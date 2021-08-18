@@ -28,6 +28,7 @@ import java.util.Map;
 public class PerfanaEventConfig extends EventConfig {
 
     private String perfanaUrl = "http://localhost:8888";
+    private String apiKey = null;
     private boolean assertResultsEnabled = false;
     private Map<String,String> variables = Collections.emptyMap();
 
@@ -43,9 +44,13 @@ public class PerfanaEventConfig extends EventConfig {
         this.variables = variables;
     }
 
+    public void setApiKey(String apiKey) {
+        this.apiKey = apiKey;
+    }
+
     @NotNull
     private PerfanaEventContext createPerfanaEventContext(EventContext context) {
-        return new PerfanaEventContext(context, perfanaUrl, assertResultsEnabled, variables);
+        return new PerfanaEventContext(context, perfanaUrl, apiKey, assertResultsEnabled, variables);
     }
 
     @Override
@@ -64,6 +69,7 @@ public class PerfanaEventConfig extends EventConfig {
             "perfanaUrl='" + perfanaUrl + '\'' +
             ", assertResultsEnabled=" + assertResultsEnabled +
             ", variables=" + variables +
+            ", apiKey=" + (apiKey == null ? "[not set]" : "[set]") +
             "} " + super.toString();
     }
 }

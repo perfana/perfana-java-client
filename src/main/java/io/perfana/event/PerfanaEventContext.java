@@ -26,18 +26,24 @@ import java.util.Map;
 public class PerfanaEventContext extends EventContext {
 
     private final String perfanaUrl;
+    private final String apiKey;
     private final boolean assertResultsEnabled;
     private final Map<String,String> variables;
 
-    protected PerfanaEventContext(EventContext context, String perfanaUrl, boolean assertResultsEnabled, Map<String, String> variables) {
+    protected PerfanaEventContext(EventContext context, String perfanaUrl, String apiKey, boolean assertResultsEnabled, Map<String, String> variables) {
         super(context, PerfanaEventFactory.class.getName(), false);
         this.perfanaUrl = perfanaUrl;
+        this.apiKey = apiKey;
         this.assertResultsEnabled = assertResultsEnabled;
         this.variables = Collections.unmodifiableMap(new HashMap<>(variables));
     }
 
     public String getPerfanaUrl() {
         return perfanaUrl;
+    }
+
+    public String getApiKey() {
+        return apiKey;
     }
 
     public boolean isAssertResultsEnabled() {
@@ -52,6 +58,7 @@ public class PerfanaEventContext extends EventContext {
     public String toString() {
         return "PerfanaEventConfig{" +
             "perfanaUrl='" + perfanaUrl + '\'' +
+            ", apiKey=" + (apiKey == null ? "[not set]" : "[set]") +
             ", assertResultsEnabled=" + assertResultsEnabled +
             ", variables=" + variables +
             "} " + super.toString();

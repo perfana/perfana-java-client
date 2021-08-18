@@ -9,6 +9,7 @@ Create a `PerfanaClient` using the builders:
 ```java
         PerfanaConnectionSettings settings = new PerfanaConnectionSettingsBuilder()
                 .setPerfanaUrl("http://perfanaUrl")
+                .setApiKey("perfana-api-key-XXX-YYY-ZZZ")
                 .setRetryMaxCount("5")
                 .setRetryTimeInSeconds("3")
                 .build();
@@ -75,6 +76,7 @@ For example (from [example-pom.xml](src/test/resources/example-pom.xml)):
                 <eventConfig implementation="io.perfana.event.PerfanaEventConfig">
                     <name>PerfanaEvent1</name>
                     <perfanaUrl>http://localhost:8888</perfanaUrl>
+                    <apiKey>perfana-api-key-XXX-YYY-ZZZ</apiKey>
                     <assertResultsEnabled>false</assertResultsEnabled>
                     <variables>
                         <var1>my_value</var1>
