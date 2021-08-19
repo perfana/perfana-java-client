@@ -99,7 +99,9 @@ public final class PerfanaClient implements PerfanaCaller {
             final int responseCode = result.code();
             final ResponseBody responseBody = result.body();
 
-            if (responseCode == HTTP_BAD_REQUEST) {
+            if (responseCode == HTTP_UNAUTHORIZED) {
+                throw new AbortSchedulerException("Abort due to: not authorized (401) for [" + request + "]");
+            } else if (responseCode == HTTP_BAD_REQUEST) {
                 if (responseBody != null) {
                     Message message = messageReader.readValue(responseBody.string());
                     throw new AbortSchedulerException(message.getMessage());
@@ -133,9 +135,9 @@ public final class PerfanaClient implements PerfanaCaller {
     }
 
     private Request createRequest(@NotNull String endpoint, String json) {
-        logger.debug("call to endpoint: " + endpoint + " with json: " + json);
+        logger.debug("call to endpoint: " + endpoint + (json != null ? " with json: " + json : ""));
 
-        String url = settings.getPerfanaUrl() + endpoint;
+        String url = PerfanaUtils.addSlashIfNeeded(settings.getPerfanaUrl(), endpoint);
 
         Request.Builder requestBuilder = new Request.Builder()
             .url(url);
@@ -171,6 +173,10 @@ public final class PerfanaClient implements PerfanaCaller {
         Request request = createRequest(endpoint, json);
         try (Response response = client.newCall(request).execute()) {
             ResponseBody responseBody = response.body();
+            final int responseCode = response.code();
+            if (responseCode == HTTP_UNAUTHORIZED) {
+                logger.warn("ignoring: not authorised (401) to post to [" + endpoint + "]");
+            }
             if (!response.isSuccessful()) {
                 logger.warn("POST was not successful: " + response + " for request: " + request + " and body: " + json);
             }
@@ -227,14 +233,24 @@ public final class PerfanaClient implements PerfanaCaller {
 
     /**
      * Call asserts for this test run.
-     * @return json string such as {"meetsRequirement":true,"benchmarkResultPreviousOK":true,"benchmarkResultFixedOK":true}
+     * @return string such as "All configured checks are OK:
+     *     https://perfana:4000/requirements/123
+     *     https://perfana:4000/benchmarkBaseline/123
+     *     https://perfana:4000/benchmarkPrevious/123"
      * @throws PerfanaClientException when call fails
      */
     private String callCheckAsserts() throws PerfanaClientException {
         // example: https://perfana-url/api/benchmark-results/DASHBOARD/NIGHTLY/TEST-RUN-831
+
+        // response example: {
+        //     "requirements":{"result":true,"deeplink":"https://perfana:4000/requirements/123"},
+        //     "benchmarkPreviousTestRun":{"result":true,"deeplink":"https://perfana:4000/benchmarkPrevious/123"},
+        //     "benchmarkBaselineTestRun":{"result":true,"deeplink":"https://perfana:4000/benchmarkBaseline/123"}
+        // }
+
         String endPoint;
         try {
-            endPoint = String.join("/",  "api", "benchmark-results", encodeForURL(context.getSystemUnderTest()), encodeForURL(context.getTestRunId()));
+            endPoint = String.join("/",  "/api", "benchmark-results", encodeForURL(context.getSystemUnderTest()), encodeForURL(context.getTestRunId()));
         } catch (UnsupportedEncodingException e) {
             throw new PerfanaClientException("cannot encode Perfana url.", e);
         }
@@ -253,25 +269,29 @@ public final class PerfanaClient implements PerfanaCaller {
             try (Response response = client.newCall(request).execute()) {
                 ResponseBody responseBody = response.body();
 
-                final int reponseCode = response.code();
-                if (reponseCode == HTTP_OK) {
+                final int responseCode = response.code();
+                if (responseCode == HTTP_OK) {
                     assertions = (responseBody == null) ? "null" : responseBody.string();
                     assertionsAvailable = true;
                     checksSpecified = true;
-                } else if (reponseCode == HTTP_NO_CONTENT) {
+                } else if (responseCode == HTTP_NO_CONTENT) {
                     // no check specified
                     assertionsAvailable = true;
                     checksSpecified = false;
-                } else if (reponseCode == HTTP_BAD_REQUEST) {
+                } else if (responseCode == HTTP_BAD_REQUEST) {
                     // something went wrong
                     throw new PerfanaClientException("Something went wrong while evaluating the test run [" + context.getTestRunId() + "]");
-                } else if (reponseCode == HTTP_NOT_FOUND) {
+                } else if (responseCode == HTTP_NOT_FOUND) {
                     // test run not found
                     throw new PerfanaClientException("Test run not found [" + context.getTestRunId() + "]");
-                }  else if (reponseCode == HTTP_ACCEPTED) {
+                }  else if (responseCode == HTTP_ACCEPTED) {
                     //  evaluation in progress
                     logger.info(String.format("Trying to get test run check results at %s, attempt [%d/%d]. Returncode [%d]: Test run evaluation in progress ...",
-                        endPoint, retryCount, maxRetryCount, reponseCode));
+                        endPoint, retryCount, maxRetryCount, responseCode));
+                } else if (responseCode == HTTP_UNAUTHORIZED) {
+                    throw new PerfanaClientException("Not authorized (401) for [" + endPoint + "]");
+                } else {
+                    throw new PerfanaClientException("No action defined for dealing with http code (" + responseCode + ") for [" + endPoint + "]");
                 }
             } catch (IOException e) {
                 throw new PerfanaClientException("Exception while trying to get test run check results at [" + endPoint + "]", e);

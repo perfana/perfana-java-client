@@ -35,4 +35,16 @@ public class PerfanaUtilsTest {
         assertEquals(Collections.emptyList(), PerfanaUtils.splitAndTrim(null, ""));
         assertEquals(Collections.emptyList(), PerfanaUtils.splitAndTrim(null, null));
     }
+
+    @Test
+    public void slashesIfNeeded() {
+        assertEquals("/", PerfanaUtils.addSlashIfNeeded("", ""));
+        assertEquals("base/end", PerfanaUtils.addSlashIfNeeded("base/", "end"));
+        assertEquals("base/end", PerfanaUtils.addSlashIfNeeded("base/", "/end"));
+        assertEquals("base/end", PerfanaUtils.addSlashIfNeeded("base", "/end"));
+        assertEquals("base/end/", PerfanaUtils.addSlashIfNeeded("base//", "//end/"));
+        assertEquals("/", PerfanaUtils.addSlashIfNeeded(null, ""));
+        assertEquals("", PerfanaUtils.addSlashIfNeeded("", null));
+        assertEquals("", PerfanaUtils.addSlashIfNeeded(null, null));
+    }
 }

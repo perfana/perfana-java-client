@@ -17,10 +17,17 @@
  */
 package io.perfana.test;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import io.perfana.client.PerfanaClient;
 import io.perfana.client.PerfanaClientBuilder;
 import io.perfana.client.api.*;
+import io.perfana.client.domain.Benchmark;
+import io.perfana.client.domain.Result;
+import io.perfana.client.exception.PerfanaAssertionsAreFalse;
+import io.perfana.client.exception.PerfanaClientException;
+import nl.stokpop.eventscheduler.exception.handler.AbortSchedulerException;
 import nl.stokpop.eventscheduler.exception.handler.KillSwitchException;
 import org.junit.Rule;
 import org.junit.Test;
@@ -29,6 +36,7 @@ import java.util.*;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
+import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertNotNull;
 
@@ -37,6 +45,7 @@ import static org.junit.Assert.assertNotNull;
  */
 public class PerfanaClientTest
 {
+    public static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     @Rule
     public WireMockRule wireMockRule = new WireMockRule(options().dynamicPort());
 
@@ -214,4 +223,64 @@ public class PerfanaClientTest
         // should not throw KillSwitchException when completed is true (not a keep alive call)
         perfanaClient.callPerfanaTestEndpoint(testContext, true);
     }
+
+    @Test
+    public void testPerfanaAssertResultsCall() throws PerfanaAssertionsAreFalse, PerfanaClientException, JsonProcessingException {
+
+        Benchmark benchmark = Benchmark.builder()
+            .requirements(Result.builder().result(true).deeplink("https://perfana:4000/requirements/123").build())
+            .benchmarkBaselineTestRun(Result.builder().result(true).deeplink("https://perfana:4000/benchmarkBaseline/123").build())
+            .benchmarkPreviousTestRun(Result.builder().result(true).deeplink("https://perfana:4000/benchmarkPrevious/123").build())
+            .build();
+
+        String body = OBJECT_MAPPER.writeValueAsString(benchmark);
+
+        wireMockRule.stubFor(get(urlEqualTo("/api/benchmark-results/unknown/testRunId"))
+            .willReturn(aResponse()
+                .withBody(body)));
+
+        PerfanaClient perfanaClient = createPerfanaClient();
+        String assertResults = perfanaClient.assertResults();
+
+        String expectReply = "All configured checks are OK: \n" +
+            "https://perfana:4000/requirements/123\n" +
+            "https://perfana:4000/benchmarkBaseline/123\n" +
+            "https://perfana:4000/benchmarkPrevious/123";
+
+        assertEquals(expectReply, assertResults);
+    }
+
+    @Test(expected = PerfanaAssertionsAreFalse.class)
+    public void testPerfanaAssertResultsFailedCall() throws PerfanaAssertionsAreFalse, PerfanaClientException, JsonProcessingException {
+
+        Benchmark benchmark = Benchmark.builder()
+            .requirements(Result.builder().result(false).deeplink("https://perfana:4000/requirements/123").build())
+            .benchmarkBaselineTestRun(Result.builder().result(false).deeplink("https://perfana:4000/benchmarkBaseline/123").build())
+            .benchmarkPreviousTestRun(Result.builder().result(true).deeplink("https://perfana:4000/benchmarkPrevious/123").build())
+            .build();
+
+        String body = OBJECT_MAPPER.writeValueAsString(benchmark);
+
+        wireMockRule.stubFor(get(urlEqualTo("/api/benchmark-results/unknown/testRunId"))
+            .willReturn(aResponse()
+                .withBody(body)));
+
+        PerfanaClient perfanaClient = createPerfanaClient();
+        perfanaClient.assertResults();
+
+    }
+
+    @Test(expected = AbortSchedulerException.class)
+    public void testPerfanaTestCallWithoutAuth() {
+        wireMockRule.stubFor(post(urlEqualTo("/api/test"))
+            .willReturn(aResponse()
+                .withStatus(401)
+                .withStatusMessage("No authorisation for perfana call!")
+                .withBody("No body")));
+
+        PerfanaClient perfanaClient = createPerfanaClient();
+        TestContext testContext = new TestContextBuilder().build();
+        perfanaClient.callPerfanaTestEndpoint(testContext, false);
+    }
+
 }

@@ -59,4 +59,20 @@ public class PerfanaUtils {
                 .filter(s -> !s.isEmpty())
                 .collect(Collectors.toList());
     }
+
+    public static String addSlashIfNeeded(String baseUrl, String endpoint) {
+        String cleanUrl;
+        if (baseUrl == null) {
+            cleanUrl = "";
+        } else {
+            cleanUrl = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
+        }
+        String slashEndpoint;
+        if (endpoint == null) {
+            slashEndpoint = "";
+        } else {
+            slashEndpoint = endpoint.startsWith("/") ? endpoint : "/" + endpoint;
+        }
+        return  (cleanUrl + slashEndpoint).replaceAll("/+", "/");
+    }
 }
