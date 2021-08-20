@@ -28,7 +28,7 @@ jobs:
         run: echo "$SECRETS_BUILD_SETTINGS_XML" | base64 -d >> ./build-settings.xml
       - name: push snapshot to maven central
         if: contains(steps.project.outputs.version, 'SNAPSHOT') == true
-        run: ./mvnw -s build-settings.xml clean javadoc:jar source:jar deploy
+        run: ./mvnw --no-transfer-progress -s build-settings.xml clean javadoc:jar source:jar deploy
       - name: Close and release repository with Gradle
         if: contains(steps.project.outputs.version, 'SNAPSHOT') != true
         run: echo "RELEASE NOT SUPPORTED YET!"

@@ -44,7 +44,7 @@
 
     <distributionManagement>
         <snapshotRepository>
-            <id>ossrh</id>
+            <id>sonatype-nexus</id>
             <url>https://oss.sonatype.org/content/repositories/snapshots</url>
         </snapshotRepository>
     </distributionManagement>
@@ -198,6 +198,10 @@
                         <exclude>make_credentials.py</exclude>
                         <exclude>.idea/**</exclude>
                         <exclude>target</exclude>
+                        <exclude>.mvn/**</exclude>
+                        <exclude>mvnw.cmd</exclude>
+                        <exclude>mvnw</exclude>
+                        <exclude>.github/**</exclude>
                     </excludes>
                 </configuration>
                 <executions>
