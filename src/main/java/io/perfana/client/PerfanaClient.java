@@ -270,6 +270,9 @@ public final class PerfanaClient implements PerfanaCaller {
                 final int responseCode = response.code();
                 if (responseCode == HTTP_OK) {
                     assertions = (responseBody == null) ? "null" : responseBody.string();
+                    if (assertions.contains("<!DOCTYPE html>")) {
+                        throw new PerfanaClientException("Got html instead of json response for [" + endPoint + "]: [" + assertions + "]");
+                    }
                     assertionsAvailable = true;
                     checksSpecified = true;
                 } else if (responseCode == HTTP_NO_CONTENT) {

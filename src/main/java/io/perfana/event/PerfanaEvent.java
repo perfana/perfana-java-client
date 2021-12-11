@@ -43,7 +43,8 @@ public class PerfanaEvent extends EventAdapter<PerfanaEventContext> {
 
     private final Map<String,String> receivedVariables = new ConcurrentHashMap<>();
 
-    private PerfanaClient perfanaClient;
+    private final PerfanaClient perfanaClient;
+
     private String abortDetailMessage = null;
     // save some state to do the status check
     private EventCheck eventCheck;
@@ -55,6 +56,8 @@ public class PerfanaEvent extends EventAdapter<PerfanaEventContext> {
         this.perfanaTestContext = createPerfanaTestContext(context);
         this.messageBus = messageBus;
 
+        this.perfanaClient = createPerfanaClient(context, perfanaTestContext, logger);
+
         EventMessageReceiver eventMessageReceiver = m -> {
             if (!m.getVariables().isEmpty()) {
                 logger.info("received variables from " + m.getPluginName() + ": " + m.getVariables());
@@ -64,8 +67,10 @@ public class PerfanaEvent extends EventAdapter<PerfanaEventContext> {
         this.messageBus.addReceiver(eventMessageReceiver);
     }
 
-    @Override
-    public void beforeTest() {
+    private static PerfanaClient createPerfanaClient(
+            PerfanaEventContext eventContext,
+            TestContext perfanaTestContext,
+            EventLogger logger) {
 
         PerfanaConnectionSettings settings = new PerfanaConnectionSettingsBuilder()
                 .setPerfanaUrl(eventContext.getPerfanaUrl())
@@ -78,7 +83,7 @@ public class PerfanaEvent extends EventAdapter<PerfanaEventContext> {
                 .setPerfanaConnectionSettings(settings)
                 .setAssertResultsEnabled(eventContext.isAssertResultsEnabled());
 
-        perfanaClient = builder.build();
+        return builder.build();
     }
 
     @Override
