@@ -15,7 +15,7 @@
  */
 package io.perfana.event;
 
-import nl.stokpop.eventscheduler.api.config.EventContext;
+import io.perfana.eventscheduler.api.config.EventContext;
 
 import java.util.Collections;
 import java.util.HashMap;

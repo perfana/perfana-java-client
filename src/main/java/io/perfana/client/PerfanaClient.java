@@ -28,8 +28,8 @@ import io.perfana.client.domain.*;
 import io.perfana.client.exception.PerfanaAssertionsAreFalse;
 import io.perfana.client.exception.PerfanaClientException;
 import io.perfana.client.exception.PerfanaClientRuntimeException;
-import nl.stokpop.eventscheduler.exception.handler.AbortSchedulerException;
-import nl.stokpop.eventscheduler.exception.handler.KillSwitchException;
+import io.perfana.eventscheduler.exception.handler.AbortSchedulerException;
+import io.perfana.eventscheduler.exception.handler.KillSwitchException;
 import okhttp3.*;
 import org.jetbrains.annotations.NotNull;
 

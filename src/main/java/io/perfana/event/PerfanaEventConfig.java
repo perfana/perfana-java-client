@@ -15,9 +15,9 @@
  */
 package io.perfana.event;
 
-import nl.stokpop.eventscheduler.api.config.EventConfig;
-import nl.stokpop.eventscheduler.api.config.EventContext;
-import nl.stokpop.eventscheduler.api.config.TestContext;
+import io.perfana.eventscheduler.api.config.EventConfig;
+import io.perfana.eventscheduler.api.config.EventContext;
+import io.perfana.eventscheduler.api.config.TestContext;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collections;

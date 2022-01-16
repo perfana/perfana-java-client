@@ -24,10 +24,10 @@ import io.perfana.client.api.TestContextBuilder;
 import io.perfana.client.exception.PerfanaAssertionsAreFalse;
 import io.perfana.client.exception.PerfanaClientException;
 import io.perfana.client.exception.PerfanaClientRuntimeException;
-import nl.stokpop.eventscheduler.api.*;
-import nl.stokpop.eventscheduler.api.message.EventMessageBus;
-import nl.stokpop.eventscheduler.api.message.EventMessageReceiver;
-import nl.stokpop.eventscheduler.exception.handler.KillSwitchException;
+import io.perfana.eventscheduler.api.*;
+import io.perfana.eventscheduler.api.message.EventMessageBus;
+import io.perfana.eventscheduler.api.message.EventMessageReceiver;
+import io.perfana.eventscheduler.exception.handler.KillSwitchException;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -162,7 +162,7 @@ public class PerfanaEvent extends EventAdapter<PerfanaEventContext> {
 
     private static TestContext createPerfanaTestContext(PerfanaEventContext context) {
 
-        nl.stokpop.eventscheduler.api.config.TestContext testContext = context.getTestContext();
+        io.perfana.eventscheduler.api.config.TestContext testContext = context.getTestContext();
 
         if (testContext == null) {
             throw new PerfanaClientRuntimeException("testConfig in eventConfig is null: " + context);

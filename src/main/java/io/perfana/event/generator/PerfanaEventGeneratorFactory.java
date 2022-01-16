@@ -15,10 +15,10 @@
  */
 package io.perfana.event.generator;
 
-import nl.stokpop.eventscheduler.api.EventGenerator;
-import nl.stokpop.eventscheduler.api.EventGeneratorFactory;
-import nl.stokpop.eventscheduler.api.EventGeneratorProperties;
-import nl.stokpop.eventscheduler.api.EventLogger;
+import io.perfana.eventscheduler.api.EventGenerator;
+import io.perfana.eventscheduler.api.EventGeneratorFactory;
+import io.perfana.eventscheduler.api.EventGeneratorProperties;
+import io.perfana.eventscheduler.api.EventLogger;
 
 public class PerfanaEventGeneratorFactory implements EventGeneratorFactory {
 

@@ -16,12 +16,12 @@
 package io.perfana.event;
 
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
-import nl.stokpop.eventscheduler.EventMessageBusSimple;
-import nl.stokpop.eventscheduler.api.CustomEvent;
-import nl.stokpop.eventscheduler.api.EventLogger;
-import nl.stokpop.eventscheduler.api.config.TestConfig;
-import nl.stokpop.eventscheduler.api.message.EventMessageBus;
-import nl.stokpop.eventscheduler.log.EventLoggerStdOut;
+import io.perfana.eventscheduler.EventMessageBusSimple;
+import io.perfana.eventscheduler.api.CustomEvent;
+import io.perfana.eventscheduler.api.EventLogger;
+import io.perfana.eventscheduler.api.config.TestConfig;
+import io.perfana.eventscheduler.api.message.EventMessageBus;
+import io.perfana.eventscheduler.log.EventLoggerStdOut;
 import org.junit.Rule;
 import org.junit.Test;
 

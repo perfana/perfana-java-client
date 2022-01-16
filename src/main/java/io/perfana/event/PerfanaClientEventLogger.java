@@ -16,12 +16,12 @@
 package io.perfana.event;
 
 import io.perfana.client.api.PerfanaClientLogger;
-import nl.stokpop.eventscheduler.api.EventLogger;
-import nl.stokpop.eventscheduler.log.EventLoggerStdOut;
+import io.perfana.eventscheduler.api.EventLogger;
+import io.perfana.eventscheduler.log.EventLoggerStdOut;
 
 public class PerfanaClientEventLogger implements PerfanaClientLogger {
 
-    private EventLogger eventLogger;
+    private final EventLogger eventLogger;
 
     public PerfanaClientEventLogger() {
         this(null);
