@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 
-       Copyright 2020-2021  Peter Paul Bakker @ Stokpop, Daniel Moll @ Perfana.io
+       Copyright 2020-2022  Peter Paul Bakker @ Perfana.io, Daniel Moll @ Perfana.io
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@
 
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>nl.stokpop</groupId>
+    <groupId>io.perfana</groupId>
     <artifactId>events-test</artifactId>
     <version>1.0-SNAPSHOT</version>
 
@@ -47,7 +47,7 @@
         <pluginManagement>
             <plugins>
                 <plugin>
-                    <groupId>nl.stokpop</groupId>
+                    <groupId>io.perfana</groupId>
                     <artifactId>event-scheduler-maven-plugin</artifactId>
                     <version>${event-scheduler-maven-plugin.version}</version>
                 </plugin>
@@ -56,7 +56,7 @@
 
         <plugins>
             <plugin>
-                <groupId>nl.stokpop</groupId>
+                <groupId>io.perfana</groupId>
                 <artifactId>event-scheduler-maven-plugin</artifactId>
                 <configuration>
                     <eventSchedulerConfig>

@@ -1,5 +1,5 @@
 /*
- *    Copyright 2020-2021  Peter Paul Bakker @ Stokpop, Daniel Moll @ Perfana.io
+ *    Copyright 2020-2022  Peter Paul Bakker @ Perfana.io, Daniel Moll @ Perfana.io
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -30,7 +30,7 @@ public class TestContextBuilder {
     private static final int DEFAULT_RAMPUP_TIME_SECONDS = 0;
     private static final int DEFAULT_CONSTANT_LOAD_TIME_SECONDS = 600;
 
-    private static DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH-mm-ss");
+    private static final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH-mm-ss");
 
     private String annotations = "";
     private String systemUnderTest = "unknown";

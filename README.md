@@ -61,7 +61,7 @@ For example (from [example-pom.xml](src/test/resources/example-pom.xml)):
 
 ```xml
 <plugin>
-    <groupId>nl.stokpop</groupId>
+    <groupId>io.perfana</groupId>
     <artifactId>event-scheduler-maven-plugin</artifactId>
     <configuration>
         <eventSchedulerConfig>
