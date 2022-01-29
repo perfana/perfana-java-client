@@ -9,15 +9,16 @@ defaults:
     shell: bash
 
 jobs:
-  release:
+  build:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
+      - name: Checkout repo
       - uses: actions/checkout@v2
 
-    - name: Set Release version env variable
-      run: |
-        echo "TAG_NAME=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)" >> $GITHUB_ENV
+      - name: Set Release version env variable
+        run: |
+          echo "TAG_NAME=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)" >> $GITHUB_ENV
 
       # if no tag exists, this is expected to fail
       - name: Switch to git tag for release
