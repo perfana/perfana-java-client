@@ -99,6 +99,8 @@ public final class PerfanaClient implements PerfanaCaller {
 
             if (responseCode == HTTP_UNAUTHORIZED) {
                 throw new AbortSchedulerException("Abort due to: not authorized (401) for [" + request + "]");
+            } else if (responseCode == HTTP_UNAVAILABLE) {
+                logger.warn("Perfana replied with service unavailable (503). Ignoring call.");
             } else if (responseCode == HTTP_BAD_REQUEST) {
                 if (responseBody != null) {
                     Message message = messageReader.readValue(responseBody.string());
@@ -230,7 +232,7 @@ public final class PerfanaClient implements PerfanaCaller {
     }
 
     /**
-     * Call asserts for this test run.
+     * Call asserts for this test run. Will try
      * @return string such as "All configured checks are OK:
      *     https://perfana:4000/requirements/123
      *     https://perfana:4000/benchmarkBaseline/123
@@ -279,9 +281,12 @@ public final class PerfanaClient implements PerfanaCaller {
                     // no check specified
                     assertionsAvailable = true;
                     checksSpecified = false;
+                } else if (responseCode == HTTP_UNAVAILABLE) {
+                    // not results available (yet), can be retried
+                    logger.warn("Check asserts service unavailable (" + HTTP_UNAVAILABLE + ") for [" + context.getTestRunId() + "]");
                 } else if (responseCode == HTTP_BAD_REQUEST) {
                     // something went wrong
-                    throw new PerfanaClientException("Something went wrong while evaluating the test run [" + context.getTestRunId() + "]");
+                    throw new PerfanaClientException("Bad request from client to get check results for [" + context.getTestRunId() + "]");
                 } else if (responseCode == HTTP_NOT_FOUND) {
                     // test run not found
                     throw new PerfanaClientException("Test run not found [" + context.getTestRunId() + "]");
