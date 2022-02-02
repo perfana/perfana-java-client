@@ -21,6 +21,7 @@ import io.perfana.client.api.PerfanaConnectionSettings;
 import io.perfana.client.api.PerfanaConnectionSettingsBuilder;
 import io.perfana.client.api.TestContext;
 import io.perfana.client.api.TestContextBuilder;
+import io.perfana.client.exception.PerfanaAssertResultsException;
 import io.perfana.client.exception.PerfanaAssertionsAreFalse;
 import io.perfana.client.exception.PerfanaClientException;
 import io.perfana.client.exception.PerfanaClientRuntimeException;
@@ -115,8 +116,11 @@ public class PerfanaEvent extends EventAdapter<PerfanaEventContext> {
         try {
             String text = perfanaClient.assertResults();
             logger.info("Received Perfana check results: " + text);
+        } catch (PerfanaAssertResultsException e) {
+            logger.error("Perfana check results failed: " + e.getMessage());
+            eventCheck = new EventCheck(eventName, CLASSNAME, EventStatus.FAILURE, "Perfana check results failed: " + e.getMessage());
         } catch (PerfanaClientException e) {
-            logger.error("Perfana checks failed.", e);
+            logger.error("Perfana check results failed.", e);
             eventCheck = new EventCheck(eventName, CLASSNAME, EventStatus.FAILURE, "Failed to get check results: " + e.getMessage());
         } catch (PerfanaAssertionsAreFalse perfanaAssertionsAreFalse) {
             eventCheck = new EventCheck(eventName, CLASSNAME, EventStatus.FAILURE, perfanaAssertionsAreFalse.getMessage());

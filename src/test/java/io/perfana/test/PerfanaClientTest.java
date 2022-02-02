@@ -15,7 +15,6 @@
  */
 package io.perfana.test;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import io.perfana.client.PerfanaClient;
@@ -23,10 +22,11 @@ import io.perfana.client.PerfanaClientBuilder;
 import io.perfana.client.api.*;
 import io.perfana.client.domain.Benchmark;
 import io.perfana.client.domain.Result;
+import io.perfana.client.exception.PerfanaAssertResultsException;
 import io.perfana.client.exception.PerfanaAssertionsAreFalse;
-import io.perfana.client.exception.PerfanaClientException;
 import io.perfana.eventscheduler.exception.handler.AbortSchedulerException;
 import io.perfana.eventscheduler.exception.handler.KillSwitchException;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -37,6 +37,7 @@ import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
 
 /**
  * This test class is in another package to check access package private fields.
@@ -223,7 +224,7 @@ public class PerfanaClientTest
     }
 
     @Test
-    public void testPerfanaAssertResultsCall() throws PerfanaAssertionsAreFalse, PerfanaClientException, JsonProcessingException {
+    public void testPerfanaAssertResultsCall() throws Exception {
 
         Benchmark benchmark = Benchmark.builder()
             .requirements(Result.builder().result(true).deeplink("https://perfana:4000/requirements/123").build())
@@ -249,7 +250,7 @@ public class PerfanaClientTest
     }
 
     @Test(expected = PerfanaAssertionsAreFalse.class)
-    public void testPerfanaAssertResultsFailedCall() throws PerfanaAssertionsAreFalse, PerfanaClientException, JsonProcessingException {
+    public void testPerfanaAssertResultsFailedCall() throws Exception {
 
         Benchmark benchmark = Benchmark.builder()
             .requirements(Result.builder().result(false).deeplink("https://perfana:4000/requirements/123").build())
@@ -281,4 +282,53 @@ public class PerfanaClientTest
         perfanaClient.callPerfanaTestEndpoint(testContext, false);
     }
 
+    @Test
+    @Ignore // takes too long to test timeouts, ignore test, enable to test manually
+    public void testPerfanaTestCallWithoutTimeout() throws Exception {
+        wireMockRule.stubFor(get(urlEqualTo("/api/benchmark-results/unknown/testRunId"))
+            .willReturn(aResponse()
+                .withFixedDelay(10_000)
+                .withStatus(200)
+                .withBody("{'some': 'body'}")));
+
+        PerfanaClient perfanaClient = createPerfanaClient();
+        perfanaClient.assertResults();
+    }
+
+    @Test(expected = PerfanaAssertResultsException.class)
+    public void testPerfanaTestCallWith500() throws Exception {
+        wireMockRule.stubFor(get(urlEqualTo("/api/benchmark-results/unknown/testRunId"))
+            .willReturn(aResponse()
+                .withStatus(500)
+                .withBody("{'some': 'body'}")));
+
+        PerfanaClient perfanaClient = createPerfanaClient();
+        String results = perfanaClient.assertResults();
+        System.out.println(results);
+    }
+
+    @Test(expected = PerfanaAssertResultsException.class)
+    public void testPerfanaTestCallWith400() throws Exception {
+        wireMockRule.stubFor(get(urlEqualTo("/api/benchmark-results/unknown/testRunId"))
+            .willReturn(aResponse()
+                .withStatus(400)
+                .withBody("{'some': 'body'}")));
+
+        PerfanaClient perfanaClient = createPerfanaClient();
+        String results = perfanaClient.assertResults();
+        System.out.println(results);
+    }
+
+    @Test(expected = PerfanaAssertResultsException.class)
+    @Ignore // takes too long to test timeouts, ignore test, enable to test manually
+    public void testPerfanaTestCallWith503() throws Exception {
+        wireMockRule.stubFor(get(urlEqualTo("/api/benchmark-results/unknown/testRunId"))
+            .willReturn(aResponse()
+                .withStatus(503)
+                .withBody("{'some': 'body'}")));
+
+        PerfanaClient perfanaClient = createPerfanaClient();
+        String results = perfanaClient.assertResults();
+        fail(results);
+    }
 }

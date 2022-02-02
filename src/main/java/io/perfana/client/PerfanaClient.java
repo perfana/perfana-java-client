@@ -25,6 +25,7 @@ import io.perfana.client.api.PerfanaClientLogger;
 import io.perfana.client.api.PerfanaConnectionSettings;
 import io.perfana.client.api.TestContext;
 import io.perfana.client.domain.*;
+import io.perfana.client.exception.PerfanaAssertResultsException;
 import io.perfana.client.exception.PerfanaAssertionsAreFalse;
 import io.perfana.client.exception.PerfanaClientException;
 import io.perfana.client.exception.PerfanaClientRuntimeException;
@@ -98,15 +99,16 @@ public final class PerfanaClient implements PerfanaCaller {
             final ResponseBody responseBody = result.body();
 
             if (responseCode == HTTP_UNAUTHORIZED) {
-                throw new AbortSchedulerException("Abort due to: not authorized (401) for [" + request + "]");
-            } else if (responseCode == HTTP_UNAVAILABLE) {
-                logger.warn("Perfana replied with service unavailable (503). Ignoring call.");
-            } else if (responseCode == HTTP_BAD_REQUEST) {
+                throw new AbortSchedulerException("Abort due to: not authorized (" + responseCode + ") for [" + request + "]");
+            } else if (responseCode == HTTP_UNAVAILABLE || responseCode == HTTP_BAD_GATEWAY) {
+                logger.warn("Perfana replied with service unavailable (" + responseCode + ") for [" + request + "]. Will retry.");
+            } else if (responseCode == HTTP_BAD_REQUEST || responseCode == HTTP_INTERNAL_ERROR) {
                 if (responseBody != null) {
                     Message message = messageReader.readValue(responseBody.string());
                     throw new AbortSchedulerException(message.getMessage());
                 } else {
                     logger.error("No response body in test endpoint result: " + result);
+                    throw new AbortSchedulerException("Abort due to Perfana error reply (" + responseCode + ") for [" + request + "]");
                 }
             } else {
                 if (responseBody != null) {
@@ -232,14 +234,15 @@ public final class PerfanaClient implements PerfanaCaller {
     }
 
     /**
-     * Call asserts for this test run. Will try
+     * Call asserts for this test run. Will retry if needed, e.g. 502 or 503.
      * @return string such as "All configured checks are OK:
      *     https://perfana:4000/requirements/123
      *     https://perfana:4000/benchmarkBaseline/123
      *     https://perfana:4000/benchmarkPrevious/123"
-     * @throws PerfanaClientException when call fails
+     * @throws PerfanaClientException when call fails unexpectedly (e.g. bug)
+     * @throws PerfanaAssertResultsException when call fails in more-or-less expect way (e.g. status code 400)
      */
-    private String callCheckAsserts() throws PerfanaClientException {
+    private String callCheckAsserts() throws PerfanaClientException, PerfanaAssertResultsException {
         // example: https://perfana-url/api/benchmark-results/DASHBOARD/NIGHTLY/TEST-RUN-831
 
         // response example: {
@@ -262,45 +265,68 @@ public final class PerfanaClient implements PerfanaCaller {
 
         int retryCount = 0;
         String assertions = null;
+
+        boolean keepRetrying = true;
         boolean assertionsAvailable = false;
         boolean checksSpecified = false;
 
-        while (!assertionsAvailable && retryCount++ < maxRetryCount) {
+         while (keepRetrying && (retryCount++ < maxRetryCount)) {
             try (Response response = client.newCall(request).execute()) {
                 ResponseBody responseBody = response.body();
 
+                // for response codes that do not throw PerfanaAssertResultsException: retries are done
                 final int responseCode = response.code();
                 if (responseCode == HTTP_OK) {
                     assertions = (responseBody == null) ? "null" : responseBody.string();
                     if (assertions.contains("<!DOCTYPE html>")) {
-                        throw new PerfanaClientException("Got html instead of json response for [" + endPoint + "]: [" + assertions + "]");
+                        throw new PerfanaAssertResultsException(String.format("Got html instead of json response for [%s]: [%s]",
+                            endPoint, assertions));
                     }
                     assertionsAvailable = true;
                     checksSpecified = true;
+                    keepRetrying = false;
+
                 } else if (responseCode == HTTP_NO_CONTENT) {
-                    // no check specified
-                    assertionsAvailable = true;
-                    checksSpecified = false;
-                } else if (responseCode == HTTP_UNAVAILABLE) {
-                    // not results available (yet), can be retried
-                    logger.warn("Check asserts service unavailable (" + HTTP_UNAVAILABLE + ") for [" + context.getTestRunId() + "]");
-                } else if (responseCode == HTTP_BAD_REQUEST) {
-                    // something went wrong
-                    throw new PerfanaClientException("Bad request from client to get check results for [" + context.getTestRunId() + "]");
-                } else if (responseCode == HTTP_NOT_FOUND) {
-                    // test run not found
-                    throw new PerfanaClientException("Test run not found [" + context.getTestRunId() + "]");
+                    // no checks specified
+                    assertionsAvailable = true; // valid response, interpret as "empty assertion list"
+                    keepRetrying = false;
+                    logger.info(String.format("No checks are present (responseCode: %d) for [%s]",
+                        responseCode, context.getTestRunId()));
+
                 }  else if (responseCode == HTTP_ACCEPTED) {
                     //  evaluation in progress
-                    logger.info(String.format("Trying to get test run check results at %s, attempt [%d/%d]. Returncode [%d]: Test run evaluation in progress ...",
+                    logger.info(String.format("Trying to get test run check results at %s, attempt (%d/%d). Return code [%d]: Test run evaluation in progress ...",
                         endPoint, retryCount, maxRetryCount, responseCode));
+
+                } else if (responseCode == HTTP_UNAVAILABLE || responseCode == HTTP_BAD_GATEWAY) {
+                    // no results available (yet), can be retried
+                    logger.warn(String.format("Perfana check-asserts service is unavailable (%s) for [%s]. Will retry (%d/%d)...",
+                        responseCode, context.getTestRunId(), retryCount, maxRetryCount));
+
+                } else if (responseCode == HTTP_BAD_REQUEST) {
+                    throw new PerfanaAssertResultsException(String.format("Bad request from client (%d) to get check results for [%s]. Fix client call.",
+                        responseCode, context.getTestRunId()));
+
+                } else if (responseCode == HTTP_INTERNAL_ERROR) {
+                    throw new PerfanaAssertResultsException(String.format("Failure on server (%d) to get check results for [%s]. Fix on server needed.",
+                        responseCode, context.getTestRunId()));
+
+                } else if (responseCode == HTTP_NOT_FOUND) {
+                    // test run not found
+                    throw new PerfanaAssertResultsException(String.format("Test run not found (%d) for [%s]",
+                        responseCode, context.getTestRunId()));
+
                 } else if (responseCode == HTTP_UNAUTHORIZED) {
-                    throw new PerfanaClientException("Not authorized (401) for [" + endPoint + "]");
+                    throw new PerfanaAssertResultsException(String.format("Not authorized (%d) for [%s]",
+                        responseCode, endPoint));
                 } else {
-                    throw new PerfanaClientException("No action defined for dealing with http code (" + responseCode + ") for [" + endPoint + "]");
+                    throw new PerfanaAssertResultsException(String.format("No action defined for dealing with http code (%d) for [%s]",
+                        responseCode, endPoint));
                 }
+
             } catch (IOException e) {
-                throw new PerfanaClientException("Exception while trying to get test run check results at [" + endPoint + "]", e);
+                logger.warn(String.format("IO Exception while trying to get test run check results at [%s], will retry (%d/%d)...[%s][%s]",
+                    endPoint, retryCount, maxRetryCount, e.getClass().getName(), e.getMessage()));
             }
 
             if (!assertionsAvailable) {
@@ -308,8 +334,9 @@ public final class PerfanaClient implements PerfanaCaller {
             }
         }
         if (!assertionsAvailable) {
-            logger.warn("Failed to get test run check results at [" + endPoint + "], maximum attempts reached!");
-            throw new PerfanaClientException("Failed to get test run check results at [" + endPoint + "], maximum attempts reached!");
+            String message = "Failed to get test run check results at [" + endPoint + "], maximum attempts reached!";
+            logger.warn(message);
+            throw new PerfanaAssertResultsException(message);
         }
         return checksSpecified ? assertions : null;
     }
@@ -326,7 +353,7 @@ public final class PerfanaClient implements PerfanaCaller {
         return URLEncoder.encode(testRunId, "UTF-8").replaceAll("\\+", "%20");
     }
 
-    public String assertResults() throws PerfanaClientException, PerfanaAssertionsAreFalse {
+    public String assertResults() throws PerfanaClientException, PerfanaAssertResultsException, PerfanaAssertionsAreFalse {
 
         if (!assertResultsEnabled) {
             String message = "Perfana assert results is not enabled and will not be checked.";
