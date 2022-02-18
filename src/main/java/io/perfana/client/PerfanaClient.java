@@ -300,16 +300,16 @@ public final class PerfanaClient implements PerfanaCaller {
 
                 } else if (responseCode == HTTP_UNAVAILABLE || responseCode == HTTP_BAD_GATEWAY) {
                     // no results available (yet), can be retried
-                    logger.warn(String.format("Perfana check-asserts service is unavailable (%s) for [%s]. Will retry (%d/%d)...",
+                    logger.warn(String.format("The Perfana check-asserts service is unavailable (%s) for [%s]. Will retry (%d/%d)...",
                         responseCode, context.getTestRunId(), retryCount, maxRetryCount));
 
                 } else if (responseCode == HTTP_BAD_REQUEST) {
-                    throw new PerfanaAssertResultsException(String.format("Bad request from client (%d) to get check results for [%s]. Fix client call.",
+                    throw new PerfanaAssertResultsException(String.format("Bad request from client (%d) to get check results for [%s].",
                         responseCode, context.getTestRunId()));
 
                 } else if (responseCode == HTTP_INTERNAL_ERROR) {
-                    throw new PerfanaAssertResultsException(String.format("Failure on server (%d) to get check results for [%s]. Fix on server needed.",
-                        responseCode, context.getTestRunId()));
+                    throw new PerfanaAssertResultsException(String.format("Something went wrong evaluating the test results for run [%s]. Got http response %d.",
+                        context.getTestRunId(), responseCode));
 
                 } else if (responseCode == HTTP_NOT_FOUND) {
                     // test run not found
