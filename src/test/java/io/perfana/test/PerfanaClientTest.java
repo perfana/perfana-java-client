@@ -270,7 +270,7 @@ public class PerfanaClientTest
 
     }
 
-    @Test
+    @Test(expected = AbortSchedulerException.class)
     public void testPerfanaTestCallWithoutAuth() {
         wireMockRule.stubFor(post(urlEqualTo("/api/test"))
             .willReturn(aResponse()
@@ -290,7 +290,7 @@ public class PerfanaClientTest
         }
     }
 
-    @Test
+    @Test(expected = PerfanaAssertResultsException.class)
     @Ignore("takes too long to test timeouts, ignore test, enable to test manually")
     public void testPerfanaTestCallWithoutTimeout() throws Exception {
         wireMockRule.stubFor(get(urlEqualTo("/api/benchmark-results/unknown/testRunId"))
@@ -303,7 +303,7 @@ public class PerfanaClientTest
         perfanaClient.assertResults();
     }
 
-    @Test
+    @Test(expected = PerfanaAssertResultsException.class)
     public void testPerfanaTestCallWith500() throws Exception {
         wireMockRule.stubFor(get(urlEqualTo("/api/benchmark-results/unknown/testRunId"))
             .willReturn(aResponse()
@@ -322,7 +322,7 @@ public class PerfanaClientTest
         }
     }
 
-    @Test
+    @Test(expected = PerfanaAssertResultsException.class)
     public void testPerfanaTestCallWith400() throws Exception {
         wireMockRule.stubFor(get(urlEqualTo("/api/benchmark-results/unknown/testRunId"))
             .willReturn(aResponse()
