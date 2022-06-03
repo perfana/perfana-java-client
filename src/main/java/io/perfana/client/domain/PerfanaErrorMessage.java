@@ -21,6 +21,6 @@ import lombok.*;
 @Builder
 @NoArgsConstructor(force = true, access = AccessLevel.PRIVATE)
 @AllArgsConstructor
-public class Message {
+public class PerfanaErrorMessage {
     String message;
 }

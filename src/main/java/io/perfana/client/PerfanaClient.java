@@ -33,6 +33,7 @@ import io.perfana.eventscheduler.exception.handler.AbortSchedulerException;
 import io.perfana.eventscheduler.exception.handler.KillSwitchException;
 import okhttp3.*;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -47,6 +48,7 @@ public final class PerfanaClient implements PerfanaCaller {
 
     private static final MediaType JSON
             = MediaType.parse("application/json; charset=utf-8");
+    public static final PerfanaErrorMessage PERFANA_ERROR_MESSAGE_NOT_FOUND = new PerfanaErrorMessage("<No detail message was send>");
 
     private final OkHttpClient client = new OkHttpClient();
 
@@ -58,7 +60,8 @@ public final class PerfanaClient implements PerfanaCaller {
     private final boolean assertResultsEnabled;
 
     private static final ObjectReader perfanaBenchmarkReader;
-    private static final ObjectReader messageReader;
+
+    private static final ObjectReader errorMessageReader;
     private static final ObjectReader perfanaTestReader;
     private static final ObjectWriter perfanaMessageWriter;
     private static final ObjectWriter perfanaEventWriter;
@@ -67,7 +70,7 @@ public final class PerfanaClient implements PerfanaCaller {
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         perfanaBenchmarkReader = objectMapper.reader().forType(Benchmark.class);
-        messageReader = objectMapper.reader().forType(Message.class);
+        errorMessageReader = objectMapper.reader().forType(PerfanaErrorMessage.class);
         perfanaTestReader = objectMapper.reader().forType(PerfanaTest.class);
         perfanaMessageWriter = objectMapper.writer().forType(PerfanaMessage.class);
         perfanaEventWriter = objectMapper.writer().forType(PerfanaEvent.class);
@@ -87,46 +90,46 @@ public final class PerfanaClient implements PerfanaCaller {
 
     @Override
     public void callPerfanaTestEndpoint(TestContext context, boolean completed, Map<String, String> extraVariables) throws KillSwitchException {
-        String json = perfanaMessageToJson(context, completed, extraVariables);
+        final String json = perfanaMessageToJson(context, completed, extraVariables);
+        final Request request = createRequest("/api/test", json);
 
-        Request request = createRequest("/api/test", json);
+        try (Response response = client.newCall(request).execute()) {
 
-        try (Response result = client.newCall(request).execute()) {
+            logger.debug("test endpoint result: " + response);
 
-            logger.debug("test endpoint result: " + result);
+            final int code = response.code();
+            final String body = extractBodyAsString(response.body());
 
-            final int responseCode = result.code();
-            final ResponseBody responseBody = result.body();
-
-            if (responseCode == HTTP_UNAUTHORIZED) {
-                throw new AbortSchedulerException("Abort due to: not authorized (" + responseCode + ") for [" + request + "]");
-            } else if (responseCode == HTTP_UNAVAILABLE || responseCode == HTTP_BAD_GATEWAY) {
-                logger.warn("Perfana replied with service unavailable (" + responseCode + ") for [" + request + "]. Will retry.");
-            } else if (responseCode == HTTP_BAD_REQUEST || responseCode == HTTP_INTERNAL_ERROR) {
-                if (responseBody != null) {
-                    Message message = messageReader.readValue(responseBody.string());
-                    throw new AbortSchedulerException(message.getMessage());
+            if (code == HTTP_UNAUTHORIZED) { // 401
+                String dueTo = extractDueTo(response.header("WWW-Authenticate"));
+                throw new AbortSchedulerException(String.format("Abort: not authorized (%d) for [%s]%s", code, request, dueTo));
+            } else if (code == HTTP_UNAVAILABLE || code == HTTP_BAD_GATEWAY) {
+                logger.warn(String.format("Perfana replied with service unavailable (%d) for [%s]. Will retry.", code, request));
+            } else if (code == HTTP_BAD_REQUEST || code == HTTP_INTERNAL_ERROR) { // 400 || 500
+                PerfanaErrorMessage message = extractPerfanaErrorMessage(body);
+                if (body != null) {
+                    throw new AbortSchedulerException("Abort due to: " + message.getMessage());
                 } else {
-                    logger.error("No response body in test endpoint result: " + result);
-                    throw new AbortSchedulerException("Abort due to Perfana error reply (" + responseCode + ") for [" + request + "]");
+                    logger.error(String.format("No response body in test endpoint result: %s", response));
+                    throw new AbortSchedulerException(String.format("Abort due to Perfana error reply (%d) for [%s]", code, request));
                 }
             } else {
-                if (responseBody != null) {
+                if (body != null) {
                     // only do the abort check for the keep alive calls, completed is final call
                     if (!completed) {
-                        PerfanaTest test = perfanaTestReader.readValue(responseBody.string());
+                        PerfanaTest test = perfanaTestReader.readValue(body);
                         if (test.isAbort()) {
                             String message = test.getAbortMessage();
-                            logger.info("abort requested by Perfana! Reason: '" + message + "'");
+                            logger.info(String.format("abort requested by Perfana! Reason: '%s'", message));
                             throw new KillSwitchException(message);
                         }
                     }
                 } else {
-                    logger.error("No response body in test endpoint result: " + result);
+                    logger.error(String.format("No response body in test endpoint result: %s", response));
                 }
             }
         } catch (IOException e) {
-            logger.error("failed to call Perfana test endpoint: " + e.getMessage());
+            logger.error(String.format("Failed to call Perfana test endpoint: %s", e.getMessage()));
         }
     }
 
@@ -235,6 +238,22 @@ public final class PerfanaClient implements PerfanaCaller {
 
     /**
      * Call asserts for this test run. Will retry if needed, e.g. 502 or 503.
+     *
+     *            example:
+     *            <pre>https://perfana-url/api/benchmark-results/DASHBOARD/NIGHTLY/TEST-RUN-831</pre>
+     *
+     *            response example:
+     *            <pre>
+     *            {
+     *              "requirements":{"result":true,"deeplink":"https://perfana:4000/requirements/123"},
+     *              "benchmarkPreviousTestRun":{"result":true,"deeplink":"https://perfana:4000/benchmarkPrevious/123"},
+     *              "benchmarkBaselineTestRun":{"result":true,"deeplink":"https://perfana:4000/benchmarkBaseline/123"}
+     *            }
+     *            </pre>
+     *
+     *            response example for 500 or other errors:
+     *            <pre>{ "message": "Something went wrong" }</pre>
+     *
      * @return string such as "All configured checks are OK:
      *     https://perfana:4000/requirements/123
      *     https://perfana:4000/benchmarkBaseline/123
@@ -243,14 +262,6 @@ public final class PerfanaClient implements PerfanaCaller {
      * @throws PerfanaAssertResultsException when call fails in more-or-less expect way (e.g. status code 400)
      */
     private String callCheckAsserts() throws PerfanaClientException, PerfanaAssertResultsException {
-        // example: https://perfana-url/api/benchmark-results/DASHBOARD/NIGHTLY/TEST-RUN-831
-
-        // response example: {
-        //     "requirements":{"result":true,"deeplink":"https://perfana:4000/requirements/123"},
-        //     "benchmarkPreviousTestRun":{"result":true,"deeplink":"https://perfana:4000/benchmarkPrevious/123"},
-        //     "benchmarkBaselineTestRun":{"result":true,"deeplink":"https://perfana:4000/benchmarkBaseline/123"}
-        // }
-
         String endPoint;
         try {
             endPoint = String.join("/",  "/api", "benchmark-results", encodeForURL(context.getSystemUnderTest()), encodeForURL(context.getTestRunId()));
@@ -272,56 +283,58 @@ public final class PerfanaClient implements PerfanaCaller {
 
          while (keepRetrying && (retryCount++ < maxRetryCount)) {
             try (Response response = client.newCall(request).execute()) {
-                ResponseBody responseBody = response.body();
 
                 // for response codes that do not throw PerfanaAssertResultsException: retries are done
-                final int responseCode = response.code();
-                if (responseCode == HTTP_OK) {
-                    assertions = (responseBody == null) ? "null" : responseBody.string();
-                    if (assertions.contains("<!DOCTYPE html>")) {
-                        throw new PerfanaAssertResultsException(String.format("Got html instead of json response for [%s]: [%s]",
-                            endPoint, assertions));
-                    }
+                final int code = response.code();
+                final String body = extractBodyAsString(response.body());
+
+                if (body != null && body.contains("<!DOCTYPE html>")) {
+                    throw new PerfanaAssertResultsException(String.format("Got html instead of json response for [%s]: [%s]",
+                            endPoint, body));
+                }
+
+                logger.debug(String.format("Received response for [%s] with code [%d] and body [%s]", request, code, body));
+
+                if (code == HTTP_OK) {
+                    assertions = body;
                     assertionsAvailable = true;
                     checksSpecified = true;
                     keepRetrying = false;
-
-                } else if (responseCode == HTTP_NO_CONTENT) {
-                    // no checks specified
-                    assertionsAvailable = true; // valid response, interpret as "empty assertion list"
-                    keepRetrying = false;
-                    logger.info(String.format("No checks are present (responseCode: %d) for [%s]",
-                        responseCode, context.getTestRunId()));
-
-                }  else if (responseCode == HTTP_ACCEPTED) {
-                    //  evaluation in progress
-                    logger.info(String.format("Trying to get test run check results at %s, attempt (%d/%d). Return code [%d]: Test run evaluation in progress ...",
-                        endPoint, retryCount, maxRetryCount, responseCode));
-
-                } else if (responseCode == HTTP_UNAVAILABLE || responseCode == HTTP_BAD_GATEWAY) {
-                    // no results available (yet), can be retried
-                    logger.warn(String.format("The Perfana check-asserts service is unavailable (%s) for [%s]. Will retry (%d/%d)...",
-                        responseCode, context.getTestRunId(), retryCount, maxRetryCount));
-
-                } else if (responseCode == HTTP_BAD_REQUEST) {
-                    throw new PerfanaAssertResultsException(String.format("Bad request from client (%d) to get check results for [%s].",
-                        responseCode, context.getTestRunId()));
-
-                } else if (responseCode == HTTP_INTERNAL_ERROR) {
-                    throw new PerfanaAssertResultsException(String.format("Something went wrong evaluating the test results for run [%s]. Got http response %d.",
-                        context.getTestRunId(), responseCode));
-
-                } else if (responseCode == HTTP_NOT_FOUND) {
-                    // test run not found
-                    throw new PerfanaAssertResultsException(String.format("Test run not found (%d) for [%s]",
-                        responseCode, context.getTestRunId()));
-
-                } else if (responseCode == HTTP_UNAUTHORIZED) {
-                    throw new PerfanaAssertResultsException(String.format("Not authorized (%d) for [%s]",
-                        responseCode, endPoint));
                 } else {
-                    throw new PerfanaAssertResultsException(String.format("No action defined for dealing with http code (%d) for [%s]",
-                        responseCode, endPoint));
+                    final PerfanaErrorMessage perfanaErrorMessage = extractPerfanaErrorMessage(body);
+
+                    if (code == HTTP_NO_CONTENT) { // 204
+                        // no checks specified
+                        assertionsAvailable = true; // valid response, interpret as "empty assertion list"
+                        keepRetrying = false;
+                        logger.info(String.format("No check can be done for [%s], due to: %s",
+                                context.getTestRunId(), perfanaErrorMessage.getMessage()));
+                    } else if (code == HTTP_ACCEPTED) { // 202
+                        //  evaluation in progress
+                        logger.info(String.format("Trying to get test run check results at %s, attempt (%d/%d). Test run evaluation in progress ...",
+                                endPoint, retryCount, maxRetryCount));
+                    } else if (code == HTTP_UNAVAILABLE || code == HTTP_BAD_GATEWAY) { // 503 and 502
+                        // no results available (yet), can be retried
+                        logger.warn(String.format("Perfana is currently unavailable (%s) for [%s]. Will retry (%d/%d)...",
+                                code, context.getTestRunId(), retryCount, maxRetryCount));
+                    } else if (code == HTTP_BAD_REQUEST) { // 400
+                        String dueTo = extractDueTo(body);
+                        throw new PerfanaAssertResultsException(String.format("Bad request from client (%d) to results for [%s].%s",
+                                code, context.getTestRunId(), dueTo));
+                    } else if (code == HTTP_INTERNAL_ERROR) { // 500
+                        throw new PerfanaAssertResultsException(String.format("Test run [%s] has been marked as invalid, due to: %s",
+                                context.getTestRunId(), perfanaErrorMessage.getMessage()));
+                    } else if (code == HTTP_NOT_FOUND) { // 404
+                        throw new PerfanaAssertResultsException(String.format("Test run [%s] not found, due to: %s",
+                                context.getTestRunId(), perfanaErrorMessage.getMessage()));
+                    } else if (code == HTTP_UNAUTHORIZED) { // 401
+                        String dueTo = extractDueTo(response.header("WWW-Authenticate"));
+                        throw new PerfanaAssertResultsException(String.format("Not authorized (%d) for [%s]. Check the Perfana API key.%s",
+                                code, endPoint, dueTo));
+                    } else {
+                        throw new PerfanaAssertResultsException(String.format("No action defined for dealing with http code (%d) for [%s]. Message: %s",
+                                code, endPoint, perfanaErrorMessage));
+                    }
                 }
 
             } catch (IOException e) {
@@ -341,6 +354,37 @@ public final class PerfanaClient implements PerfanaCaller {
         return checksSpecified ? assertions : null;
     }
 
+    @Nullable
+    private String extractBodyAsString(ResponseBody responseBody) throws IOException {
+        return responseBody == null ? null : responseBody.string();
+    }
+
+    @NotNull
+    private String extractDueTo(String bodyAsString) {
+        String dueTo;
+        if (bodyAsString != null && !bodyAsString.isEmpty()) {
+            dueTo = " Due to : " + bodyAsString;
+        }
+        else {
+            dueTo = "";
+        }
+        return dueTo;
+    }
+
+    private PerfanaErrorMessage extractPerfanaErrorMessage(String messageBody) throws IOException {
+        if (messageBody == null) {
+            return PERFANA_ERROR_MESSAGE_NOT_FOUND;
+        }
+        PerfanaErrorMessage perfanaErrorMessage;
+        try {
+            perfanaErrorMessage = errorMessageReader.readValue(messageBody);
+        } catch (JsonProcessingException e) {
+            logger.warn(String.format("Failed to process Perfana error message: [%s] due to: %s", messageBody, e));
+            return PERFANA_ERROR_MESSAGE_NOT_FOUND;
+        }
+        return perfanaErrorMessage;
+    }
+
     private void sleep(long sleepDurationMillis) {
         try {
             Thread.sleep(sleepDurationMillis);
@@ -350,7 +394,7 @@ public final class PerfanaClient implements PerfanaCaller {
     }
 
     private String encodeForURL(String testRunId) throws UnsupportedEncodingException {
-        return URLEncoder.encode(testRunId, "UTF-8").replaceAll("\\+", "%20");
+        return URLEncoder.encode(testRunId, "UTF-8").replace("\\", "%20");
     }
 
     public String assertResults() throws PerfanaClientException, PerfanaAssertResultsException, PerfanaAssertionsAreFalse {

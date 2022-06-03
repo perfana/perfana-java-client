@@ -45,6 +45,7 @@ import static org.junit.Assert.fail;
 public class PerfanaClientTest
 {
     public static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    public static final String MESSAGE_THERE_WAS_A_FAILURE = "{\"message\":\"there was a failure!\"}";
     @Rule
     public WireMockRule wireMockRule = new WireMockRule(options().dynamicPort());
 
@@ -220,7 +221,7 @@ public class PerfanaClientTest
         PerfanaClient perfanaClient = createPerfanaClient();
         TestContext testContext = new TestContextBuilder().build();
         // should not throw KillSwitchException when completed is true (not a keep alive call)
-        perfanaClient.callPerfanaTestEndpoint(testContext, true);
+         perfanaClient.callPerfanaTestEndpoint(testContext, true);
     }
 
     @Test
@@ -269,63 +270,83 @@ public class PerfanaClientTest
 
     }
 
-    @Test(expected = AbortSchedulerException.class)
+    @Test
     public void testPerfanaTestCallWithoutAuth() {
         wireMockRule.stubFor(post(urlEqualTo("/api/test"))
             .willReturn(aResponse()
                 .withStatus(401)
-                .withStatusMessage("No authorisation for perfana call!")
-                .withBody("No body")));
+                .withHeader("WWW-Authenticate", "Bearer realm=\"Users\", error=\"invalid_token\", error_description=\"Invalid or expired API key\"")
+                .withStatusMessage("Unauthorized")
+                .withBody("Unauthorized")));
 
         PerfanaClient perfanaClient = createPerfanaClient();
         TestContext testContext = new TestContextBuilder().build();
-        perfanaClient.callPerfanaTestEndpoint(testContext, false);
+        try {
+            perfanaClient.callPerfanaTestEndpoint(testContext, false);
+        } catch (AbortSchedulerException e) {
+            // System.out.println("Error: " + e);
+            assertTrue(e.getMessage().contains("Invalid or expired API key"));
+            throw e;
+        }
     }
 
     @Test
-    @Ignore // takes too long to test timeouts, ignore test, enable to test manually
+    @Ignore("takes too long to test timeouts, ignore test, enable to test manually")
     public void testPerfanaTestCallWithoutTimeout() throws Exception {
         wireMockRule.stubFor(get(urlEqualTo("/api/benchmark-results/unknown/testRunId"))
             .willReturn(aResponse()
                 .withFixedDelay(10_000)
                 .withStatus(200)
-                .withBody("{'some': 'body'}")));
+                .withBody("{'message': 'all ok'}")));
 
         PerfanaClient perfanaClient = createPerfanaClient();
         perfanaClient.assertResults();
     }
 
-    @Test(expected = PerfanaAssertResultsException.class)
+    @Test
     public void testPerfanaTestCallWith500() throws Exception {
         wireMockRule.stubFor(get(urlEqualTo("/api/benchmark-results/unknown/testRunId"))
             .willReturn(aResponse()
                 .withStatus(500)
-                .withBody("{'some': 'body'}")));
+                .withBody(MESSAGE_THERE_WAS_A_FAILURE)));
 
         PerfanaClient perfanaClient = createPerfanaClient();
-        String results = perfanaClient.assertResults();
-        System.out.println(results);
+
+        // check if the message is ok, is there a better way to check this?
+        try {
+            perfanaClient.assertResults();
+        } catch (PerfanaAssertResultsException e) {
+            // System.out.println("Error: " + e);
+            assertTrue(e.getMessage().contains("due to: there was a failure!"));
+            throw e;
+        }
     }
 
-    @Test(expected = PerfanaAssertResultsException.class)
+    @Test
     public void testPerfanaTestCallWith400() throws Exception {
         wireMockRule.stubFor(get(urlEqualTo("/api/benchmark-results/unknown/testRunId"))
             .willReturn(aResponse()
                 .withStatus(400)
-                .withBody("{'some': 'body'}")));
+                .withBody("{\"message\":\"Match error: Missing key 'systemUnderTest'\",\"path\":\"\",\"sanitizedError\":{\"isClientSafe\":true,\"error\":400,\"reason\":\"Match failed\",\"message\":\"Match failed [400]\",\"errorType\":\"Meteor.Error\"},\"errorType\":\"Match.Error\"}")));
 
         PerfanaClient perfanaClient = createPerfanaClient();
-        String results = perfanaClient.assertResults();
-        System.out.println(results);
+        try {
+            perfanaClient.assertResults();
+        } catch (PerfanaAssertResultsException e) {
+            System.out.println("Error: " + e);
+            assertTrue(e.getMessage().contains("Missing key 'systemUnderTest'"));
+            throw e;
+        }
+
     }
 
     @Test(expected = PerfanaAssertResultsException.class)
-    @Ignore // takes too long to test timeouts, ignore test, enable to test manually
+    @Ignore("takes too long to test timeouts, ignore test, enable to test manually")
     public void testPerfanaTestCallWith503() throws Exception {
         wireMockRule.stubFor(get(urlEqualTo("/api/benchmark-results/unknown/testRunId"))
             .willReturn(aResponse()
                 .withStatus(503)
-                .withBody("{'some': 'body'}")));
+                .withBody(MESSAGE_THERE_WAS_A_FAILURE)));
 
         PerfanaClient perfanaClient = createPerfanaClient();
         String results = perfanaClient.assertResults();
