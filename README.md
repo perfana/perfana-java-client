@@ -1,61 +1,18 @@
 # perfana-java-client
 
-Add this java library to your project to easily integrate with Perfana.
+The Perfana Java Client can be used from Maven via an event-scheduler plugin, or it can be used
+via the event-scheduler directly from code.
 
-# usage
+## Maven example
 
-Create a `PerfanaClient` using the builders:
+The following event-scheduler Maven plugins can be used:
+* `event-scheduler-maven-plugin` (https://github.com/perfana/event-scheduler-maven-plugin)
+* `event-gatling-maven-plugin` (https://github.com/perfana/events-gatling-maven-plugin)
+* `event-jmeter-maven-plugin` (https://github.com/perfana/events-jmeter-maven-plugin)
 
-```java
-        PerfanaConnectionSettings settings = new PerfanaConnectionSettingsBuilder()
-                .setPerfanaUrl("http://perfanaUrl")
-                .setApiKey("perfana-api-key-XXX-YYY-ZZZ")
-                .setRetryMaxCount("5")
-                .setRetryTimeInSeconds("3")
-                .build();
-
-        TestContext context = new TestContextBuilder()
-                .setSystemUnderTest("sut")
-                .setWorkload("workload")
-                .setTestEnvironment("env")
-                .setTestRunId("testRunId")
-                .setCIBuildResultsUrl("http://url")
-                .setVersion("version")
-                .setRampupTimeInSeconds("10")
-                .setConstantLoadTimeInSeconds("300")
-                .setAnnotations("annotation")
-                .setVariables(new HashMap<>())
-                .setTags(new ArrayList<>())
-                .build();
-
-        PerfanaClient client = new PerfanaClientBuilder()
-                .setPerfanaConnectionSettings(settings)
-                .setTestContext(context)
-                .setAssertResultsEnabled(true)
-                .setLogger(testLogger)
-                .build();
-
-```
-
-Note that a lot of properties have decent defaults and do not need to be 
-called, such as the retry and keep alive properties.
-
-Then call these methods at the appropriate time:
-
-### client.startSession()
-Call when the load test starts. 
-
-### client.stopSession()
-Call when the load test stops. When assert results is enabled, 
-a `PerfanaAssertionsAreFalse` will be thrown when the assert check 
-is not ok.
-
-## Use with events-*-maven-plugin
-
-You can use the `perfana-java-client` as a plugin of the `events-*-maven-plugin` 
-by putting the `perfana-java-client` jar on the classpath of the plugin.
-
-You can use the `dependencies` element inside the `plugin` element.
+You can use the `perfana-java-client` as a plugin of the `events-*-maven-plugin`
+by putting the `perfana-java-client` jar in the `dependencies` element 
+of the Maven `plugin` element.
 
 For example (from [example-pom.xml](src/test/resources/example-pom.xml)):
 
@@ -107,11 +64,145 @@ For example (from [example-pom.xml](src/test/resources/example-pom.xml)):
     </dependencies>
 </plugin>
 ```
-
-You can substitute `event-scheduler-maven-plugin` by `event-gatling-maven-plugin`, `event-jmeter-maven-plugin`
-and others when available.
-
-Try this by calling:
+Run via Maven:
 
     mvn -f src/test/resources/example-pom.xml event-scheduler:test
+
+## code example 
+
+The _Perfana Java Client_ used from code via the _Perfana Event Scheduler_.
+
+Most properties have decent defaults and do not need to be
+called, such as the retry and keep alive properties.
+
+Minimal example:
+
+```java
+    EventLogger eventLogger = EventLoggerStdOut.INSTANCE;
+
+    TestConfig testConfig = TestConfig.builder()
+            .workload("testType")
+            .testEnvironment("testEnv")
+            .testRunId("testRunId")
+            .buildResultsUrl("http://url")
+            .version("version")
+            .rampupTimeInSeconds(10)
+            .constantLoadTimeInSeconds(300)
+            .build();
+
+    // enable the Perfana events
+    PerfanaEventConfig perfanaEventConfig = new PerfanaEventConfig();
+    perfanaEventConfig.setPerfanaUrl("http://localhost:8888");
+    perfanaEventConfig.setApiKey("perfana-api-key-XXX-YYY-ZZZ");
+
+    List<EventConfig> eventConfigs = new ArrayList<>();
+    eventConfigs.add(perfanaEventConfig);
+
+    EventSchedulerConfig eventSchedulerConfig = EventSchedulerConfig.builder()
+            .testConfig(testConfig)
+            .eventConfigs(eventConfigs)
+            .build();
+
+    EventScheduler scheduler = EventSchedulerBuilder.of(eventSchedulerConfig, eventLogger);
+
+    scheduler.startSession();
+
+    try {
+        // instead of a sleep run or start a load test
+        Thread.sleep(Duration.ofSeconds(20).toMillis());
+    } finally {
+        scheduler.stopSession();
+    }
+```
+
+Example with more configuration settings and checks enabled:
+
+```java
+    EventLogger eventLogger = EventLoggerStdOut.INSTANCE;
+    
+    String scheduleScript1 =
+    "PT1S|restart(restart to reset replicas)|{ 'server':'myserver' 'replicas':2, 'tags': [ 'first', 'second' ] }\n"
+    + "PT10S|scale-down|{ 'replicas':1 }\n"
+    + "PT18S|heapdump|server=myserver.example.com;port=1567";
+    
+    TestConfig testConfig = TestConfig.builder()
+        .workload("testType")
+        .testEnvironment("testEnv")
+        .testRunId("testRunId")
+        .buildResultsUrl("http://url-of-the-ci-build")
+        .version("version")
+        .rampupTimeInSeconds(10)
+        .constantLoadTimeInSeconds(300)
+        .annotations("annotation")
+        .tags(Arrays.asList("tag1","tag2"))
+        .build();
+    
+    // enable the Perfana events
+    PerfanaEventConfig perfanaEventConfig = new PerfanaEventConfig();
+    perfanaEventConfig.setPerfanaUrl("http://localhost:8888");
+    perfanaEventConfig.setApiKey("perfana-api-key-XXX-YYY-ZZZ");
+    perfanaEventConfig.setAssertResultsEnabled(true);
+    Map<String, String> variables = Map.of("var1", "value1", "var2", "value2");
+    perfanaEventConfig.setVariables(variables);
+    
+    List<EventConfig> eventConfigs = new ArrayList<>();
+    eventConfigs.add(perfanaEventConfig);
+    
+    EventSchedulerConfig eventSchedulerConfig = EventSchedulerConfig.builder()
+        .schedulerEnabled(true)
+        .debugEnabled(false)
+        .continueOnEventCheckFailure(false)
+        .failOnError(true)
+        .keepAliveIntervalInSeconds(120)
+        .testConfig(testConfig)
+        .eventConfigs(eventConfigs)
+        .scheduleScript(scheduleScript1)
+        .build();
+    
+    EventScheduler scheduler = EventSchedulerBuilder.of(eventSchedulerConfig, eventLogger);
+    
+    scheduler.startSession();
+    
+    try {
+        // instead of a sleep run or start a load test
+        Thread.sleep(Duration.ofSeconds(20).toMillis());
+    } finally {
+        scheduler.stopSession();
+    }
+
+    try {
+        scheduler.checkResults();
+    } catch (EventCheckFailureException e) {
+        // deal with failed checks: e.g. fail the CI run
+    }
+```
+
+Then call these methods at the appropriate time:
+
+* `scheduler.startSession()` - at start of the load test 
+* `scheduler.stopSession()` - at end of the load test
+* `scheduler.checkResults()` - call to see if all checks of the test run are ok
+* `scheduler.abortSession()` - call when the load test was aborted abnormally
+
+The `checkResults()` throws `EventCheckFailureException` in case there are
+events that report a failure.
+
+You need the following dependencies:
+
+```xml
+<dependency>
+    <groupId>io.perfana</groupId>
+    <artifactId>event-scheduler</artifactId>
+    <version>${event-scheduler.version}</version>
+</dependency>
+<dependency>
+    <groupId>io.perfana</groupId>
+    <artifactId>perfana-java-client</artifactId>
+    <version>${perfana-java-client.version}</version>
+</dependency>
+```
+
+
+
+
 
