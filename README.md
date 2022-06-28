@@ -6,9 +6,9 @@ via the event-scheduler directly from code.
 ## Maven example
 
 The following event-scheduler Maven plugins can be used:
-* `event-scheduler-maven-plugin` (https://github.com/perfana/event-scheduler-maven-plugin)
-* `event-gatling-maven-plugin` (https://github.com/perfana/events-gatling-maven-plugin)
-* `event-jmeter-maven-plugin` (https://github.com/perfana/events-jmeter-maven-plugin)
+* [event-scheduler-maven-plugin](https://github.com/perfana/event-scheduler-maven-plugin) runs plain event-scheduler via Maven 
+* [event-gatling-maven-plugin](https://github.com/perfana/events-gatling-maven-plugin) runs Gatling load test via Maven with event-scheduler build-in
+* [event-jmeter-maven-plugin](https://github.com/perfana/events-jmeter-maven-plugin)  runs jMeter load test via Maven with event-scheduler build-in
 
 You can use the `perfana-java-client` as a plugin of the `events-*-maven-plugin`
 by putting the `perfana-java-client` jar in the `dependencies` element 
