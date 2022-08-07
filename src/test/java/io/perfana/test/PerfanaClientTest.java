@@ -17,11 +17,14 @@ package io.perfana.test;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
+import com.github.tomakehurst.wiremock.matching.UrlPattern;
 import io.perfana.client.PerfanaClient;
 import io.perfana.client.PerfanaClientBuilder;
 import io.perfana.client.api.*;
 import io.perfana.client.domain.Benchmark;
 import io.perfana.client.domain.Result;
+import io.perfana.client.domain.TestRunConfigJson;
+import io.perfana.client.domain.TestRunConfigKeyValue;
 import io.perfana.client.exception.PerfanaAssertResultsException;
 import io.perfana.client.exception.PerfanaAssertionsAreFalse;
 import io.perfana.eventscheduler.exception.handler.AbortSchedulerException;
@@ -214,14 +217,17 @@ public class PerfanaClientTest
 
     @Test
     public void testPerfanaTestCallWithResultCompletedTrue() {
-        wireMockRule.stubFor(post(urlEqualTo("/api/test"))
+        UrlPattern urlPattern = urlEqualTo("/api/test");
+        wireMockRule.stubFor(post(urlPattern)
             .willReturn(aResponse()
                 .withBody("{ \"abort\": true, \"abortMessage\": \"What is wrong?\" }")));
 
         PerfanaClient perfanaClient = createPerfanaClient();
         TestContext testContext = new TestContextBuilder().build();
         // should not throw KillSwitchException when completed is true (not a keep alive call)
-         perfanaClient.callPerfanaTestEndpoint(testContext, true);
+        perfanaClient.callPerfanaTestEndpoint(testContext, true);
+
+        verify(postRequestedFor(urlPattern));
     }
 
     @Test
@@ -352,4 +358,52 @@ public class PerfanaClientTest
         String results = perfanaClient.assertResults();
         fail(results);
     }
+
+    @Test
+    public void testRunConfigJson() {
+        UrlPattern urlPattern = urlEqualTo("/api/config/json");
+
+        wireMockRule.stubFor(post(urlPattern)
+            .willReturn(aResponse()
+                .withStatus(200)));
+
+        PerfanaClient perfanaClient = createPerfanaClient();
+
+        List<String> tags = new ArrayList<>();
+        tags.add("tag1");
+        tags.add("tag2");
+
+        List<String> includes = new ArrayList<>();
+        includes.add("include1");
+        includes.add("include2");
+
+        List<String> excludes = new ArrayList<>();
+        excludes.add("exclude1");
+        excludes.add("exclude2");
+
+        perfanaClient.addTestRunConfigJson(new TestRunConfigJson("app", "env", "loadTest", "test-123", tags, includes, excludes, "{ \"hello\": 123 }"));
+
+        verify(postRequestedFor(urlPattern));
+
+    }
+
+    @Test
+    public void testRunConfigKeyValue() {
+        UrlPattern urlPattern = urlEqualTo("/api/config/key");
+
+        wireMockRule.stubFor(post(urlPattern)
+                .willReturn(aResponse()
+                        .withStatus(200)));
+
+        PerfanaClient perfanaClient = createPerfanaClient();
+
+        List<String> tags = new ArrayList<>();
+        tags.add("tag1");
+        tags.add("tag2");
+
+        perfanaClient.addTestRunConfigKeyValue(new TestRunConfigKeyValue("app", "env", "loadTest", "test-123", tags, "key1", "value1"));
+
+        verify(postRequestedFor(urlPattern));
+    }
+
 }

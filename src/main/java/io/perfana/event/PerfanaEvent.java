@@ -21,21 +21,25 @@ import io.perfana.client.api.PerfanaConnectionSettings;
 import io.perfana.client.api.PerfanaConnectionSettingsBuilder;
 import io.perfana.client.api.TestContext;
 import io.perfana.client.api.TestContextBuilder;
+import io.perfana.client.domain.TestRunConfigJson;
+import io.perfana.client.domain.TestRunConfigKeyValue;
 import io.perfana.client.exception.PerfanaAssertResultsException;
 import io.perfana.client.exception.PerfanaAssertionsAreFalse;
 import io.perfana.client.exception.PerfanaClientException;
 import io.perfana.client.exception.PerfanaClientRuntimeException;
 import io.perfana.eventscheduler.api.*;
+import io.perfana.eventscheduler.api.message.EventMessage;
 import io.perfana.eventscheduler.api.message.EventMessageBus;
 import io.perfana.eventscheduler.api.message.EventMessageReceiver;
 import io.perfana.eventscheduler.exception.handler.KillSwitchException;
 
+import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class PerfanaEvent extends EventAdapter<PerfanaEventContext> {
 
-    private final String CLASSNAME = PerfanaEvent.class.getName();
+    private static final String CLASSNAME = PerfanaEvent.class.getName();
     private final String eventName;
 
     private final TestContext perfanaTestContext;
@@ -59,13 +63,64 @@ public class PerfanaEvent extends EventAdapter<PerfanaEventContext> {
 
         this.perfanaClient = createPerfanaClient(context, perfanaTestContext, logger);
 
-        EventMessageReceiver eventMessageReceiver = m -> {
-            if (!m.getVariables().isEmpty()) {
-                logger.info("received variables from " + m.getPluginName() + ": " + m.getVariables());
-                receivedVariables.putAll(m.getVariables());
+        EventMessageReceiver eventMessageReceiver = message -> {
+            // a test-run-config message
+            if (message.getVariables().getOrDefault("message-type", "").equals("test-run-config")) {
+                logger.info("received test-run-config message from " + message.getPluginName());
+                addTestRunConfig(message);
+            }
+            else if (!message.getVariables().isEmpty()) {
+                logger.info("received variables from " + message.getPluginName() + ": " + message.getVariables());
+                receivedVariables.putAll(message.getVariables());
             }
         };
         this.messageBus.addReceiver(eventMessageReceiver);
+    }
+
+    private void addTestRunConfig(EventMessage message) {
+
+        Map<String, String> variables = message.getVariables();
+
+        String output = variables.get("output");
+        String tags = variables.getOrDefault("tags", "");
+
+        if (output.equals("key")) {
+
+            TestRunConfigKeyValue.TestRunConfigKeyValueBuilder testRunConfig = TestRunConfigKeyValue.builder()
+                    .testRunId(perfanaTestContext.getTestRunId())
+                    .application(perfanaTestContext.getSystemUnderTest())
+                    .testEnvironment(perfanaTestContext.getTestEnvironment())
+                    .testType(perfanaTestContext.getWorkload())
+                    .key(variables.get("key"))
+                    .value(message.getMessage());
+
+            Arrays.stream(tags.split(",")).forEach(testRunConfig::tag);
+
+            perfanaClient.addTestRunConfigKeyValue(testRunConfig.build());
+
+        }
+        else if (output.equals("json")) {
+
+            TestRunConfigJson.TestRunConfigJsonBuilder testRunConfigJson = TestRunConfigJson.builder()
+                    .testRunId(perfanaTestContext.getTestRunId())
+                    .application(perfanaTestContext.getSystemUnderTest())
+                    .testEnvironment(perfanaTestContext.getTestEnvironment())
+                    .testType(perfanaTestContext.getWorkload())
+                    .json(message.getMessage());
+
+            String excludes = variables.getOrDefault("excludes", "");
+            String includes = variables.getOrDefault("includes", "");
+
+            Arrays.stream(excludes.split(",")).forEach(testRunConfigJson::excludeItem);
+            Arrays.stream(includes.split(",")).forEach(testRunConfigJson::includeItem);
+
+            Arrays.stream(tags.split(",")).forEach(testRunConfigJson::tag);
+
+            perfanaClient.addTestRunConfigJson(testRunConfigJson.build());
+        }
+        else {
+            logger.error("received test-run-config message with unexpected output type: " + output);
+        }
     }
 
     private static PerfanaClient createPerfanaClient(

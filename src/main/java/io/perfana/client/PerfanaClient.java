@@ -66,6 +66,10 @@ public final class PerfanaClient implements PerfanaCaller {
     private static final ObjectWriter perfanaMessageWriter;
     private static final ObjectWriter perfanaEventWriter;
 
+    private static final ObjectWriter testRunConfigKeyValueWriter;
+
+    private static final ObjectWriter testRunConfigJsonWriter;
+
     static {
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
@@ -74,6 +78,8 @@ public final class PerfanaClient implements PerfanaCaller {
         perfanaTestReader = objectMapper.reader().forType(PerfanaTest.class);
         perfanaMessageWriter = objectMapper.writer().forType(PerfanaMessage.class);
         perfanaEventWriter = objectMapper.writer().forType(PerfanaEvent.class);
+        testRunConfigKeyValueWriter = objectMapper.writer().forType(TestRunConfigKeyValue.class);
+        testRunConfigJsonWriter = objectMapper.writer().forType(TestRunConfigJson.class);
     }
 
     PerfanaClient(TestContext context, PerfanaConnectionSettings settings,
@@ -450,4 +456,35 @@ public final class PerfanaClient implements PerfanaCaller {
             " Perfana url: " + settings.getPerfanaUrl() + "]";
     }
 
+    public void addTestRunConfigKeyValue(TestRunConfigKeyValue testRunConfigKeyValue) {
+        logger.info("add Perfana test-run-config with key-value: " + testRunConfigKeyValue);
+        try {
+
+            String json = testRunConfigKeyValueWriter.writeValueAsString(testRunConfigKeyValue);
+            String result = post("/api/config/key", json);
+            // result expected to be "null"?
+            logger.debug("result: " + result);
+
+        } catch (JsonProcessingException e) {
+            logger.error("failed to serialize " + testRunConfigKeyValue + " to json", e);
+        } catch (IOException e) {
+            logger.error("failed to call Perfana event endpoint: " + e.getMessage());
+        }
+    }
+
+    public void addTestRunConfigJson(TestRunConfigJson testRunConfigJson) {
+        logger.info("add Perfana test-run-config with json: " + testRunConfigJson);
+        try {
+
+            String json = testRunConfigJsonWriter.writeValueAsString(testRunConfigJson);
+            String result = post("/api/config/json", json);
+            // result expected to be "null"?
+            logger.debug("result: " + result);
+
+        } catch (JsonProcessingException e) {
+            logger.error("failed to serialize " + testRunConfigJson + " to json", e);
+        } catch (IOException e) {
+            logger.error("failed to call Perfana event endpoint: " + e.getMessage());
+        }
+    }
 }
