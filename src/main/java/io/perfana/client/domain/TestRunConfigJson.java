@@ -15,6 +15,7 @@
  */
 package io.perfana.client.domain;
 
+import com.fasterxml.jackson.annotation.JsonRawValue;
 import lombok.*;
 
 import java.util.List;
@@ -34,5 +35,6 @@ public class TestRunConfigJson {
     List<String> include;
     @Singular("excludeItem")
     List<String> exclude;
+    @JsonRawValue
     String json;
 }
