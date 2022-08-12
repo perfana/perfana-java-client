@@ -33,7 +33,10 @@ import io.perfana.eventscheduler.api.message.EventMessageBus;
 import io.perfana.eventscheduler.api.message.EventMessageReceiver;
 import io.perfana.eventscheduler.exception.handler.KillSwitchException;
 
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -66,11 +69,11 @@ public class PerfanaEvent extends EventAdapter<PerfanaEventContext> {
         EventMessageReceiver eventMessageReceiver = message -> {
             // a test-run-config message
             if (message.getVariables().getOrDefault("message-type", "").equals("test-run-config")) {
-                logger.info("received test-run-config message from " + message.getPluginName());
+                logger.debug("received test-run-config message from " + message.getPluginName());
                 addTestRunConfig(message);
             }
             else if (!message.getVariables().isEmpty()) {
-                logger.info("received variables from " + message.getPluginName() + ": " + message.getVariables());
+                logger.debug("received variables from " + message.getPluginName() + ": " + message.getVariables());
                 receivedVariables.putAll(message.getVariables());
             }
         };
@@ -140,6 +143,52 @@ public class PerfanaEvent extends EventAdapter<PerfanaEventContext> {
                 .setAssertResultsEnabled(eventContext.isAssertResultsEnabled());
 
         return builder.build();
+    }
+
+    @Override
+    public void beforeTest() {
+        sendTestRunConfig();
+    }
+
+    private void sendTestRunConfig() {
+        Map<String, String> configLines = createTestRunConfigLines();
+        configLines.forEach((name, value) -> sendKeyValueMessage(name, value, eventContext.getName(), "perfana-java-client"));
+    }
+
+    private Map<String, String> createTestRunConfigLines() {
+        String prefix = "event." + eventContext.getName() + ".";
+        Map<String, String> lines = new HashMap<>();
+        lines.put(prefix + "perfanaUrl", eventContext.getPerfanaUrl());
+        lines.put(prefix + "isAssertResultsEnabled", String.valueOf(eventContext.isAssertResultsEnabled()));
+        lines.put(prefix + "scheduleScript", eventContext.getScheduleScript());
+        lines.put(prefix + "variables", String.valueOf(eventContext.getVariables()));
+        lines.put(prefix + "apiKey", hashSecret(eventContext.getApiKey()));
+        return lines;
+    }
+
+    private String hashSecret(String secretToHash) {
+        try {
+            MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
+            messageDigest.update(secretToHash.getBytes());
+            return "(hashed-secret)" + new String(messageDigest.digest());
+        } catch (NoSuchAlgorithmException e) {
+            logger.error("SHA-256 algo not found", e);
+            return "(hashed-secret)" + "(sorry, no algorithm found)";
+        }
+    }
+
+    private void sendKeyValueMessage(String key, String value, String pluginName, String tags) {
+
+        EventMessage.EventMessageBuilder messageBuilder = EventMessage.builder();
+
+        messageBuilder.variable("message-type", "test-run-config");
+        messageBuilder.variable("output", "key");
+        messageBuilder.variable("tags", tags);
+
+        messageBuilder.variable("key", key);
+        messageBuilder.message(value);
+
+        this.eventMessageBus.send(messageBuilder.pluginName(pluginName).build());
     }
 
     @Override
