@@ -65,6 +65,10 @@ public class PerfanaEventTest {
                         .willReturn(aResponse()
                                 .withBody(REPLY_BODY_BENCHMARK_RESULTS)));
 
+        wireMockRule.stubFor(post(urlEqualTo("/api/config/key"))
+                .willReturn(aResponse()
+                        .withBody("")));
+
         PerfanaEventConfig eventConfig = new PerfanaEventConfig();
         eventConfig.setPerfanaUrl("http://localhost:" + wireMockRule.port());
         eventConfig.setName("test-name");
