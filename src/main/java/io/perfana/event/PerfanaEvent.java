@@ -33,6 +33,7 @@ import io.perfana.eventscheduler.api.message.EventMessageBus;
 import io.perfana.eventscheduler.api.message.EventMessageReceiver;
 import io.perfana.eventscheduler.exception.handler.KillSwitchException;
 
+import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
@@ -166,15 +167,19 @@ public class PerfanaEvent extends EventAdapter<PerfanaEventContext> {
         return lines;
     }
 
-    private String hashSecret(String secretToHash) {
+     static String hashSecret(String secretToHash) {
         try {
             MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
             messageDigest.update(secretToHash.getBytes());
-            return "(hashed-secret)" + new String(messageDigest.digest());
+            return "(hashed-secret)" + toHex(messageDigest.digest());
         } catch (NoSuchAlgorithmException e) {
-            logger.error("SHA-256 algo not found", e);
             return "(hashed-secret)" + "(sorry, no algorithm found)";
         }
+    }
+
+    public static String toHex(byte[] bytes) {
+        BigInteger bi = new BigInteger(1, bytes);
+        return String.format("%0" + (bytes.length << 1) + "x", bi);
     }
 
     private void sendKeyValueMessage(String key, String value, String pluginName, String tags) {

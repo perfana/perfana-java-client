@@ -29,6 +29,7 @@ import java.time.Duration;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
+import static org.junit.Assert.assertEquals;
 
 public class PerfanaEventTest {
 
@@ -92,5 +93,11 @@ public class PerfanaEventTest {
         // this will not happen, either abortTest or afterTest is called by event-scheduler, not both
         // event.afterTest();
 
+    }
+
+    @Test
+    public void hashSecret() {
+        // this is without salting, so should be improved
+        assertEquals("(hashed-secret)5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8", PerfanaEvent.hashSecret("password"));
     }
 }
