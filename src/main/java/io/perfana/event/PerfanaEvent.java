@@ -96,7 +96,7 @@ public class PerfanaEvent extends EventAdapter<PerfanaEventContext> {
                     .testEnvironment(perfanaTestContext.getTestEnvironment())
                     .testType(perfanaTestContext.getWorkload())
                     .key(variables.get("key"))
-                    .value(message.getMessage());
+                    .value(replaceNullWithEmptyString(message.getMessage()));
 
             Arrays.stream(tags.split(",")).forEach(testRunConfig::tag);
 
@@ -125,6 +125,10 @@ public class PerfanaEvent extends EventAdapter<PerfanaEventContext> {
         else {
             logger.error("received test-run-config message with unexpected output type: " + output);
         }
+    }
+
+    private String replaceNullWithEmptyString(String text) {
+        return text == null ? "" : text;
     }
 
     private static PerfanaClient createPerfanaClient(
@@ -163,7 +167,6 @@ public class PerfanaEvent extends EventAdapter<PerfanaEventContext> {
         lines.put(prefix + "isAssertResultsEnabled", String.valueOf(eventContext.isAssertResultsEnabled()));
         lines.put(prefix + "scheduleScript", eventContext.getScheduleScript());
         lines.put(prefix + "variables", String.valueOf(eventContext.getVariables()));
-        lines.put(prefix + "apiKey", hashSecret(eventContext.getApiKey()));
         return lines;
     }
 

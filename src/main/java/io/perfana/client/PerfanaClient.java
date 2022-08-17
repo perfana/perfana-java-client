@@ -189,7 +189,7 @@ public final class PerfanaClient implements PerfanaCaller {
                 logger.warn("ignoring: not authorised (401) to post to [" + endpoint + "]");
             }
             if (!response.isSuccessful()) {
-                logger.warn("POST was not successful: " + response + " for request: " + request + " and body: " + json);
+                logger.warn("POST was not successful. Response: " + response + " Body: " + json);
             }
             return responseBody == null ? "null" : responseBody.string();
         }
@@ -462,7 +462,7 @@ public final class PerfanaClient implements PerfanaCaller {
 
             String json = testRunConfigKeyValueWriter.writeValueAsString(testRunConfigKeyValue);
             String result = post("/api/config/key", json);
-            // result expected to be "null"?
+            // result expected to be ""?
             logger.debug("result: " + result);
 
         } catch (JsonProcessingException e) {
@@ -478,7 +478,7 @@ public final class PerfanaClient implements PerfanaCaller {
 
             String json = testRunConfigJsonWriter.writeValueAsString(testRunConfigJson);
             String result = post("/api/config/json", json);
-            // result expected to be "null"?
+            // result expected to be ""?
             logger.debug("result: " + result);
 
         } catch (JsonProcessingException e) {
