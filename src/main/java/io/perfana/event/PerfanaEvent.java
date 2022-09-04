@@ -21,8 +21,10 @@ import io.perfana.client.api.PerfanaConnectionSettings;
 import io.perfana.client.api.PerfanaConnectionSettingsBuilder;
 import io.perfana.client.api.TestContext;
 import io.perfana.client.api.TestContextBuilder;
+import io.perfana.client.domain.ConfigItem;
 import io.perfana.client.domain.TestRunConfigJson;
 import io.perfana.client.domain.TestRunConfigKeyValue;
+import io.perfana.client.domain.TestRunConfigKeys;
 import io.perfana.client.exception.PerfanaAssertResultsException;
 import io.perfana.client.exception.PerfanaAssertionsAreFalse;
 import io.perfana.client.exception.PerfanaClientException;
@@ -38,6 +40,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -88,42 +91,65 @@ public class PerfanaEvent extends EventAdapter<PerfanaEventContext> {
         String output = variables.get("output");
         String tags = variables.getOrDefault("tags", "");
 
-        if (output.equals("key")) {
+        switch (output) {
+            case "key":
 
-            TestRunConfigKeyValue.TestRunConfigKeyValueBuilder testRunConfig = TestRunConfigKeyValue.builder()
-                    .testRunId(perfanaTestContext.getTestRunId())
-                    .application(perfanaTestContext.getSystemUnderTest())
-                    .testEnvironment(perfanaTestContext.getTestEnvironment())
-                    .testType(perfanaTestContext.getWorkload())
-                    .key(variables.get("key"))
-                    .value(replaceNullWithEmptyString(message.getMessage()));
+                TestRunConfigKeyValue.TestRunConfigKeyValueBuilder testRunConfig = TestRunConfigKeyValue.builder()
+                        .testRunId(perfanaTestContext.getTestRunId())
+                        .application(perfanaTestContext.getSystemUnderTest())
+                        .testEnvironment(perfanaTestContext.getTestEnvironment())
+                        .testType(perfanaTestContext.getWorkload())
+                        .key(variables.get("key"))
+                        .value(replaceNullWithEmptyString(message.getMessage()));
 
-            Arrays.stream(tags.split(",")).forEach(testRunConfig::tag);
+                Arrays.stream(tags.split(",")).forEach(testRunConfig::tag);
 
-            perfanaClient.addTestRunConfigKeyValue(testRunConfig.build());
+                perfanaClient.addTestRunConfigKeyValue(testRunConfig.build());
 
-        }
-        else if (output.equals("json")) {
+                break;
+            case "json":
 
-            TestRunConfigJson.TestRunConfigJsonBuilder testRunConfigJson = TestRunConfigJson.builder()
-                    .testRunId(perfanaTestContext.getTestRunId())
-                    .application(perfanaTestContext.getSystemUnderTest())
-                    .testEnvironment(perfanaTestContext.getTestEnvironment())
-                    .testType(perfanaTestContext.getWorkload())
-                    .json(message.getMessage());
+                TestRunConfigJson.TestRunConfigJsonBuilder testRunConfigJson = TestRunConfigJson.builder()
+                        .testRunId(perfanaTestContext.getTestRunId())
+                        .application(perfanaTestContext.getSystemUnderTest())
+                        .testEnvironment(perfanaTestContext.getTestEnvironment())
+                        .testType(perfanaTestContext.getWorkload())
+                        .json(message.getMessage());
 
-            String excludes = variables.getOrDefault("excludes", "");
-            String includes = variables.getOrDefault("includes", "");
+                String excludes = variables.getOrDefault("excludes", "");
+                String includes = variables.getOrDefault("includes", "");
 
-            Arrays.stream(excludes.split(",")).forEach(testRunConfigJson::excludeItem);
-            Arrays.stream(includes.split(",")).forEach(testRunConfigJson::includeItem);
+                Arrays.stream(excludes.split(",")).forEach(testRunConfigJson::excludeItem);
+                Arrays.stream(includes.split(",")).forEach(testRunConfigJson::includeItem);
 
-            Arrays.stream(tags.split(",")).forEach(testRunConfigJson::tag);
+                Arrays.stream(tags.split(",")).forEach(testRunConfigJson::tag);
 
-            perfanaClient.addTestRunConfigJson(testRunConfigJson.build());
-        }
-        else {
-            logger.error("received test-run-config message with unexpected output type: " + output);
+                perfanaClient.addTestRunConfigJson(testRunConfigJson.build());
+                break;
+            case "keys":
+                TestRunConfigKeys.TestRunConfigKeysBuilder keysBuilder = TestRunConfigKeys.builder()
+                        .testRunId(perfanaTestContext.getTestRunId())
+                        .application(perfanaTestContext.getSystemUnderTest())
+                        .testEnvironment(perfanaTestContext.getTestEnvironment())
+                        .testType(perfanaTestContext.getWorkload());
+
+                String keyValuePairsString = message.getMessage();
+
+                List<String> keyValuePairs = Arrays.asList(keyValuePairsString.split(","));
+
+                if (keyValuePairs.size() % 2 != 0) {
+                    logger.error("received key value pairs string with uneven number of key values: " + keyValuePairs.size());
+                } else {
+
+                    for (int i = 0; i < keyValuePairs.size(); i = i + 2) {
+                        keysBuilder.configItem(new ConfigItem(keyValuePairs.get(i), keyValuePairs.get(i + 1)));
+                    }
+                    perfanaClient.addTestRunConfigKeys(keysBuilder.build());
+                }
+                break;
+            default:
+                logger.error("received test-run-config message with unexpected output type: " + output);
+                break;
         }
     }
 

@@ -21,10 +21,7 @@ import com.github.tomakehurst.wiremock.matching.UrlPattern;
 import io.perfana.client.PerfanaClient;
 import io.perfana.client.PerfanaClientBuilder;
 import io.perfana.client.api.*;
-import io.perfana.client.domain.Benchmark;
-import io.perfana.client.domain.Result;
-import io.perfana.client.domain.TestRunConfigJson;
-import io.perfana.client.domain.TestRunConfigKeyValue;
+import io.perfana.client.domain.*;
 import io.perfana.client.exception.PerfanaAssertResultsException;
 import io.perfana.client.exception.PerfanaAssertionsAreFalse;
 import io.perfana.eventscheduler.exception.handler.AbortSchedulerException;
@@ -406,4 +403,26 @@ public class PerfanaClientTest
         verify(postRequestedFor(urlPattern));
     }
 
+    @Test
+    public void testRunConfigKeyKeys() {
+        UrlPattern urlPattern = urlEqualTo("/api/config/keys");
+
+        wireMockRule.stubFor(post(urlPattern)
+                .willReturn(aResponse()
+                        .withStatus(200)));
+
+        PerfanaClient perfanaClient = createPerfanaClient();
+
+        List<String> tags = new ArrayList<>();
+        tags.add("tag1");
+        tags.add("tag2");
+
+        List<ConfigItem> configItems = new ArrayList<>();
+        configItems.add(new ConfigItem("key1", "value1"));
+        configItems.add(new ConfigItem("key2", "value2"));
+
+        perfanaClient.addTestRunConfigKeys(new TestRunConfigKeys("app", "env", "loadTest", "test-123", tags, configItems));
+
+        verify(postRequestedFor(urlPattern));
+    }
 }
