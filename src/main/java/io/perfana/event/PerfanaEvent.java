@@ -137,10 +137,11 @@ public class PerfanaEvent extends EventAdapter<PerfanaEventContext> {
 
                 String keyValuePairsString = message.getMessage();
 
-                List<String> keyValuePairs = Arrays.asList(keyValuePairsString.split(","));
+                // -1 to keep empty strings in split
+                List<String> keyValuePairs = Arrays.asList(keyValuePairsString.split(",", -1));
 
                 if (keyValuePairs.size() % 2 != 0) {
-                    logger.error("received key value pairs string with uneven number of key values: " + keyValuePairs.size());
+                    logger.error("skip send of test config key value pairs: received string with uneven number of key-value items: " + keyValuePairs.size());
                 } else {
                     for (int i = 0; i < keyValuePairs.size(); i = i + 2) {
                         keysBuilder.configItem(new ConfigItem(keyValuePairs.get(i), keyValuePairs.get(i + 1)));
