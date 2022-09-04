@@ -133,6 +133,8 @@ public class PerfanaEvent extends EventAdapter<PerfanaEventContext> {
                         .testEnvironment(perfanaTestContext.getTestEnvironment())
                         .testType(perfanaTestContext.getWorkload());
 
+                Arrays.stream(tags.split(",")).forEach(keysBuilder::tag);
+
                 String keyValuePairsString = message.getMessage();
 
                 List<String> keyValuePairs = Arrays.asList(keyValuePairsString.split(","));
@@ -140,7 +142,6 @@ public class PerfanaEvent extends EventAdapter<PerfanaEventContext> {
                 if (keyValuePairs.size() % 2 != 0) {
                     logger.error("received key value pairs string with uneven number of key values: " + keyValuePairs.size());
                 } else {
-
                     for (int i = 0; i < keyValuePairs.size(); i = i + 2) {
                         keysBuilder.configItem(new ConfigItem(keyValuePairs.get(i), keyValuePairs.get(i + 1)));
                     }
