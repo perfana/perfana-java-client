@@ -138,7 +138,7 @@ public class PerfanaEvent extends EventAdapter<PerfanaEventContext> {
                 String keyValuePairsString = message.getMessage();
 
                 // -1 to keep empty strings in split
-                List<String> keyValuePairs = Arrays.asList(keyValuePairsString.split(",", -1));
+                List<String> keyValuePairs = Arrays.asList(keyValuePairsString.split("\u0000", -1));
 
                 if (keyValuePairs.size() % 2 != 0) {
                     logger.error("skip send of test config key value pairs: received string with uneven number of key-value items: " + keyValuePairs.size());
