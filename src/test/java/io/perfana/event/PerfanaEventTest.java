@@ -65,7 +65,7 @@ public class PerfanaEventTest {
                         .willReturn(aResponse()
                                 .withBody(REPLY_BODY_BENCHMARK_RESULTS)));
 
-        wireMockRule.stubFor(post(urlEqualTo("/api/config/key"))
+        wireMockRule.stubFor(post(urlEqualTo("/api/config/keys"))
                 .willReturn(aResponse()
                         .withBody("")));
 
