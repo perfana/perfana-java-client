@@ -34,6 +34,7 @@ import io.perfana.eventscheduler.api.message.EventMessage;
 import io.perfana.eventscheduler.api.message.EventMessageBus;
 import io.perfana.eventscheduler.api.message.EventMessageReceiver;
 import io.perfana.eventscheduler.exception.handler.KillSwitchException;
+import io.perfana.eventscheduler.util.TestRunConfigUtil;
 
 import java.math.BigInteger;
 import java.security.MessageDigest;
@@ -138,7 +139,7 @@ public class PerfanaEvent extends EventAdapter<PerfanaEventContext> {
                 String keyValuePairsString = message.getMessage();
 
                 // -1 to keep empty strings in split
-                List<String> keyValuePairs = Arrays.asList(keyValuePairsString.split("\u0000", -1));
+                List<String> keyValuePairs = Arrays.asList(keyValuePairsString.split(TestRunConfigUtil.MESSAGE_KEY_VALUE_DELIMITER, -1));
 
                 if (keyValuePairs.size() % 2 != 0) {
                     logger.error("skip send of test config key value pairs: received string with uneven number of key-value items: " + keyValuePairs.size());
