@@ -36,9 +36,6 @@ import io.perfana.eventscheduler.api.message.EventMessageReceiver;
 import io.perfana.eventscheduler.exception.handler.KillSwitchException;
 import io.perfana.eventscheduler.util.TestRunConfigUtil;
 
-import java.math.BigInteger;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -185,11 +182,12 @@ public class PerfanaEvent extends EventAdapter<PerfanaEventContext> {
     }
 
     private void sendTestRunConfig() {
-        Map<String, String> configLines = createTestRunConfigLines();
-        configLines.forEach((name, value) -> sendKeyValueMessage(name, value, eventContext.getName(), "perfana-java-client"));
+        Map<String, String> configKeyValues = createTestRunConfigKeyValues();
+        EventMessage message = TestRunConfigUtil.createTestRunConfigMessageKeys(eventContext.getName(), configKeyValues, "perfana-java-client");
+        this.eventMessageBus.send(message);
     }
 
-    private Map<String, String> createTestRunConfigLines() {
+    private Map<String, String> createTestRunConfigKeyValues() {
         String prefix = "event." + eventContext.getName() + ".";
         Map<String, String> lines = new HashMap<>();
         lines.put(prefix + "perfanaUrl", eventContext.getPerfanaUrl());
@@ -197,35 +195,6 @@ public class PerfanaEvent extends EventAdapter<PerfanaEventContext> {
         lines.put(prefix + "scheduleScript", eventContext.getScheduleScript());
         lines.put(prefix + "variables", String.valueOf(eventContext.getVariables()));
         return lines;
-    }
-
-     static String hashSecret(String secretToHash) {
-        try {
-            MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
-            messageDigest.update(secretToHash.getBytes());
-            return "(hashed-secret)" + toHex(messageDigest.digest());
-        } catch (NoSuchAlgorithmException e) {
-            return "(hashed-secret)" + "(sorry, no algorithm found)";
-        }
-    }
-
-    public static String toHex(byte[] bytes) {
-        BigInteger bi = new BigInteger(1, bytes);
-        return String.format("%0" + (bytes.length << 1) + "x", bi);
-    }
-
-    private void sendKeyValueMessage(String key, String value, String pluginName, String tags) {
-
-        EventMessage.EventMessageBuilder messageBuilder = EventMessage.builder();
-
-        messageBuilder.variable("message-type", "test-run-config");
-        messageBuilder.variable("output", "key");
-        messageBuilder.variable("tags", tags);
-
-        messageBuilder.variable("key", key);
-        messageBuilder.message(value);
-
-        this.eventMessageBus.send(messageBuilder.pluginName(pluginName).build());
     }
 
     @Override
