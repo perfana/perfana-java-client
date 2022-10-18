@@ -73,7 +73,9 @@ Run via Maven:
 The _Perfana Java Client_ used from code via the _Perfana Event Scheduler_.
 
 Most properties have decent defaults and do not need to be
-called, such as the retry and keep alive properties.
+called, such as the retry (30 times 6 seconds) and keep alive properties.
+
+If needed you can use `retryCount` and `retryDelaySeconds` as eventConfig properties.
 
 Minimal example:
 

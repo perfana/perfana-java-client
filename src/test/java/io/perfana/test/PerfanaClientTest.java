@@ -61,7 +61,7 @@ public class PerfanaClientTest
         PerfanaConnectionSettings settings = new PerfanaConnectionSettingsBuilder()
                 .setPerfanaUrl("http://localhost:" + wireMockRule.port())
                 .setRetryMaxCount("5")
-                .setRetryTimeInSeconds("3")
+                .setRetryTimeSeconds("3")
                 .build();
 
         TestContext context = new TestContextBuilder()
@@ -110,7 +110,7 @@ public class PerfanaClientTest
         PerfanaConnectionSettings settings = new PerfanaConnectionSettingsBuilder()
                 .setPerfanaUrl(null)
                 .setRetryMaxCount(null)
-                .setRetryTimeInSeconds(null)
+                .setRetryTimeSeconds(null)
                 .setRetryDuration(null).build();
 
         new PerfanaClientBuilder()
@@ -125,7 +125,7 @@ public class PerfanaClientTest
 
         PerfanaConnectionSettings settings =
                 new PerfanaConnectionSettingsBuilder()
-                        .setRetryTimeInSeconds("P5")
+                        .setRetryTimeSeconds("P5")
                         .build();
 
         assertNotNull(settings);

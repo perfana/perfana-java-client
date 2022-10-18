@@ -15,6 +15,7 @@
  */
 package io.perfana.event;
 
+import io.perfana.client.api.PerfanaConnectionSettingsBuilder;
 import io.perfana.eventscheduler.api.config.EventConfig;
 import io.perfana.eventscheduler.api.config.EventContext;
 import io.perfana.eventscheduler.api.config.TestContext;
@@ -29,6 +30,10 @@ public class PerfanaEventConfig extends EventConfig {
     private String apiKey = null;
     private boolean assertResultsEnabled = false;
     private Map<String,String> variables = Collections.emptyMap();
+
+    private int retryCount = PerfanaConnectionSettingsBuilder.DEFAULT_RETRY_MAX_COUNT;
+
+    private int retryDelaySeconds = PerfanaConnectionSettingsBuilder.DEFAULT_RETRY_TIME_SECONDS;
 
     public void setPerfanaUrl(String perfanaUrl) {
         this.perfanaUrl = perfanaUrl;
@@ -46,9 +51,17 @@ public class PerfanaEventConfig extends EventConfig {
         this.apiKey = apiKey;
     }
 
+    public void setRetryCount(int retryCount) {
+        this.retryCount = retryCount;
+    }
+
+    public void setRetryDelaySeconds(int retryDelaySeconds) {
+        this.retryDelaySeconds = retryDelaySeconds;
+    }
+
     @NotNull
     private PerfanaEventContext createPerfanaEventContext(EventContext context) {
-        return new PerfanaEventContext(context, perfanaUrl, apiKey, assertResultsEnabled, variables);
+        return new PerfanaEventContext(context, perfanaUrl, apiKey, assertResultsEnabled, variables, retryCount, retryDelaySeconds);
     }
 
     @Override
@@ -64,10 +77,12 @@ public class PerfanaEventConfig extends EventConfig {
     @Override
     public String toString() {
         return "PerfanaEventConfig{" +
-            "perfanaUrl='" + perfanaUrl + '\'' +
-            ", assertResultsEnabled=" + assertResultsEnabled +
-            ", variables=" + variables +
-            ", apiKey=" + (apiKey == null ? "[not set]" : "[set]") +
-            "} " + super.toString();
+                "perfanaUrl='" + perfanaUrl + '\'' +
+                ", apiKey=" + (apiKey == null ? "[not set]" : "[set]") +
+                ", assertResultsEnabled=" + assertResultsEnabled +
+                ", variables=" + variables +
+                ", retryCount=" + retryCount +
+                ", retryDelaySeconds=" + retryDelaySeconds +
+                '}' + super.toString();
     }
 }

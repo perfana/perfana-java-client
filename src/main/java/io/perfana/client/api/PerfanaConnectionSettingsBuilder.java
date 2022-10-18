@@ -21,8 +21,8 @@ import java.time.Duration;
 
 public class PerfanaConnectionSettingsBuilder {
 
-    private static final int DEFAULT_RETRY_TIME_SECONDS = 6;
-    private static final int DEFAULT_RETRY_MAX_COUNT = 30;
+    public static final int DEFAULT_RETRY_TIME_SECONDS = 6;
+    public static final int DEFAULT_RETRY_MAX_COUNT = 30;
     private String perfanaUrl = "unknown";
     private int retryMaxCount = DEFAULT_RETRY_MAX_COUNT;
     private Duration retryDuration = Duration.ofSeconds(DEFAULT_RETRY_TIME_SECONDS);
@@ -33,7 +33,7 @@ public class PerfanaConnectionSettingsBuilder {
         return this;
     }
 
-    public PerfanaConnectionSettingsBuilder setRetryTimeInSeconds(String retryTimeInSeconds) {
+    public PerfanaConnectionSettingsBuilder setRetryTimeSeconds(String retryTimeInSeconds) {
         this.retryDuration = Duration.ofSeconds(PerfanaUtils.parseInt("retryTimeInSeconds", retryTimeInSeconds, DEFAULT_RETRY_TIME_SECONDS));
         return this;
     }

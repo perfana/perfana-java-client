@@ -165,6 +165,8 @@ public class PerfanaEvent extends EventAdapter<PerfanaEventContext> {
         PerfanaConnectionSettings settings = new PerfanaConnectionSettingsBuilder()
                 .setPerfanaUrl(eventContext.getPerfanaUrl())
                 .setApiKey(eventContext.getApiKey())
+                .setRetryMaxCount(eventContext.getRetryCount())
+                .setRetryTimeSeconds(String.valueOf(eventContext.getRetryDelaySeconds()))
                 .build();
 
         PerfanaClientBuilder builder = new PerfanaClientBuilder()

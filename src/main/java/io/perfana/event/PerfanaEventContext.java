@@ -28,12 +28,18 @@ public class PerfanaEventContext extends EventContext {
     private final boolean assertResultsEnabled;
     private final Map<String,String> variables;
 
-    protected PerfanaEventContext(EventContext context, String perfanaUrl, String apiKey, boolean assertResultsEnabled, Map<String, String> variables) {
-        super(context, PerfanaEventFactory.class.getName(), false);
+    private final int retryCount;
+
+    private final int retryDelaySeconds;
+
+    protected PerfanaEventContext(EventContext context, String perfanaUrl, String apiKey, boolean assertResultsEnabled, Map<String, String> variables, int retryCount, int retryDelaySeconds) {
+        super(context, PerfanaEventFactory.class.getName());
         this.perfanaUrl = perfanaUrl;
         this.apiKey = apiKey;
         this.assertResultsEnabled = assertResultsEnabled;
         this.variables = Collections.unmodifiableMap(new HashMap<>(variables));
+        this.retryCount = retryCount;
+        this.retryDelaySeconds = retryDelaySeconds;
     }
 
     public String getPerfanaUrl() {
@@ -52,13 +58,23 @@ public class PerfanaEventContext extends EventContext {
         return variables;
     }
 
+    public int getRetryCount() {
+        return retryCount;
+    }
+
+    public int getRetryDelaySeconds() {
+        return retryDelaySeconds;
+    }
+
     @Override
     public String toString() {
-        return "PerfanaEventConfig{" +
-            "perfanaUrl='" + perfanaUrl + '\'' +
-            ", apiKey=" + (apiKey == null ? "[not set]" : "[set]") +
-            ", assertResultsEnabled=" + assertResultsEnabled +
-            ", variables=" + variables +
-            "} " + super.toString();
+        return "PerfanaEventContext{" +
+                "perfanaUrl='" + perfanaUrl + '\'' +
+                ", apiKey=" + (apiKey == null ? "[not set]" : "[set]") +
+                ", assertResultsEnabled=" + assertResultsEnabled +
+                ", variables=" + variables +
+                ", retryCount=" + retryCount +
+                ", retryDelaySeconds=" + retryDelaySeconds +
+                '}' + super.toString();
     }
 }
