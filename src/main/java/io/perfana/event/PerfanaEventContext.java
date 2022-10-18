@@ -33,7 +33,7 @@ public class PerfanaEventContext extends EventContext {
     private final int retryDelaySeconds;
 
     protected PerfanaEventContext(EventContext context, String perfanaUrl, String apiKey, boolean assertResultsEnabled, Map<String, String> variables, int retryCount, int retryDelaySeconds) {
-        super(context, PerfanaEventFactory.class.getName());
+        super(context, PerfanaEventFactory.class.getName(), false);
         this.perfanaUrl = perfanaUrl;
         this.apiKey = apiKey;
         this.assertResultsEnabled = assertResultsEnabled;
