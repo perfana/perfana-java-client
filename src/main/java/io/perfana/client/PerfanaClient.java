@@ -317,7 +317,7 @@ public final class PerfanaClient implements PerfanaCaller {
                         assertionsAvailable = true; // valid response, interpret as "empty assertion list"
                         keepRetrying = false;
                         logger.info(String.format("No check can be done for [%s], due to: %s",
-                                context.getTestRunId(), perfanaErrorMessage.getMessage()));
+                                context.getTestRunId(), "no checks specified for this test run in Perfana"));
                     } else if (code == HTTP_ACCEPTED) { // 202
                         //  evaluation in progress
                         logger.info(String.format("Trying to get test run check results at %s, attempt (%d/%d). Test run evaluation in progress ...",
@@ -381,7 +381,7 @@ public final class PerfanaClient implements PerfanaCaller {
     }
 
     private PerfanaErrorMessage extractPerfanaErrorMessage(String messageBody) throws IOException {
-        if (messageBody == null) {
+        if (messageBody == null || messageBody.isEmpty()) {
             return PERFANA_ERROR_MESSAGE_NOT_FOUND;
         }
         PerfanaErrorMessage perfanaErrorMessage;
@@ -409,7 +409,7 @@ public final class PerfanaClient implements PerfanaCaller {
     public String assertResults() throws PerfanaClientException, PerfanaAssertResultsException, PerfanaAssertionsAreFalse {
 
         if (!assertResultsEnabled) {
-            String message = "Perfana assert results is not enabled and will not be checked.";
+            String message = "Perfana assert results is not enabled: results will not be checked.";
             logger.info(message);
             return message;
         }
@@ -417,7 +417,7 @@ public final class PerfanaClient implements PerfanaCaller {
         final String assertions = callCheckAsserts();
         if (assertions == null) {
             // No checks have specified
-            return "No checks have been specified for this test run! Set assertResults property to false or create checks for key metrics";
+            return "No checks have been specified for this test run. Set assertResults property to false or create checks for key metrics.";
         }
 
         Benchmark benchmark;

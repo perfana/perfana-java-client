@@ -26,6 +26,7 @@ import io.perfana.client.exception.PerfanaAssertResultsException;
 import io.perfana.client.exception.PerfanaAssertionsAreFalse;
 import io.perfana.eventscheduler.exception.handler.AbortSchedulerException;
 import io.perfana.eventscheduler.exception.handler.KillSwitchException;
+import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -273,7 +274,7 @@ public class PerfanaClientTest
 
     }
 
-    @Test(expected = AbortSchedulerException.class)
+    @Test
     public void testPerfanaTestCallWithoutAuth() {
         wireMockRule.stubFor(post(urlEqualTo("/api/test"))
             .willReturn(aResponse()
@@ -284,18 +285,13 @@ public class PerfanaClientTest
 
         PerfanaClient perfanaClient = createPerfanaClient();
         TestContext testContext = new TestContextBuilder().build();
-        try {
-            perfanaClient.callPerfanaTestEndpoint(testContext, false);
-        } catch (AbortSchedulerException e) {
-            // System.out.println("Error: " + e);
-            assertTrue(e.getMessage().contains("Invalid or expired API key"));
-            throw e;
-        }
+        AbortSchedulerException thrown = Assert.assertThrows(AbortSchedulerException.class, () -> perfanaClient.callPerfanaTestEndpoint(testContext, false));
+        assertTrue(thrown.getMessage().contains("Invalid or expired API key"));
     }
 
-    @Test(expected = PerfanaAssertResultsException.class)
+    @Test
     @Ignore("takes too long to test timeouts, ignore test, enable to test manually")
-    public void testPerfanaTestCallWithoutTimeout() throws Exception {
+    public void testPerfanaTestCallWithoutTimeout() {
         wireMockRule.stubFor(get(urlEqualTo("/api/benchmark-results/unknown/testRunId"))
             .willReturn(aResponse()
                 .withFixedDelay(10_000)
@@ -303,43 +299,47 @@ public class PerfanaClientTest
                 .withBody("{'message': 'all ok'}")));
 
         PerfanaClient perfanaClient = createPerfanaClient();
-        perfanaClient.assertResults();
+        Assert.assertThrows(PerfanaAssertResultsException.class, perfanaClient::assertResults);
     }
 
-    @Test(expected = PerfanaAssertResultsException.class)
-    public void testPerfanaTestCallWith500() throws Exception {
+    @Test
+    public void testPerfanaTestCallWith500() {
         wireMockRule.stubFor(get(urlEqualTo("/api/benchmark-results/unknown/testRunId"))
             .willReturn(aResponse()
                 .withStatus(500)
                 .withBody(MESSAGE_THERE_WAS_A_FAILURE)));
 
         PerfanaClient perfanaClient = createPerfanaClient();
-
-        // check if the message is ok, is there a better way to check this?
-        try {
-            perfanaClient.assertResults();
-        } catch (PerfanaAssertResultsException e) {
-            // System.out.println("Error: " + e);
-            assertTrue(e.getMessage().contains("due to: there was a failure!"));
-            throw e;
-        }
+        PerfanaAssertResultsException thrown = Assert.assertThrows(PerfanaAssertResultsException.class, perfanaClient::assertResults);
+        assertTrue(thrown.getMessage().contains("due to: there was a failure!"));
     }
 
-    @Test(expected = PerfanaAssertResultsException.class)
-    public void testPerfanaTestCallWith400() throws Exception {
+    @Test
+    public void testPerfanaTestCallWith400() {
         wireMockRule.stubFor(get(urlEqualTo("/api/benchmark-results/unknown/testRunId"))
             .willReturn(aResponse()
                 .withStatus(400)
                 .withBody("{\"message\":\"Match error: Missing key 'systemUnderTest'\",\"path\":\"\",\"sanitizedError\":{\"isClientSafe\":true,\"error\":400,\"reason\":\"Match failed\",\"message\":\"Match failed [400]\",\"errorType\":\"Meteor.Error\"},\"errorType\":\"Match.Error\"}")));
 
         PerfanaClient perfanaClient = createPerfanaClient();
-        try {
-            perfanaClient.assertResults();
-        } catch (PerfanaAssertResultsException e) {
-            System.out.println("Error: " + e);
-            assertTrue(e.getMessage().contains("Missing key 'systemUnderTest'"));
-            throw e;
-        }
+        PerfanaAssertResultsException thrown = Assert.assertThrows(PerfanaAssertResultsException.class, perfanaClient::assertResults);
+        assertTrue(thrown.getMessage().contains("Missing key 'systemUnderTest'"));
+    }
+
+    @Test
+    public void testPerfanaTestCallWith204() throws Exception {
+        // 204 is no content, so parsing of error message failed
+
+        // [WARNING] [PerfanaEvent] [PerfanaEvent] Failed to process Perfana error message: [] due to: com.fasterxml.jackson.databind.exc.MismatchedInputException: No content to map due to end-of-input
+        // at [Source: (String)""; line: 1, column: 0]
+
+        wireMockRule.stubFor(get(urlEqualTo("/api/benchmark-results/unknown/testRunId"))
+                .willReturn(aResponse()
+                        .withStatus(204)));
+
+        PerfanaClient perfanaClient = createPerfanaClient();
+        String resultText = perfanaClient.assertResults();
+        assertEquals("No checks have been specified for this test run. Set assertResults property to false or create checks for key metrics.", resultText);
 
     }
 
