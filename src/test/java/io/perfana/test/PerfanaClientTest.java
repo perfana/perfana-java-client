@@ -35,8 +35,7 @@ import java.util.*;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
-import static junit.framework.TestCase.assertEquals;
-import static junit.framework.TestCase.assertTrue;
+import static junit.framework.TestCase.*;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
@@ -425,4 +424,36 @@ public class PerfanaClientTest
 
         verify(postRequestedFor(urlPattern));
     }
+
+    @Test
+    public void testInitTest() {
+        UrlPattern urlPattern = urlEqualTo("/api/init");
+
+        String expectedTestRunId = "OptimusPrime-acme-loadTest-00001";
+        String returnJson = "{ \"testRunId\" : \"" + expectedTestRunId + "\" }";
+        wireMockRule.stubFor(post(urlPattern)
+                .willReturn(aResponse()
+                        .withStatus(200).withBody(returnJson)));
+
+        PerfanaClient perfanaClient = createPerfanaClient();
+        TestContext testContext = new TestContextBuilder().build();
+        String testRunId = perfanaClient.callInitTest(testContext);
+        assertEquals(expectedTestRunId, testRunId);
+    }
+
+    @Test
+    public void testInitTest500() {
+        UrlPattern urlPattern = urlEqualTo("/api/init");
+
+        wireMockRule.stubFor(post(urlPattern)
+                .willReturn(aResponse()
+                        .withStatus(500).withBody("error")));
+
+        PerfanaClient perfanaClient = createPerfanaClient();
+        TestContext testContext = new TestContextBuilder().build();
+        String testRunId = perfanaClient.callInitTest(testContext);
+        assertNull(testRunId);
+    }
+
+
 }

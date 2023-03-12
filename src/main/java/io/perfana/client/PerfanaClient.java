@@ -72,6 +72,9 @@ public final class PerfanaClient implements PerfanaCaller {
 
     private static final ObjectWriter testRunConfigKeysWriter;
 
+    private static final ObjectWriter initWriter;
+    private static final ObjectReader initReplyReader;
+
     static {
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
@@ -83,6 +86,8 @@ public final class PerfanaClient implements PerfanaCaller {
         testRunConfigKeyValueWriter = objectMapper.writer().forType(TestRunConfigKeyValue.class);
         testRunConfigJsonWriter = objectMapper.writer().forType(TestRunConfigJson.class);
         testRunConfigKeysWriter = objectMapper.writer().forType(TestRunConfigKeys.class);
+        initWriter = objectMapper.writer().forType(Init.class);
+        initReplyReader = objectMapper.reader().forType(InitReply.class);
     }
 
     PerfanaClient(TestContext context, PerfanaConnectionSettings settings,
@@ -183,18 +188,23 @@ public final class PerfanaClient implements PerfanaCaller {
         }
     }
 
+    /**
+     * @return null when response is not successful
+     */
     private String post(String endpoint, String json) throws IOException {
         Request request = createRequest(endpoint, json);
         try (Response response = client.newCall(request).execute()) {
-            ResponseBody responseBody = response.body();
+            String responseBody = response.body() == null ? "" : response.body().string();
             final int responseCode = response.code();
             if (responseCode == HTTP_UNAUTHORIZED) {
                 logger.warn("ignoring: not authorised (401) to post to [" + endpoint + "]");
+                return null;
             }
             if (!response.isSuccessful()) {
-                logger.warn("POST was not successful. Response: " + response + " Body: " + json);
+                logger.warn("POST was not successful. Response: " + response + " Body: '" + responseBody + "' Request: " + json);
+                return null;
             }
-            return responseBody == null ? "null" : responseBody.string();
+            return responseBody;
         }
     }
 
@@ -508,5 +518,34 @@ public final class PerfanaClient implements PerfanaCaller {
         } catch (IOException e) {
             logger.error("failed to call Perfana event endpoint: " + e.getMessage());
         }
+    }
+
+    public String callInitTest(TestContext context) {
+        Init init = Init.builder()
+                .systemUnderTest(context.getSystemUnderTest())
+                .testEnvironment(context.getTestEnvironment())
+                .workload(context.getWorkload()).build();
+
+        logger.info("call Perfana init-test with: " + init);
+
+        try {
+            String json = initWriter.writeValueAsString(init);
+            String initReplyJson = post("/api/init", json);
+
+            logger.info("got init reply: " + initReplyJson);
+            if (initReplyJson == null) {
+                logger.error("Perfana init call failed.");
+                return null;
+            }
+            
+            InitReply initReply = initReplyReader.readValue(initReplyJson);
+            return initReply.getTestRunId();
+
+        } catch (JsonProcessingException e) {
+            logger.error("failed to serialize " + context + " to json", e);
+        } catch (IOException e) {
+            logger.error("failed to call Perfana init-test endpoint: " + e.getMessage());
+        }
+        return null;
     }
 }
