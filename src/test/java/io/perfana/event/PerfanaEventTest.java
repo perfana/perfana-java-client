@@ -53,6 +53,10 @@ public class PerfanaEventTest {
     @Test
     public void testLifeCycle() {
 
+        wireMockRule.stubFor(post(urlEqualTo("/api/init"))
+                .willReturn(aResponse()
+                        .withBody("{ \"test-run-id\": \"test-123\" }")));
+
         wireMockRule.stubFor(post(urlEqualTo("/api/events"))
                         .willReturn(aResponse()
                                 .withBody("{ hello: world }")));

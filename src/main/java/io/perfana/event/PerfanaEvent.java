@@ -45,6 +45,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class PerfanaEvent extends EventAdapter<PerfanaEventContext> {
 
     private static final String CLASSNAME = PerfanaEvent.class.getName();
+    public static final String PLUGIN_NAME = "perfana-java-client";
     private final String eventName;
 
     private final TestContext perfanaTestContext;
@@ -180,12 +181,26 @@ public class PerfanaEvent extends EventAdapter<PerfanaEventContext> {
 
     @Override
     public void beforeTest() {
+        // sends a test-run-id message, always, if no new test-run-id is available
+        initTest();
         sendTestRunConfig();
+    }
+
+    private void initTest() {
+        String newTestRunId = perfanaClient.callInitTest(perfanaTestContext);
+        EventMessage eventMessage;
+        if (newTestRunId != null) {
+            eventMessage = EventMessage.builder().pluginName(PLUGIN_NAME).message("test-run-id:" + newTestRunId).build();
+        }
+        else {
+            eventMessage = EventMessage.builder().pluginName(PLUGIN_NAME).message("test-run-id: none").build();
+        }
+        this.eventMessageBus.send(eventMessage);
     }
 
     private void sendTestRunConfig() {
         Map<String, String> configKeyValues = createTestRunConfigKeyValues();
-        EventMessage message = TestRunConfigUtil.createTestRunConfigMessageKeys(eventContext.getName(), configKeyValues, "perfana-java-client");
+        EventMessage message = TestRunConfigUtil.createTestRunConfigMessageKeys(eventContext.getName(), configKeyValues, PLUGIN_NAME);
         this.eventMessageBus.send(message);
     }
 
