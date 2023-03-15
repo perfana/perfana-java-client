@@ -16,11 +16,8 @@
 package io.perfana.event;
 
 import io.perfana.client.PerfanaClient;
-import io.perfana.client.PerfanaClientBuilder;
-import io.perfana.client.api.PerfanaConnectionSettings;
-import io.perfana.client.api.PerfanaConnectionSettingsBuilder;
+import io.perfana.client.PerfanaUtils;
 import io.perfana.client.api.TestContext;
-import io.perfana.client.api.TestContextBuilder;
 import io.perfana.client.domain.ConfigItem;
 import io.perfana.client.domain.TestRunConfigJson;
 import io.perfana.client.domain.TestRunConfigKeyValue;
@@ -28,7 +25,6 @@ import io.perfana.client.domain.TestRunConfigKeys;
 import io.perfana.client.exception.PerfanaAssertResultsException;
 import io.perfana.client.exception.PerfanaAssertionsAreFalse;
 import io.perfana.client.exception.PerfanaClientException;
-import io.perfana.client.exception.PerfanaClientRuntimeException;
 import io.perfana.eventscheduler.api.*;
 import io.perfana.eventscheduler.api.message.EventMessage;
 import io.perfana.eventscheduler.api.message.EventMessageBus;
@@ -64,10 +60,10 @@ public class PerfanaEvent extends EventAdapter<PerfanaEventContext> {
         super(context, messageBus, logger);
         this.eventCheck = new EventCheck(context.getName(), CLASSNAME, EventStatus.UNKNOWN, "No known result yet. Try again some time later.");
         this.eventName = context.getName();
-        this.perfanaTestContext = createPerfanaTestContext(context);
+        this.perfanaTestContext = PerfanaUtils.createPerfanaTestContext(context);
         this.messageBus = messageBus;
 
-        this.perfanaClient = createPerfanaClient(context, perfanaTestContext, logger);
+        this.perfanaClient = PerfanaUtils.createPerfanaClient(context, perfanaTestContext, logger);
 
         EventMessageReceiver eventMessageReceiver = message -> {
             // a test-run-config message
@@ -158,44 +154,9 @@ public class PerfanaEvent extends EventAdapter<PerfanaEventContext> {
         return text == null ? "" : text;
     }
 
-    private static PerfanaClient createPerfanaClient(
-            PerfanaEventContext eventContext,
-            TestContext perfanaTestContext,
-            EventLogger logger) {
-
-        PerfanaConnectionSettings settings = new PerfanaConnectionSettingsBuilder()
-                .setPerfanaUrl(eventContext.getPerfanaUrl())
-                .setApiKey(eventContext.getApiKey())
-                .setRetryMaxCount(eventContext.getRetryCount())
-                .setRetryTimeSeconds(String.valueOf(eventContext.getRetryDelaySeconds()))
-                .build();
-
-        PerfanaClientBuilder builder = new PerfanaClientBuilder()
-                .setLogger(new PerfanaClientEventLogger(logger))
-                .setTestContext(perfanaTestContext)
-                .setPerfanaConnectionSettings(settings)
-                .setAssertResultsEnabled(eventContext.isAssertResultsEnabled());
-
-        return builder.build();
-    }
-
     @Override
     public void beforeTest() {
-        // sends a test-run-id message, always, if no new test-run-id is available
-        initTest();
         sendTestRunConfig();
-    }
-
-    private void initTest() {
-        String newTestRunId = perfanaClient.callInitTest(perfanaTestContext);
-        EventMessage eventMessage;
-        if (newTestRunId != null) {
-            eventMessage = EventMessage.builder().pluginName(PLUGIN_NAME).message("test-run-id:" + newTestRunId).build();
-        }
-        else {
-            eventMessage = EventMessage.builder().pluginName(PLUGIN_NAME).message("test-run-id: none").build();
-        }
-        this.eventMessageBus.send(eventMessage);
     }
 
     private void sendTestRunConfig() {
@@ -289,29 +250,6 @@ public class PerfanaEvent extends EventAdapter<PerfanaEventContext> {
         } catch (Exception e) {
             logger.error("Perfana call event failed", e);
         }
-    }
-
-    private static TestContext createPerfanaTestContext(PerfanaEventContext context) {
-
-        io.perfana.eventscheduler.api.config.TestContext testContext = context.getTestContext();
-
-        if (testContext == null) {
-            throw new PerfanaClientRuntimeException("testConfig in eventConfig is null: " + context);
-        }
-
-        return new TestContextBuilder()
-            .setVariables(context.getVariables())
-            .setTags(testContext.getTags())
-            .setAnnotations(testContext.getAnnotations())
-            .setSystemUnderTest(testContext.getSystemUnderTest())
-            .setVersion(testContext.getVersion())
-            .setCIBuildResultsUrl(testContext.getBuildResultsUrl())
-            .setConstantLoadTime(testContext.getConstantLoadTime())
-            .setRampupTime(testContext.getRampupTime())
-            .setTestEnvironment(testContext.getTestEnvironment())
-            .setTestRunId(testContext.getTestRunId())
-            .setWorkload(testContext.getWorkload())
-            .build();
     }
 
 }

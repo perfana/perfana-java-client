@@ -28,11 +28,13 @@ public class PerfanaEventContext extends EventContext {
     private final boolean assertResultsEnabled;
     private final Map<String,String> variables;
 
+    private final boolean overrideTestRunId;
+
     private final int retryCount;
 
     private final int retryDelaySeconds;
 
-    protected PerfanaEventContext(EventContext context, String perfanaUrl, String apiKey, boolean assertResultsEnabled, Map<String, String> variables, int retryCount, int retryDelaySeconds) {
+    protected PerfanaEventContext(EventContext context, String perfanaUrl, String apiKey, boolean assertResultsEnabled, Map<String, String> variables, int retryCount, int retryDelaySeconds, boolean overrideTestRunId) {
         super(context, PerfanaEventFactory.class.getName(), false);
         this.perfanaUrl = perfanaUrl;
         this.apiKey = apiKey;
@@ -40,6 +42,7 @@ public class PerfanaEventContext extends EventContext {
         this.variables = Collections.unmodifiableMap(new HashMap<>(variables));
         this.retryCount = retryCount;
         this.retryDelaySeconds = retryDelaySeconds;
+        this.overrideTestRunId = overrideTestRunId;
     }
 
     public String getPerfanaUrl() {
@@ -64,6 +67,10 @@ public class PerfanaEventContext extends EventContext {
 
     public int getRetryDelaySeconds() {
         return retryDelaySeconds;
+    }
+
+    public boolean isOverrideTestRunId() {
+        return overrideTestRunId;
     }
 
     @Override

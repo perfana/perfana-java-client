@@ -15,6 +15,15 @@
  */
 package io.perfana.client;
 
+import io.perfana.client.api.PerfanaConnectionSettings;
+import io.perfana.client.api.PerfanaConnectionSettingsBuilder;
+import io.perfana.client.api.TestContext;
+import io.perfana.client.api.TestContextBuilder;
+import io.perfana.client.exception.PerfanaClientRuntimeException;
+import io.perfana.event.PerfanaClientEventLogger;
+import io.perfana.event.PerfanaEventContext;
+import io.perfana.eventscheduler.api.EventLogger;
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -72,5 +81,49 @@ public class PerfanaUtils {
             slashEndpoint = endpoint.startsWith("/") ? endpoint : "/" + endpoint;
         }
         return  (cleanUrl + slashEndpoint).replaceAll("/+", "/");
+    }
+
+    public static PerfanaClient createPerfanaClient(
+            PerfanaEventContext eventContext,
+            TestContext testContext,
+            EventLogger logger) {
+
+        PerfanaConnectionSettings settings = new PerfanaConnectionSettingsBuilder()
+                .setPerfanaUrl(eventContext.getPerfanaUrl())
+                .setApiKey(eventContext.getApiKey())
+                .setRetryMaxCount(eventContext.getRetryCount())
+                .setRetryTimeSeconds(String.valueOf(eventContext.getRetryDelaySeconds()))
+                .build();
+
+        PerfanaClientBuilder builder = new PerfanaClientBuilder()
+                .setLogger(new PerfanaClientEventLogger(logger))
+                .setTestContext(testContext)
+                .setPerfanaConnectionSettings(settings)
+                .setAssertResultsEnabled(eventContext.isAssertResultsEnabled());
+
+        return builder.build();
+    }
+
+    public static TestContext createPerfanaTestContext(PerfanaEventContext context) {
+
+        io.perfana.eventscheduler.api.config.TestContext testContext = context.getTestContext();
+
+        if (testContext == null) {
+            throw new PerfanaClientRuntimeException("testConfig in eventConfig is null: " + context);
+        }
+
+        return new TestContextBuilder()
+            .setVariables(context.getVariables())
+            .setTags(testContext.getTags())
+            .setAnnotations(testContext.getAnnotations())
+            .setSystemUnderTest(testContext.getSystemUnderTest())
+            .setVersion(testContext.getVersion())
+            .setCIBuildResultsUrl(testContext.getBuildResultsUrl())
+            .setConstantLoadTime(testContext.getConstantLoadTime())
+            .setRampupTime(testContext.getRampupTime())
+            .setTestEnvironment(testContext.getTestEnvironment())
+            .setTestRunId(testContext.getTestRunId())
+            .setWorkload(testContext.getWorkload())
+            .build();
     }
 }

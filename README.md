@@ -35,6 +35,7 @@ For example (from [example-pom.xml](src/test/resources/example-pom.xml)):
                     <perfanaUrl>http://localhost:8888</perfanaUrl>
                     <apiKey>perfana-api-key-XXX-YYY-ZZZ</apiKey>
                     <assertResultsEnabled>false</assertResultsEnabled>
+                    <overrideTestRunId>false</overrideTestRunId>
                     <variables>
                         <var1>my_value</var1>
                         <__var2>my_value_2</__var2>
@@ -204,6 +205,11 @@ You need the following dependencies:
 </dependency>
 ```
 
+# Test Run ids
+
+To avoid issues with test run ids that are not unique it is best to have Perfana in control
+of generating the unique test runs ids. By default the given test run id is overridden by Perfana.
+If you want to use your own test run ids, you can set the `overrideTestRunId` property to `false`.
 
 
 

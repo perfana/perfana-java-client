@@ -35,6 +35,8 @@ public class PerfanaEventConfig extends EventConfig {
 
     private int retryDelaySeconds = PerfanaConnectionSettingsBuilder.DEFAULT_RETRY_TIME_SECONDS;
 
+    private boolean overrideTestRunId = true;
+
     public void setPerfanaUrl(String perfanaUrl) {
         this.perfanaUrl = perfanaUrl;
     }
@@ -61,7 +63,13 @@ public class PerfanaEventConfig extends EventConfig {
 
     @NotNull
     private PerfanaEventContext createPerfanaEventContext(EventContext context) {
-        return new PerfanaEventContext(context, perfanaUrl, apiKey, assertResultsEnabled, variables, retryCount, retryDelaySeconds);
+        return new PerfanaEventContext(context, perfanaUrl, apiKey,
+                assertResultsEnabled, variables, retryCount,
+                retryDelaySeconds, overrideTestRunId);
+    }
+
+    public void setOverrideTestRunId(boolean overrideTestRunId) {
+        this.overrideTestRunId = overrideTestRunId;
     }
 
     @Override
