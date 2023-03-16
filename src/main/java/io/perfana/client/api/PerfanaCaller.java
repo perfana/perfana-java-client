@@ -18,14 +18,14 @@ package io.perfana.client.api;
 import java.util.Map;
 
 public interface PerfanaCaller {
-    void callPerfanaEvent(TestContext context, String eventTitle, String eventDescription);
-    void callPerfanaTestEndpoint(TestContext context, boolean complete);
-    void callPerfanaTestEndpoint(TestContext context, boolean complete, Map<String,String> extraVariables);
+    void callPerfanaEvent(PerfanaTestContext context, String eventTitle, String eventDescription);
+    void callPerfanaTestEndpoint(PerfanaTestContext context, boolean complete);
+    void callPerfanaTestEndpoint(PerfanaTestContext context, boolean complete, Map<String,String> extraVariables);
 
     /**
      * Call before test starts to get a unique test run id.
      * @param context the test context
      * @return a unique test run id to be used in the test
      */
-    String callInitTest(TestContext context);
+    String callInitTest(PerfanaTestContext context);
 }

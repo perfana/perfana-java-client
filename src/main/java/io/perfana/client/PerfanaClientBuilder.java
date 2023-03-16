@@ -18,12 +18,12 @@ package io.perfana.client;
 import io.perfana.client.api.PerfanaClientLogger;
 import io.perfana.client.api.PerfanaClientLoggerStdOut;
 import io.perfana.client.api.PerfanaConnectionSettings;
-import io.perfana.client.api.TestContext;
+import io.perfana.client.api.PerfanaTestContext;
 import io.perfana.client.exception.PerfanaClientRuntimeException;
 
 public class PerfanaClientBuilder {
 
-    private TestContext testContext;
+    private PerfanaTestContext testContext;
 
     private PerfanaConnectionSettings perfanaConnectionSettings;
 
@@ -31,7 +31,7 @@ public class PerfanaClientBuilder {
 
     private PerfanaClientLogger logger = new PerfanaClientLoggerStdOut();
 
-    public PerfanaClientBuilder setTestContext(TestContext context) {
+    public PerfanaClientBuilder setTestContext(PerfanaTestContext context) {
         this.testContext = context;
         return this;
     }

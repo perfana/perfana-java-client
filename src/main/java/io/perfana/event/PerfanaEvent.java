@@ -17,7 +17,7 @@ package io.perfana.event;
 
 import io.perfana.client.PerfanaClient;
 import io.perfana.client.PerfanaUtils;
-import io.perfana.client.api.TestContext;
+import io.perfana.client.api.PerfanaTestContext;
 import io.perfana.client.domain.ConfigItem;
 import io.perfana.client.domain.TestRunConfigJson;
 import io.perfana.client.domain.TestRunConfigKeyValue;
@@ -26,6 +26,7 @@ import io.perfana.client.exception.PerfanaAssertResultsException;
 import io.perfana.client.exception.PerfanaAssertionsAreFalse;
 import io.perfana.client.exception.PerfanaClientException;
 import io.perfana.eventscheduler.api.*;
+import io.perfana.eventscheduler.api.config.TestContext;
 import io.perfana.eventscheduler.api.message.EventMessage;
 import io.perfana.eventscheduler.api.message.EventMessageBus;
 import io.perfana.eventscheduler.api.message.EventMessageReceiver;
@@ -44,7 +45,7 @@ public class PerfanaEvent extends EventAdapter<PerfanaEventContext> {
     public static final String PLUGIN_NAME = "perfana-java-client";
     private final String eventName;
 
-    private final TestContext perfanaTestContext;
+    private final PerfanaTestContext perfanaTestContext;
 
     private final EventMessageBus messageBus;
 
@@ -56,11 +57,11 @@ public class PerfanaEvent extends EventAdapter<PerfanaEventContext> {
     // save some state to do the status check
     private EventCheck eventCheck;
 
-    PerfanaEvent(PerfanaEventContext context, EventMessageBus messageBus, EventLogger logger) {
-        super(context, messageBus, logger);
+    PerfanaEvent(PerfanaEventContext context, TestContext testContext,EventMessageBus messageBus, EventLogger logger) {
+        super(context, testContext, messageBus, logger);
         this.eventCheck = new EventCheck(context.getName(), CLASSNAME, EventStatus.UNKNOWN, "No known result yet. Try again some time later.");
         this.eventName = context.getName();
-        this.perfanaTestContext = PerfanaUtils.createPerfanaTestContext(context);
+        this.perfanaTestContext = PerfanaUtils.createPerfanaTestContext(context, testContext);
         this.messageBus = messageBus;
 
         this.perfanaClient = PerfanaUtils.createPerfanaClient(context, perfanaTestContext, logger);

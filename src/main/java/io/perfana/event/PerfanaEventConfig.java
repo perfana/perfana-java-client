@@ -18,7 +18,6 @@ package io.perfana.event;
 import io.perfana.client.api.PerfanaConnectionSettingsBuilder;
 import io.perfana.eventscheduler.api.config.EventConfig;
 import io.perfana.eventscheduler.api.config.EventContext;
-import io.perfana.eventscheduler.api.config.TestContext;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collections;
@@ -75,11 +74,6 @@ public class PerfanaEventConfig extends EventConfig {
     @Override
     public PerfanaEventContext toContext() {
         return createPerfanaEventContext(super.toContext());
-    }
-
-    @Override
-    public EventContext toContext(TestContext overrideTestContext) {
-        return createPerfanaEventContext(super.toContext(overrideTestContext));
     }
 
     @Override

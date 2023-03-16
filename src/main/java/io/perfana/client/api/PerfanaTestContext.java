@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.Map;
 
 @Value
-public class TestContext {
+public class PerfanaTestContext {
 
     String systemUnderTest;
     String workload;

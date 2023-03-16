@@ -129,8 +129,8 @@ public class TestContextBuilder {
         return this;
     }
 
-    public TestContext build() {
-        return new TestContext(systemUnderTest, workload, testEnvironment, testRunId, version, ciBuildResultsUrl, rampupTime, constantLoadTime, annotations, variables, tags);
+    public PerfanaTestContext build() {
+        return new PerfanaTestContext(systemUnderTest, workload, testEnvironment, testRunId, version, ciBuildResultsUrl, rampupTime, constantLoadTime, annotations, variables, tags);
     }
 
     public TestContextBuilder setRampupTimeInSeconds(String rampupTimeSeconds) {

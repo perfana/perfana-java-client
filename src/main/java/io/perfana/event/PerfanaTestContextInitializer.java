@@ -17,6 +17,7 @@ package io.perfana.event;
 
 import io.perfana.client.PerfanaClient;
 import io.perfana.client.PerfanaUtils;
+import io.perfana.client.api.PerfanaTestContext;
 import io.perfana.eventscheduler.api.EventLogger;
 import io.perfana.eventscheduler.api.TestContextInitializer;
 import io.perfana.eventscheduler.api.config.TestContext;
@@ -38,7 +39,7 @@ public class PerfanaTestContextInitializer implements TestContextInitializer {
             return testContext;
         }
         else {
-            io.perfana.client.api.TestContext perfanaTestContext = PerfanaUtils.createPerfanaTestContext(perfanaEventContext);
+            PerfanaTestContext perfanaTestContext = PerfanaUtils.createPerfanaTestContext(perfanaEventContext, testContext);
             PerfanaClient perfanaClient = PerfanaUtils.createPerfanaClient(perfanaEventContext, perfanaTestContext, logger);
             String newTestRunId = perfanaClient.callInitTest(perfanaTestContext);
             if ("none".equals(newTestRunId)) {

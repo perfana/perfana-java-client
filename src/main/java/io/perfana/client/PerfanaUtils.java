@@ -17,12 +17,12 @@ package io.perfana.client;
 
 import io.perfana.client.api.PerfanaConnectionSettings;
 import io.perfana.client.api.PerfanaConnectionSettingsBuilder;
-import io.perfana.client.api.TestContext;
+import io.perfana.client.api.PerfanaTestContext;
 import io.perfana.client.api.TestContextBuilder;
-import io.perfana.client.exception.PerfanaClientRuntimeException;
 import io.perfana.event.PerfanaClientEventLogger;
 import io.perfana.event.PerfanaEventContext;
 import io.perfana.eventscheduler.api.EventLogger;
+import io.perfana.eventscheduler.api.config.TestContext;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -85,7 +85,7 @@ public class PerfanaUtils {
 
     public static PerfanaClient createPerfanaClient(
             PerfanaEventContext eventContext,
-            TestContext testContext,
+            PerfanaTestContext testContext,
             EventLogger logger) {
 
         PerfanaConnectionSettings settings = new PerfanaConnectionSettingsBuilder()
@@ -104,13 +104,7 @@ public class PerfanaUtils {
         return builder.build();
     }
 
-    public static TestContext createPerfanaTestContext(PerfanaEventContext context) {
-
-        io.perfana.eventscheduler.api.config.TestContext testContext = context.getTestContext();
-
-        if (testContext == null) {
-            throw new PerfanaClientRuntimeException("testConfig in eventConfig is null: " + context);
-        }
+    public static PerfanaTestContext createPerfanaTestContext(PerfanaEventContext context, TestContext testContext) {
 
         return new TestContextBuilder()
             .setVariables(context.getVariables())

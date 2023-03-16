@@ -77,13 +77,12 @@ public class PerfanaEventTest {
         eventConfig.setPerfanaUrl("http://localhost:" + wireMockRule.port());
         eventConfig.setName("test-name");
         eventConfig.setApiKey("perfana-api-key-123");
-        eventConfig.setTestConfig(TestConfig.builder().build());
 
         EventLogger eventLogger = EventLoggerStdOut.INSTANCE;
 
         EventMessageBus messageBus = new EventMessageBusSimple();
 
-        PerfanaEvent event = new PerfanaEvent(eventConfig.toContext(), messageBus, eventLogger);
+        PerfanaEvent event = new PerfanaEvent(eventConfig.toContext(), TestConfig.builder().build().toContext(), messageBus, eventLogger);
 
         event.beforeTest();
 

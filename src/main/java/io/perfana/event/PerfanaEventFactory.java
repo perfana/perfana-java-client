@@ -18,12 +18,13 @@ package io.perfana.event;
 import io.perfana.eventscheduler.api.Event;
 import io.perfana.eventscheduler.api.EventFactory;
 import io.perfana.eventscheduler.api.EventLogger;
+import io.perfana.eventscheduler.api.config.TestContext;
 import io.perfana.eventscheduler.api.message.EventMessageBus;
 
 public class PerfanaEventFactory implements EventFactory<PerfanaEventContext> {
 
     @Override
-    public Event create(PerfanaEventContext context, EventMessageBus messageBus, EventLogger logger) {
-        return new PerfanaEvent(context, messageBus, logger);
+    public Event create(PerfanaEventContext context, TestContext testContext, EventMessageBus messageBus, EventLogger logger) {
+        return new PerfanaEvent(context, testContext, messageBus, logger);
     }
 }

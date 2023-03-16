@@ -22,7 +22,7 @@ import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 
-public class TestContextBuilderTest {
+public class TestContextBuilderPerfanaTest {
 
     @Test
     public void testTestContextBuilderContents() {
@@ -48,7 +48,7 @@ public class TestContextBuilderTest {
 
         String tagsSeparatedByCommas = tag6767 + "," + tag3434;
 
-        TestContext context = new TestContextBuilder()
+        PerfanaTestContext context = new TestContextBuilder()
             .setWorkload(testType)
             .setTestEnvironment(testEnv)
             .setTestRunId(testRunId)

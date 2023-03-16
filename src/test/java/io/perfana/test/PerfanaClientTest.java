@@ -64,7 +64,7 @@ public class PerfanaClientTest
                 .setRetryTimeSeconds("3")
                 .build();
 
-        TestContext context = new TestContextBuilder()
+        PerfanaTestContext context = new TestContextBuilder()
                 .setWorkload("testType")
                 .setTestEnvironment("testEnv")
                 .setTestRunId("testRunId")
@@ -91,7 +91,7 @@ public class PerfanaClientTest
     @Test
     public void createWithNulls() {
 
-        TestContext context = new TestContextBuilder()
+        PerfanaTestContext context = new TestContextBuilder()
                 .setAnnotations(null)
                 .setVersion(null)
                 .setSystemUnderTest(null)
@@ -149,7 +149,7 @@ public class PerfanaClientTest
         vars.put(var2, value2);
 
         String annotations = "Xmx set to 2g";
-        TestContext context = new TestContextBuilder()
+        PerfanaTestContext context = new TestContextBuilder()
                 .setAnnotations(annotations)
                 .setVariables(vars)
                 .setTags(tags)
@@ -190,7 +190,7 @@ public class PerfanaClientTest
         props.put("foo", "foo-1");
         props.put("bar", "bar-2");
         
-        TestContext context = new TestContextBuilder()
+        PerfanaTestContext context = new TestContextBuilder()
                 .setVariables(props)
                 .build();
 
@@ -208,7 +208,7 @@ public class PerfanaClientTest
                         .withBody("{ \"abort\": true, \"abortMessage\": \"What is wrong?\" }")));
 
         PerfanaClient perfanaClient = createPerfanaClient();
-        TestContext testContext = new TestContextBuilder().build();
+        PerfanaTestContext testContext = new TestContextBuilder().build();
         perfanaClient.callPerfanaTestEndpoint(testContext, false);
     }
 
@@ -220,7 +220,7 @@ public class PerfanaClientTest
                 .withBody("{ \"abort\": true, \"abortMessage\": \"What is wrong?\" }")));
 
         PerfanaClient perfanaClient = createPerfanaClient();
-        TestContext testContext = new TestContextBuilder().build();
+        PerfanaTestContext testContext = new TestContextBuilder().build();
         // should not throw KillSwitchException when completed is true (not a keep alive call)
         perfanaClient.callPerfanaTestEndpoint(testContext, true);
 
@@ -283,7 +283,7 @@ public class PerfanaClientTest
                 .withBody("Unauthorized")));
 
         PerfanaClient perfanaClient = createPerfanaClient();
-        TestContext testContext = new TestContextBuilder().build();
+        PerfanaTestContext testContext = new TestContextBuilder().build();
         AbortSchedulerException thrown = Assert.assertThrows(AbortSchedulerException.class, () -> perfanaClient.callPerfanaTestEndpoint(testContext, false));
         assertTrue(thrown.getMessage().contains("Invalid or expired API key"));
     }
@@ -436,7 +436,7 @@ public class PerfanaClientTest
                         .withStatus(200).withBody(returnJson)));
 
         PerfanaClient perfanaClient = createPerfanaClient();
-        TestContext testContext = new TestContextBuilder().build();
+        PerfanaTestContext testContext = new TestContextBuilder().build();
         String testRunId = perfanaClient.callInitTest(testContext);
         assertEquals(expectedTestRunId, testRunId);
     }
@@ -450,7 +450,7 @@ public class PerfanaClientTest
                         .withStatus(500).withBody("error")));
 
         PerfanaClient perfanaClient = createPerfanaClient();
-        TestContext testContext = new TestContextBuilder().build();
+        PerfanaTestContext testContext = new TestContextBuilder().build();
         String testRunId = perfanaClient.callInitTest(testContext);
         assertNull(testRunId);
     }

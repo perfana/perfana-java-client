@@ -23,7 +23,7 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import io.perfana.client.api.PerfanaCaller;
 import io.perfana.client.api.PerfanaClientLogger;
 import io.perfana.client.api.PerfanaConnectionSettings;
-import io.perfana.client.api.TestContext;
+import io.perfana.client.api.PerfanaTestContext;
 import io.perfana.client.domain.*;
 import io.perfana.client.exception.PerfanaAssertResultsException;
 import io.perfana.client.exception.PerfanaAssertionsAreFalse;
@@ -54,7 +54,7 @@ public final class PerfanaClient implements PerfanaCaller {
 
     private final PerfanaClientLogger logger;
 
-    private final TestContext context;
+    private final PerfanaTestContext context;
     private final PerfanaConnectionSettings settings;
     
     private final boolean assertResultsEnabled;
@@ -90,7 +90,7 @@ public final class PerfanaClient implements PerfanaCaller {
         initReplyReader = objectMapper.reader().forType(InitReply.class);
     }
 
-    PerfanaClient(TestContext context, PerfanaConnectionSettings settings,
+    PerfanaClient(PerfanaTestContext context, PerfanaConnectionSettings settings,
                   boolean assertResultsEnabled, PerfanaClientLogger logger) {
         this.context = context;
         this.settings = settings;
@@ -98,12 +98,12 @@ public final class PerfanaClient implements PerfanaCaller {
         this.logger = logger;
     }
 
-    public void callPerfanaTestEndpoint(TestContext context, boolean completed) throws KillSwitchException {
+    public void callPerfanaTestEndpoint(PerfanaTestContext context, boolean completed) throws KillSwitchException {
         callPerfanaTestEndpoint(context, completed, Collections.emptyMap());
     }
 
     @Override
-    public void callPerfanaTestEndpoint(TestContext context, boolean completed, Map<String, String> extraVariables) throws KillSwitchException {
+    public void callPerfanaTestEndpoint(PerfanaTestContext context, boolean completed, Map<String, String> extraVariables) throws KillSwitchException {
         final String json = perfanaMessageToJson(context, completed, extraVariables);
         final Request request = createRequest("/api/test", json);
 
@@ -177,7 +177,7 @@ public final class PerfanaClient implements PerfanaCaller {
     }
 
     @Override
-    public void callPerfanaEvent(TestContext context, String eventTitle, String eventDescription) {
+    public void callPerfanaEvent(PerfanaTestContext context, String eventTitle, String eventDescription) {
         logger.info("add Perfana event: " + eventDescription);
         String json = perfanaEventToJson(context, eventTitle, eventDescription);
         try {
@@ -208,7 +208,7 @@ public final class PerfanaClient implements PerfanaCaller {
         }
     }
 
-    public static String perfanaMessageToJson(TestContext context, boolean completed, Map<String, String> extraVariables) {
+    public static String perfanaMessageToJson(PerfanaTestContext context, boolean completed, Map<String, String> extraVariables) {
 
         PerfanaMessage.PerfanaMessageBuilder perfanaMessageBuilder = PerfanaMessage.builder()
             .testRunId(context.getTestRunId())
@@ -238,7 +238,7 @@ public final class PerfanaClient implements PerfanaCaller {
         }
     }
 
-    private String perfanaEventToJson(TestContext context, String eventTitle, String eventDescription) {
+    private String perfanaEventToJson(PerfanaTestContext context, String eventTitle, String eventDescription) {
 
         PerfanaEvent event = PerfanaEvent.builder()
             .systemUnderTest(context.getSystemUnderTest())
@@ -520,7 +520,7 @@ public final class PerfanaClient implements PerfanaCaller {
         }
     }
 
-    public String callInitTest(TestContext context) {
+    public String callInitTest(PerfanaTestContext context) {
         Init init = Init.builder()
                 .systemUnderTest(context.getSystemUnderTest())
                 .testEnvironment(context.getTestEnvironment())
