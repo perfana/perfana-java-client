@@ -33,7 +33,7 @@
     <properties>
         <encoding>UTF-8</encoding>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <java.version>8</java.version>
+        <java.version>11</java.version>
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
         <header.basedir>${project.basedir}</header.basedir>
@@ -300,10 +300,6 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-compiler-plugin</artifactId>
-                        <configuration>
-                            <source>8</source>
-                            <target>8</target>
-                        </configuration>
                     </plugin>
                 </plugins>
             </build>
