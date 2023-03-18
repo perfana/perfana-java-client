@@ -520,6 +520,9 @@ public final class PerfanaClient implements PerfanaCaller {
         }
     }
 
+    /**
+     * @return the testRunId or null if the call failed.
+     */
     public String callInitTest(PerfanaTestContext context) {
         Init init = Init.builder()
                 .systemUnderTest(context.getSystemUnderTest())
@@ -538,11 +541,13 @@ public final class PerfanaClient implements PerfanaCaller {
                 return null;
             }
 
-            InitReply initReply = initReplyReader.readValue(initReplyJson);
-            return initReply.getTestRunId();
+            try {
+                InitReply initReply = initReplyReader.readValue(initReplyJson);
+                return initReply.getTestRunId();
+            } catch (JsonProcessingException e) {
+                logger.error("failed to serialize " + initReplyJson + " to json: " + e.getMessage());
+            }
 
-        } catch (JsonProcessingException e) {
-            logger.error("failed to serialize " + context + " to json", e);
         } catch (IOException e) {
             logger.error("failed to call Perfana init-test endpoint: " + e.getMessage());
         }

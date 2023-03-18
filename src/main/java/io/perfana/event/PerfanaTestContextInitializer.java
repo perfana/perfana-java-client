@@ -42,8 +42,8 @@ public class PerfanaTestContextInitializer implements TestContextInitializer {
             PerfanaTestContext perfanaTestContext = PerfanaUtils.createPerfanaTestContext(perfanaEventContext, testContext);
             PerfanaClient perfanaClient = PerfanaUtils.createPerfanaClient(perfanaEventContext, perfanaTestContext, logger);
             String newTestRunId = perfanaClient.callInitTest(perfanaTestContext);
-            if ("none".equals(newTestRunId)) {
-                logger.warn("Perfana test run id is 'none'. No override will be done.");
+            if (newTestRunId == null) {
+                logger.warn("Perfana test run id is null. No override will be done.");
                 return testContext;
             }
             logger.info("Perfana test run id is '" + newTestRunId + "'. Will override test run id. ");
