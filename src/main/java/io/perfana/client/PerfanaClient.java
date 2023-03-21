@@ -48,7 +48,7 @@ public final class PerfanaClient implements PerfanaCaller {
 
     private static final MediaType JSON
             = MediaType.parse("application/json; charset=utf-8");
-    public static final PerfanaErrorMessage PERFANA_ERROR_MESSAGE_NOT_FOUND = new PerfanaErrorMessage("<No detail message was send>");
+    public static final PerfanaErrorMessage PERFANA_ERROR_MESSAGE_NOT_FOUND = new PerfanaErrorMessage(Collections.singletonList("<No detail message was send>"));
 
     private final OkHttpClient client = new OkHttpClient();
 

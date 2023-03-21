@@ -45,7 +45,7 @@ import static org.junit.Assert.fail;
 public class PerfanaClientTest
 {
     public static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-    public static final String MESSAGE_THERE_WAS_A_FAILURE = "{\"message\":\"there was a failure!\"}";
+    public static final String MESSAGE_THERE_WAS_A_FAILURE = "{\"message\":[\"there was a failure!\"]}";
     @Rule
     public WireMockRule wireMockRule = new WireMockRule(options().dynamicPort());
 
@@ -310,7 +310,7 @@ public class PerfanaClientTest
 
         PerfanaClient perfanaClient = createPerfanaClient();
         PerfanaAssertResultsException thrown = Assert.assertThrows(PerfanaAssertResultsException.class, perfanaClient::assertResults);
-        assertTrue(thrown.getMessage().contains("due to: there was a failure!"));
+        assertTrue(thrown.getMessage().contains("due to: [there was a failure!]"));
     }
 
     @Test
