@@ -49,6 +49,7 @@ public final class PerfanaClient implements PerfanaCaller {
     private static final MediaType JSON
             = MediaType.parse("application/json; charset=utf-8");
     public static final PerfanaErrorMessage PERFANA_ERROR_MESSAGE_NOT_FOUND = new PerfanaErrorMessage(Collections.singletonList("<No detail message was send>"));
+    public static final PerfanaSingleMessage PERFANA_SINGLE_MESSAGE_NOT_FOUND = new PerfanaSingleMessage("<No detail message was send>");
 
     private final OkHttpClient client = new OkHttpClient();
 
@@ -62,6 +63,7 @@ public final class PerfanaClient implements PerfanaCaller {
     private static final ObjectReader perfanaBenchmarkReader;
 
     private static final ObjectReader errorMessageReader;
+    private static final ObjectReader singleMessageReader;
     private static final ObjectReader perfanaTestReader;
     private static final ObjectWriter perfanaMessageWriter;
     private static final ObjectWriter perfanaEventWriter;
@@ -80,6 +82,7 @@ public final class PerfanaClient implements PerfanaCaller {
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         perfanaBenchmarkReader = objectMapper.reader().forType(Benchmark.class);
         errorMessageReader = objectMapper.reader().forType(PerfanaErrorMessage.class);
+        singleMessageReader = objectMapper.reader().forType(PerfanaSingleMessage.class);
         perfanaTestReader = objectMapper.reader().forType(PerfanaTest.class);
         perfanaMessageWriter = objectMapper.writer().forType(PerfanaMessage.class);
         perfanaEventWriter = objectMapper.writer().forType(PerfanaEvent.class);
@@ -319,19 +322,19 @@ public final class PerfanaClient implements PerfanaCaller {
                     assertionsAvailable = true;
                     checksSpecified = true;
                     keepRetrying = false;
-                } else {
-                    final PerfanaErrorMessage perfanaErrorMessage = extractPerfanaErrorMessage(body);
-
+                } else if (code == HTTP_ACCEPTED) { // 202
+                    PerfanaSingleMessage message = extractPerfanaSingleMessage(body);
+                    //  evaluation in progress
+                    logger.info(String.format("Trying to get test run check results at %s, attempt (%d/%d). %s",
+                            endPoint, retryCount, maxRetryCount, message.getMessage()));
+                }
+                else {
                     if (code == HTTP_NO_CONTENT) { // 204
                         // no checks specified
                         assertionsAvailable = true; // valid response, interpret as "empty assertion list"
                         keepRetrying = false;
                         logger.info(String.format("No check can be done for [%s], due to: %s",
                                 context.getTestRunId(), "no checks specified for this test run in Perfana"));
-                    } else if (code == HTTP_ACCEPTED) { // 202
-                        //  evaluation in progress
-                        logger.info(String.format("Trying to get test run check results at %s, attempt (%d/%d). Test run evaluation in progress ...",
-                                endPoint, retryCount, maxRetryCount));
                     } else if (code == HTTP_UNAVAILABLE || code == HTTP_BAD_GATEWAY) { // 503 and 502
                         // no results available (yet), can be retried
                         logger.warn(String.format("Perfana is currently unavailable (%s) for [%s]. Will retry (%d/%d)...",
@@ -341,9 +344,11 @@ public final class PerfanaClient implements PerfanaCaller {
                         throw new PerfanaAssertResultsException(String.format("Bad request from client (%d) to results for [%s].%s",
                                 code, context.getTestRunId(), dueTo));
                     } else if (code == HTTP_INTERNAL_ERROR) { // 500
+                        PerfanaErrorMessage perfanaErrorMessage = extractPerfanaErrorMessage(body);
                         throw new PerfanaAssertResultsException(String.format("Test run [%s] has been marked as invalid, due to: %s",
                                 context.getTestRunId(), perfanaErrorMessage.getMessage()));
                     } else if (code == HTTP_NOT_FOUND) { // 404
+                        PerfanaErrorMessage perfanaErrorMessage = extractPerfanaErrorMessage(body);
                         throw new PerfanaAssertResultsException(String.format("Test run [%s] not found, due to: %s",
                                 context.getTestRunId(), perfanaErrorMessage.getMessage()));
                     } else if (code == HTTP_UNAUTHORIZED) { // 401
@@ -351,6 +356,7 @@ public final class PerfanaClient implements PerfanaCaller {
                         throw new PerfanaAssertResultsException(String.format("Not authorized (%d) for [%s]. Check the Perfana API key.%s",
                                 code, endPoint, dueTo));
                     } else {
+                        PerfanaErrorMessage perfanaErrorMessage = extractPerfanaErrorMessage(body);
                         throw new PerfanaAssertResultsException(String.format("No action defined for dealing with http code (%d) for [%s]. Message: %s",
                                 code, endPoint, perfanaErrorMessage));
                     }
@@ -402,6 +408,20 @@ public final class PerfanaClient implements PerfanaCaller {
             return PERFANA_ERROR_MESSAGE_NOT_FOUND;
         }
         return perfanaErrorMessage;
+    }
+
+    private PerfanaSingleMessage extractPerfanaSingleMessage(String messageBody) throws IOException {
+        if (messageBody == null || messageBody.isEmpty()) {
+            return PerfanaSingleMessage.builder().message("[No message]").build();
+        }
+        PerfanaSingleMessage perfanaSingleMessage;
+        try {
+            perfanaSingleMessage = singleMessageReader.readValue(messageBody);
+        } catch (JsonProcessingException e) {
+            logger.warn(String.format("Failed to process Perfana error message: [%s] due to: %s", messageBody, e));
+            return PERFANA_SINGLE_MESSAGE_NOT_FOUND;
+        }
+        return perfanaSingleMessage;
     }
 
     private void sleep(long sleepDurationMillis) {

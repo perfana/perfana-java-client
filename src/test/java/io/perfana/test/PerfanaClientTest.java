@@ -18,6 +18,7 @@ package io.perfana.test;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import com.github.tomakehurst.wiremock.matching.UrlPattern;
+import com.github.tomakehurst.wiremock.stubbing.Scenario;
 import io.perfana.client.PerfanaClient;
 import io.perfana.client.PerfanaClientBuilder;
 import io.perfana.client.api.*;
@@ -60,8 +61,8 @@ public class PerfanaClientTest
 
         PerfanaConnectionSettings settings = new PerfanaConnectionSettingsBuilder()
                 .setPerfanaUrl("http://localhost:" + wireMockRule.port())
-                .setRetryMaxCount("5")
-                .setRetryTimeSeconds("3")
+                .setRetryMaxCount("3")
+                .setRetryTimeSeconds("1")
                 .build();
 
         PerfanaTestContext context = new TestContextBuilder()
@@ -249,6 +250,46 @@ public class PerfanaClientTest
             "https://perfana:4000/requirements/123\n" +
             "https://perfana:4000/benchmarkBaseline/123\n" +
             "https://perfana:4000/benchmarkPrevious/123";
+
+        assertEquals(expectReply, assertResults);
+    }
+
+    @Test
+    public void testPerfanaAssertResultsCall202() throws Exception {
+
+        Benchmark benchmark = Benchmark.builder()
+                .requirements(Result.builder().result(true).deeplink("https://perfana:4000/requirements/123").build())
+                .benchmarkBaselineTestRun(Result.builder().result(true).deeplink("https://perfana:4000/benchmarkBaseline/123").build())
+                .benchmarkPreviousTestRun(Result.builder().result(true).deeplink("https://perfana:4000/benchmarkPrevious/123").build())
+                .build();
+
+        String finalBody = OBJECT_MAPPER.writeValueAsString(benchmark);
+
+        String body = "{\"message\":\"Test run evaluation in progress ...\"}";
+
+        // wiremock rule will return 202 once and next 200
+        wireMockRule.stubFor(get(urlEqualTo("/api/benchmark-results/unknown/testRunId"))
+                .inScenario("testPerfanaAssertResultsCall202")
+                .whenScenarioStateIs(Scenario.STARTED)
+                .willReturn(aResponse()
+                        .withBody(body)
+                        .withStatus(202))
+                .willSetStateTo("202"));
+
+                wireMockRule.stubFor(get(urlEqualTo("/api/benchmark-results/unknown/testRunId"))
+                        .inScenario("testPerfanaAssertResultsCall202")
+                        .whenScenarioStateIs("202")
+                        .willReturn(aResponse()
+                            .withBody(finalBody)
+                            .withStatus(200)));
+
+        PerfanaClient perfanaClient = createPerfanaClient();
+        String assertResults = perfanaClient.assertResults();
+
+        String expectReply = "All configured checks are OK: \n" +
+                "https://perfana:4000/requirements/123\n" +
+                "https://perfana:4000/benchmarkBaseline/123\n" +
+                "https://perfana:4000/benchmarkPrevious/123";
 
         assertEquals(expectReply, assertResults);
     }
@@ -454,6 +495,5 @@ public class PerfanaClientTest
         String testRunId = perfanaClient.callInitTest(testContext);
         assertNull(testRunId);
     }
-
 
 }
