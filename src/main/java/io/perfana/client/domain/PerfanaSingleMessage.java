@@ -17,8 +17,6 @@ package io.perfana.client.domain;
 
 import lombok.*;
 
-import java.util.List;
-
 @Value
 @Builder
 @NoArgsConstructor(force = true, access = AccessLevel.PRIVATE)

@@ -38,6 +38,7 @@ import org.jetbrains.annotations.Nullable;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
@@ -433,7 +434,7 @@ public final class PerfanaClient implements PerfanaCaller {
     }
 
     private String encodeForURL(String testRunId) throws UnsupportedEncodingException {
-        return URLEncoder.encode(testRunId, "UTF-8").replace("\\", "%20");
+        return URLEncoder.encode(testRunId, StandardCharsets.UTF_8).replace("\\", "%20");
     }
 
     public String assertResults() throws PerfanaClientException, PerfanaAssertResultsException, PerfanaAssertionsAreFalse {
