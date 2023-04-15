@@ -23,7 +23,7 @@
 
     <groupId>io.perfana</groupId>
     <artifactId>perfana-java-client</artifactId>
-    <version>3.0.0-SNAPSHOT</version>
+    <version>3.0.0</version>
     <description>Perfana java client for integrating performance test tools</description>
     <packaging>jar</packaging>
 

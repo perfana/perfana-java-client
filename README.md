@@ -29,6 +29,18 @@ For example (from [example-pom.xml](src/test/resources/example-pom.xml)):
             <scheduleScript>
                 ${eventScheduleScript}
             </scheduleScript>
+            <testConfig>
+                <systemUnderTest>${systemUnderTest}</systemUnderTest>
+                <version>${version}</version>
+                <workload>${workload}</workload>
+                <testEnvironment>${testEnvironment}</testEnvironment>
+                <testRunId>${testRunId}</testRunId>
+                <buildResultsUrl>${buildResultsUrl}</buildResultsUrl>
+                <rampupTimeInSeconds>${rampupTimeInSeconds}</rampupTimeInSeconds>
+                <constantLoadTimeInSeconds>${constantLoadTimeInSeconds}</constantLoadTimeInSeconds>
+                <annotations>${annotations}</annotations>
+                <tags>${tags}</tags>
+            </testConfig>
             <eventConfigs>
                 <eventConfig implementation="io.perfana.event.PerfanaEventConfig">
                     <name>PerfanaEvent1</name>
@@ -40,18 +52,6 @@ For example (from [example-pom.xml](src/test/resources/example-pom.xml)):
                         <var1>my_value</var1>
                         <__var2>my_value_2</__var2>
                     </variables>
-                    <testConfig>
-                        <systemUnderTest>${systemUnderTest}</systemUnderTest>
-                        <version>${version}</version>
-                        <workload>${workload}</workload>
-                        <testEnvironment>${testEnvironment}</testEnvironment>
-                        <testRunId>${testRunId}</testRunId>
-                        <buildResultsUrl>${buildResultsUrl}</buildResultsUrl>
-                        <rampupTimeInSeconds>${rampupTimeInSeconds}</rampupTimeInSeconds>
-                        <constantLoadTimeInSeconds>${constantLoadTimeInSeconds}</constantLoadTimeInSeconds>
-                        <annotations>${annotations}</annotations>
-                        <tags>${tags}</tags>
-                    </testConfig>
                 </eventConfig>
             </eventConfigs>
         </eventSchedulerConfig>
