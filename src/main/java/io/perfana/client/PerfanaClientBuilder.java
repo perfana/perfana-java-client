@@ -27,7 +27,7 @@ public class PerfanaClientBuilder {
 
     private PerfanaConnectionSettings perfanaConnectionSettings;
 
-    private boolean assertResultsEnabled = false;
+    private boolean assertResultsEnabled = true;
 
     private PerfanaClientLogger logger = new PerfanaClientLoggerStdOut();
 

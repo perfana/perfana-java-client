@@ -1,7 +1,21 @@
 # perfana-java-client
 
-The Perfana Java Client can be used from Maven via an event-scheduler plugin, or it can be used
-via the event-scheduler directly from code.
+A Java client for Perfana. Use this jar to call the Perfana API.
+
+This project provides Java domain objects for Perfana to use in your code.
+
+There are calls to start a test run and to get the analysis results and act on them.
+It will poll the Perfana until the results are available or time out if it takes too long.
+
+Logic is present to deal with failed calls in an appropriate way, 
+e.g. by retrying or throwing an exception.
+
+Additional test run configuration is sent to Perfana to be used in comparisons.
+Think of configuration of the system under test (e.g. connection pool settings)
+and test environment (e.g. CPU limits).
+
+The Perfana Java Client can be used from Maven as an event-scheduler plugin, 
+or it can be used via the event-scheduler directly from code.
 
 ## Maven example
 
@@ -46,8 +60,6 @@ For example (from [example-pom.xml](src/test/resources/example-pom.xml)):
                     <name>PerfanaEvent1</name>
                     <perfanaUrl>http://localhost:8888</perfanaUrl>
                     <apiKey>perfana-api-key-XXX-YYY-ZZZ</apiKey>
-                    <assertResultsEnabled>false</assertResultsEnabled>
-                    <overrideTestRunId>false</overrideTestRunId>
                     <variables>
                         <var1>my_value</var1>
                         <__var2>my_value_2</__var2>
@@ -211,6 +223,9 @@ To avoid issues with test run ids that are not unique it is best to have Perfana
 of generating the unique test runs ids. By default the given test run id is overridden by Perfana.
 If you want to use your own test run ids, you can set the `overrideTestRunId` property to `false`.
 
+# Assert results
 
-
-
+Assert results is the call to Perfana to check if all checks as defined for the test run have passed.
+By default this is enabled. If you want to disable this, you can set the `assertResultsEnabled` property to `false`.
+Note that if you want to temporarily disable _all_ calls to Perfana you can also change
+the PerfanaEvent `enabled` property to `false`.
