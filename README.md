@@ -58,7 +58,7 @@ For example (from [example-pom.xml](src/test/resources/example-pom.xml)):
             <eventConfigs>
                 <eventConfig implementation="io.perfana.event.PerfanaEventConfig">
                     <name>PerfanaEvent1</name>
-                    <perfanaUrl>http://localhost:8888</perfanaUrl>
+                    <perfanaUrl>http://localhost:4000</perfanaUrl>
                     <apiKey>perfana-api-key-XXX-YYY-ZZZ</apiKey>
                     <variables>
                         <var1>my_value</var1>
@@ -107,7 +107,7 @@ Minimal example:
 
     // enable the Perfana events
     PerfanaEventConfig perfanaEventConfig = new PerfanaEventConfig();
-    perfanaEventConfig.setPerfanaUrl("http://localhost:8888");
+    perfanaEventConfig.setPerfanaUrl("http://localhost:4000");
     perfanaEventConfig.setApiKey("perfana-api-key-XXX-YYY-ZZZ");
 
     List<EventConfig> eventConfigs = new ArrayList<>();
@@ -154,7 +154,7 @@ Example with more configuration settings and checks enabled:
     
     // enable the Perfana events
     PerfanaEventConfig perfanaEventConfig = new PerfanaEventConfig();
-    perfanaEventConfig.setPerfanaUrl("http://localhost:8888");
+    perfanaEventConfig.setPerfanaUrl("http://localhost:4000");
     perfanaEventConfig.setApiKey("perfana-api-key-XXX-YYY-ZZZ");
     perfanaEventConfig.setAssertResultsEnabled(true);
     Map<String, String> variables = Map.of("var1", "value1", "var2", "value2");

@@ -25,7 +25,7 @@ import java.util.Map;
 
 public class PerfanaEventConfig extends EventConfig {
 
-    private String perfanaUrl = "http://localhost:8888";
+    private String perfanaUrl = "http://localhost:4000";
     private String apiKey = null;
     private boolean assertResultsEnabled = false;
     private Map<String,String> variables = Collections.emptyMap();
