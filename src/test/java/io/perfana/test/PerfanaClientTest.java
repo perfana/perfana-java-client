@@ -384,7 +384,6 @@ public class PerfanaClientTest
     }
 
     @Test(expected = PerfanaAssertResultsException.class)
-    @Ignore("takes too long to test timeouts, ignore test, enable to test manually")
     public void testPerfanaTestCallWith503() throws Exception {
         wireMockRule.stubFor(get(urlEqualTo("/api/benchmark-results/unknown/testRunId"))
             .willReturn(aResponse()
