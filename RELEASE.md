@@ -10,3 +10,9 @@
   * use `<overrideTestRunId>true</overrideTestRunId>` to override the testRunId from Perfana
 * fix message parsing for Perfana api benchmark 202 responses
 * use java 11 instead of java 8
+
+## 3.0.1 - January 2024
+
+* change assertResultsEnabled to be true by default
+* set default to use localhost:4000
+* 

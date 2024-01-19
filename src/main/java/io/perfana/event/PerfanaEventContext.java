@@ -17,8 +17,6 @@ package io.perfana.event;
 
 import io.perfana.eventscheduler.api.config.EventContext;
 
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 
 public class PerfanaEventContext extends EventContext {
@@ -39,7 +37,7 @@ public class PerfanaEventContext extends EventContext {
         this.perfanaUrl = perfanaUrl;
         this.apiKey = apiKey;
         this.assertResultsEnabled = assertResultsEnabled;
-        this.variables = Collections.unmodifiableMap(new HashMap<>(variables));
+        this.variables = Map.copyOf(variables);
         this.retryCount = retryCount;
         this.retryDelaySeconds = retryDelaySeconds;
         this.overrideTestRunId = overrideTestRunId;
