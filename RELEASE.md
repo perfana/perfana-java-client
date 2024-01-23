@@ -15,4 +15,4 @@
 
 * change assertResultsEnabled to be true by default
 * set default to use localhost:4000
-* 
+* dependency updates, including event-scheduler 4.0.3
